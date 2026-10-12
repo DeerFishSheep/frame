@@ -30,7 +30,7 @@ npm run dev
 没有凭证也可体验设计预览。需要真实联调时：
 
 1. 本地 `.env.local` 不存在时，复制 `.env.example`。
-2. 在 `.env.local` 配置 `TMDB_API_READ_ACCESS_TOKEN`。
+2. 在 `.env.local` 配置 `TMDB_API_KEY`（v3 Key）或 `TMDB_API_READ_ACCESS_TOKEN`；两者都有时优先使用 Token。
 3. 重启本地应用，再检查真实数据模式。
 
 已有 `.env.local` 时不要覆盖；只检查是否配置，不向日志、聊天或 Git 输出凭证内容。

@@ -51,6 +51,52 @@ test("missing credentials returns 503 and never requests or substitutes demo", a
   assert.deepEqual(await response.json(), { error: "配置缺失", code: "TMDB_NOT_CONFIGURED" });
 });
 
+test("v3 API key authenticates server requests without entering returned data", async () => {
+  const params = new URLSearchParams({ language: "zh-CN" });
+  const client = createTmdbClient({ apiKey: " test-api-key ", fetchImpl: async (url, init) => {
+    const request = new URL(String(url));
+    assert.equal(request.origin, "https://api.themoviedb.org");
+    assert.equal(request.searchParams.get("api_key"), "test-api-key");
+    assert.equal(request.searchParams.get("language"), "zh-CN");
+    assert.equal(new Headers(init?.headers).has("Authorization"), false);
+    return json({ results: [fixture] });
+  } });
+  const result = await client.request("/trending/movie/day", params);
+  assert.equal(JSON.stringify(result).includes("test-api-key"), false);
+  assert.equal(params.has("api_key"), false);
+});
+
+test("Bearer authentication takes precedence when both credentials are configured", async () => {
+  const client = createTmdbClient({ token: " test-token ", apiKey: "test-api-key", fetchImpl: async (url, init) => {
+    assert.equal(new URL(String(url)).searchParams.has("api_key"), false);
+    assert.equal(new Headers(init?.headers).get("Authorization"), "Bearer test-token");
+    return json({ results: [] });
+  } });
+  await client.request("/movie/popular");
+});
+
+test("API key authentication errors remain generic", async () => {
+  const client = createTmdbClient({ apiKey: "test-api-key", fetchImpl: async () => json({}, 401) });
+  await assert.rejects(client.request("/movie/popular"), (error: unknown) => error instanceof TmdbError && error.code === "TMDB_AUTH_FAILED" && !error.message.includes("test-api-key"));
+});
+
+test("transient network failure retries once and persistent failure stays sanitized", async () => {
+  let calls = 0;
+  const recovered = createTmdbClient({ apiKey: "test-api-key", sleep: async () => {}, fetchImpl: async () => {
+    if (++calls === 1) throw new TypeError("fetch failed");
+    return json({ results: [fixture] });
+  } });
+  await recovered.request("/movie/popular");
+  assert.equal(calls, 2);
+  calls = 0;
+  const failed = createTmdbClient({ apiKey: "test-api-key", sleep: async () => {}, fetchImpl: async () => {
+    calls++;
+    throw new TypeError("request containing test-api-key failed");
+  } });
+  await assert.rejects(failed.request("/movie/popular"), (error: unknown) => error instanceof TmdbError && error.code === "TMDB_UNAVAILABLE" && !error.message.includes("test-api-key"));
+  assert.equal(calls, 2);
+});
+
 test("cache deduplicates concurrent requests and marks expired fallback with the original timestamp", async () => {
   let now = Date.UTC(2026, 0, 1);
   let calls = 0;

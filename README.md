@@ -4,7 +4,7 @@
 
 原始项目资料只有 `PLAN.md`、开发任务书、HTML 原型和预览图。当前工程将原型整理为 Next.js 16 + React 19 + TypeScript 应用，可在自己的服务器运行。
 
-**当前在本地开发和测试；服务器部署尚未开始。** 真实 TMDB 接口已实现，但仍待有效凭证的本地联调。
+**当前在本地开发和测试；服务器部署尚未开始。** 本地已接通 TMDB 真实数据，逐项验收状态见当前进度。
 
 ## 项目状态与交接
 
@@ -27,14 +27,18 @@ test -e .env.local || cp .env.example .env.local
 npm run dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000)。在 `.env.local` 填入 TMDB API Read Access Token 后，重启应用即可使用真实数据。
+打开 [http://localhost:3000](http://localhost:3000)。在 `.env.local` 配置下面任一种凭证，重启应用即可使用真实数据。
 
 ```dotenv
-TMDB_API_READ_ACCESS_TOKEN=填入你的TMDB读取令牌
+# v3 API Key
+TMDB_API_KEY=
+# 或 API Read Access Token；两者同时配置时优先使用 Token
+TMDB_API_READ_ACCESS_TOKEN=
 TMDB_CACHE_SECONDS=1800
 ```
 
-令牌仅供服务端读取；不使用 `NEXT_PUBLIC_` 前缀，不需要访客输入 Key。`.env.local`、`.env` 已加入 Git 和 Docker 忽略规则。
+凭证仅供服务端读取；不使用 `NEXT_PUBLIC_` 前缀，不需要访客输入 Key。`.env.local`、`.env` 已加入 Git 和 Docker 忽略规则。
+API Key 由服务端通过 `api_key` 参数认证，Token 使用 Bearer 请求头，参见 [TMDB 官方认证说明](https://developer.themoviedb.org/docs/authentication-application)。
 
 ## 当前功能
 
@@ -49,9 +53,9 @@ TMDB_CACHE_SECONDS=1800
 
 ## 预览与真实数据
 
-未配置令牌时默认进入**设计预览**。预览作品明确标记为示例，不展示真实评分和名次，不代表当日榜单或全站搜索。
+未配置凭证时默认进入**设计预览**。预览作品明确标记为示例，不展示真实评分和名次，不代表当日榜单或全站搜索。
 
-已配置令牌时默认使用真实 TMDB 数据。来源面板可切换模式；真实请求失败会显示错误，不会自动混入预览作品。缺少令牌时切换真实模式会返回配置错误。
+已配置凭证时默认使用真实 TMDB 数据。来源面板可切换模式；真实请求失败会显示错误，不会自动混入预览作品。缺少凭证时切换真实模式会返回配置错误。
 
 真实数据默认缓存 1800 秒，并显示采集时间。收藏使用浏览器 `localStorage`，键为 `frame_favorites_v2`，电影与剧集使用不同的复合 ID。
 
@@ -82,13 +86,13 @@ TMDB_CACHE_SECONDS=1800
 
 ```bash
 cp .env.example .env
-# 编辑 .env，填入 TMDB_API_READ_ACCESS_TOKEN
+# 编辑 .env，填写 TMDB_API_KEY 或 TMDB_API_READ_ACCESS_TOKEN
 docker compose up -d --build
 docker compose ps
 docker compose logs --tail=100 frame
 ```
 
-镜像采用 [Next.js standalone 输出](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)，以普通用户运行。令牌通过 [Compose 运行时环境变量](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/) 注入，不进入镜像构建。
+镜像采用 [Next.js standalone 输出](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)，以普通用户运行。凭证通过 [Compose 运行时环境变量](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/) 注入，不进入镜像构建。
 
 站点只绑定服务器 `127.0.0.1:3000`。在已有 Nginx、Caddy 或服务器面板中，将域名反向代理到 `http://127.0.0.1:3000`，并配置 HTTPS。
 
@@ -115,7 +119,7 @@ docker compose --env-file .env.example config --quiet
 
 重点检查：手机页面无横向溢出；筛选 URL 刷新可复现；电影/剧集同数字 ID 可分别收藏；收藏刷新保留；缺少令牌和请求失败时显示可恢复状态。
 
-真实接口验收需配置有效 TMDB 令牌。来源署名与声明在 `/about`：`This product uses the TMDB API but is not endorsed or certified by TMDB.`
+真实接口验收需配置有效 TMDB 凭证。来源署名与声明在 `/about`：`This product uses the TMDB API but is not endorsed or certified by TMDB.`
 
 ## 第二阶段
 

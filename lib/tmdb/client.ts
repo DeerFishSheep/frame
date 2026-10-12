@@ -9,7 +9,8 @@ export class TmdbError extends Error {
 export interface TmdbResult<T> { data: T; retrievedAt: string; stale: boolean }
 interface Entry { data: unknown; retrievedAt: string; cachedAt: number }
 interface ClientOptions {
-  token: string;
+  token?: string;
+  apiKey?: string;
   cacheSeconds?: number;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
@@ -29,6 +30,8 @@ function validateData(data: unknown, path: string) {
 }
 
 export function createTmdbClient(options: ClientOptions) {
+  const token = options.token?.trim() ?? "";
+  const apiKey = options.apiKey?.trim() ?? "";
   const cache = new Map<string, Entry>();
   const inflight = new Map<string, Promise<TmdbResult<unknown>>>();
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -40,12 +43,18 @@ export function createTmdbClient(options: ClientOptions) {
   const maxCacheEntries = 500;
 
   async function fetchData(url: string): Promise<unknown> {
+    // v3 API keys use a query parameter; access tokens use the Bearer header.
+    // Build credentials only here, never in cache keys or returned data.
+    const authenticatedUrl = new URL(url);
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    else authenticatedUrl.searchParams.set("api_key", apiKey);
     for (let attempt = 0; attempt < 2; attempt++) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeout);
       try {
-        const response = await fetchImpl(url, {
-          headers: { Authorization: `Bearer ${options.token.trim()}`, Accept: "application/json" },
+        const response = await fetchImpl(authenticatedUrl.toString(), {
+          headers,
           signal: controller.signal, cache: "no-store",
         });
         if (response.status === 429 && attempt === 0) {
@@ -67,6 +76,7 @@ export function createTmdbClient(options: ClientOptions) {
           if (attempt === 0) continue;
           throw new TmdbError("连接 TMDB 超时，请重试。", "TMDB_TIMEOUT", 504);
         }
+        if (attempt === 0) { await sleep(250); continue; }
         throw new TmdbError("无法连接 TMDB，请稍后重试。", "TMDB_UNAVAILABLE", 502);
       } finally { clearTimeout(timer); }
     }
@@ -75,7 +85,7 @@ export function createTmdbClient(options: ClientOptions) {
 
   async function request<T>(path: string, params = new URLSearchParams()): Promise<TmdbResult<T>> {
     if (!allowedPath.test(path)) throw new TmdbError("不支持的数据接口。", "INVALID_TMDB_PATH", 400);
-    if (!options.token.trim()) throw new TmdbError("请在服务器配置 TMDB_API_READ_ACCESS_TOKEN。", "TMDB_NOT_CONFIGURED", 503);
+    if (!token && !apiKey) throw new TmdbError("请在本地服务端配置 TMDB_API_KEY 或 TMDB_API_READ_ACCESS_TOKEN。", "TMDB_NOT_CONFIGURED", 503);
     const sorted = new URLSearchParams(params);
     sorted.sort();
     const key = `${path}?${sorted.toString()}`;

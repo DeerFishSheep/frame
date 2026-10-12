@@ -90,7 +90,7 @@ export function FrameShell({ children }: { children: ReactNode }) {
           <Dialog.Title>数据来源</Dialog.Title>
           <Dialog.Description>{preview ? "当前展示固定的预览影片，不代表今日榜单。" : "影视资料和榜单来自 TMDB，按接口返回顺序展示。"}</Dialog.Description>
           <p className="source-instruction">{configured ? "已配置 TMDB，可以切换真实数据与预览影片。" : "真实榜单尚未启用。预览可以体验选片、详情和收藏。"}</p>
-          {!configured && <details className="connection-help"><summary>本地数据接入说明</summary><p>在本地 .env.local 中配置 <code>TMDB_API_READ_ACCESS_TOKEN</code>，重启应用后即可联调。</p></details>}
+          {!configured && <details className="connection-help"><summary>本地数据接入说明</summary><p>在本地 .env.local 中配置 <code>TMDB_API_KEY</code> 或 <code>TMDB_API_READ_ACCESS_TOKEN</code>，重启应用后即可联调。</p></details>}
           <button className="primary-button full-width" onClick={() => { setPreview(!preview); setSourceOpen(false); }}>{preview ? "切换真实数据" : "查看预览影片"}</button>
           <Link className="text-link" href="/about" onClick={() => setSourceOpen(false)}>完整来源说明<ArrowUpRight size={14}/></Link>
         </Dialog.Content>

@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default function RootLayout({children}:{children:React.ReactNode}) {
-  return <html lang="zh-CN" data-theme="dark" data-scroll-behavior="smooth" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html:"try{document.documentElement.dataset.theme=localStorage.getItem('frame_theme_v2')==='light'?'light':'dark'}catch(e){}"}}/></head><body><Suspense fallback={<div className="boot-state">FRAME.</div>}><FrameProvider configured={Boolean(process.env.TMDB_API_READ_ACCESS_TOKEN?.trim())}><FrameShell>{children}</FrameShell></FrameProvider></Suspense></body></html>;
+  return <html lang="zh-CN" data-theme="dark" data-scroll-behavior="smooth" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html:"try{document.documentElement.dataset.theme=localStorage.getItem('frame_theme_v2')==='light'?'light':'dark'}catch(e){}"}}/></head><body><Suspense fallback={<div className="boot-state">FRAME.</div>}><FrameProvider configured={Boolean(process.env.TMDB_API_READ_ACCESS_TOKEN?.trim() || process.env.TMDB_API_KEY?.trim())}><FrameShell>{children}</FrameShell></FrameProvider></Suspense></body></html>;
 }
