@@ -65,7 +65,7 @@ npm run start
 | 找片全部类型 | `components/workspace.tsx`、`lib/ui.ts` | `quick-genres`、`GENRES` |
 | 筛选弹层、主题搜索 | `components/filter-panel.tsx` | `FilterPanel`、`KeywordPicker` |
 | 海报卡片、完整日期、全部类型、序号 | `components/media-card.tsx`、`lib/media-presentation.ts` | `MediaCard`、`formatMediaDate`、`cardNumber` |
-| 详情、演员、剧照 | `components/detail-view.tsx`、`lib/tmdb/normalize.ts` | `DetailView`、`normalizeDetail` |
+| 详情、演员、剧照 | `components/detail-view.tsx`、`components/detail-media-strip.tsx`、`lib/tmdb/normalize.ts` | `DetailView`、`DetailMediaStrip`、`StillPhoto` |
 | 猜你喜欢横向分页 | `components/recommendations-rail.tsx`、`app/api/recommendations/[mediaType]/[id]/route.ts`、`lib/tmdb/service.ts` | `RecommendationsRail`、`recommendations`、`normalizeRecommendations` |
 | 参数白名单与上游接口选择 | `lib/query.ts` | `parseFilters`、`buildCatalogRequest` |
 | 缓存、超时、重试 | `lib/tmdb/client.ts` | `createTmdbClient` |
@@ -131,12 +131,19 @@ npm run start
 4. “猜你喜欢”首屏保留完整推荐页；滚动到末尾触发 `/api/recommendations/movie/969681?page=2`。分页按复合 ID 去重，最后一页禁用继续向右按钮，空结果和失败分别显示状态。
 5. `MediaDetail.recommendations` 现在是 `MediaPage`（`results/page/totalPages/totalResults`），缺失追加资源时以 `page: 0` 重试第一推荐页。
 
-## UI-05 轮播显示规则
+## 轮播显示规则（UI-07 更新）
 
 - `Workspace` 的 `workspace--featured` 只用于主榜单；CSS 让外层铺满页面，榜单卡片内容仍限制在 1440px 内。
-- `featured-image img` 使用原图比例、最大宽高和 `contain`；清晰层不使用 `cover`。只有装饰性的 `featured-ambient` 模糊背景允许裁切填充。
+- 桌面 `featured-image img` 使用 `cover` 放大铺满，允许适度裁切；900px 以下以及无背景图的竖海报回退使用 `contain`。`featured-ambient` 模糊层已在 UI-07 移除。
 - 页顶上下渐变、图片边缘蒙版匹配深浅主题；900px 以下图文上下排列。轮播外框用 `overflow: clip`，避免按钮聚焦时产生内部滚动偏移。
 - 移除暂停／继续按钮和永久暂停状态；`hovered`、`focused`、页面可见性、减少动画偏好共同控制自动切换。手动切换重置计时，离开交互区域恢复。
-- 复检 `/`、`/?media=tv`：调整窗口宽高，核对主图实际宽高比与原图一致、桌面五部切换高度稳定、无横向溢出；聚焦后应暂停，离开后等待 6 秒应继续。
+- 复检 `/`、`/?media=tv`：调整窗口宽高，核对手机主图完整、桌面图片铺满、五部桌面切换高度稳定、无横向溢出；聚焦后应暂停，离开后等待 6 秒应继续。
 
 - UI-06：900px 以下不再为 `.featured-copy` 设置 300px 最低高度，`.featured-actions` 使用固定 `margin-top: 18px`，禁止用自动外边距撑开简介与按钮。手机文字区随内容自然变高，复检 320／390／486／762px 下的长短简介。
+
+## UI-07 详情布局复检
+
+1. `/movie/969681`：700px 以下 `detail-aside`／`detail-main` 通过 `display: contents` 进入同一 Grid；`detail-summary` 保持完整资料块，在海报右侧依次显示片名、日期类型和评分，操作横跨两列，避免三枚按钮撑高海报侧栏。701px 以上恢复桌面两栏。
+2. `detail-rating` 禁止换行；人数不再使用 `flex-basis: 100%`。手机外链显示简短的 TMDB／IMDb，完整含义保留在无障碍名称。
+3. `DetailMediaStrip` 负责演员与剧照的单行、箭头、键盘、边界状态；演员显示已返回的最多 18 位，剧照显示已返回的最多 12 张，未增加上游取数范围。
+4. “相关主题”区域与专属 CSS 已删除；找片中的关键词筛选继续保留。

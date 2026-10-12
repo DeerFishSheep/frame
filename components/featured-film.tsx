@@ -26,7 +26,6 @@ function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
   const item = items[index];
   const saved = isFavorite(item);
   const running = !reducedMotion && visible && !hovered && !focused && items.length > 1;
-  const currentImage = imageUrl(item.backdropPath || item.posterPath, item.backdropPath ? "w1280" : "w500");
   const nextItem = items[(index + 1) % items.length];
   const nextImage = imageUrl(nextItem.backdropPath || nextItem.posterPath, nextItem.backdropPath ? "w1280" : "w500");
 
@@ -81,13 +80,12 @@ function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
     if (Math.abs(horizontal) > 45 && Math.abs(event.clientY - start.y) < 60) select(index + (horizontal < 0 ? 1 : -1));
   }
 
-  return <section className="featured-film" aria-label={label} aria-roledescription="轮播" data-active-key={mediaKey(item)} data-slide-index={index} data-autoplay={running}
+  return <section className="featured-film" aria-label={label} aria-roledescription="轮播" data-active-key={mediaKey(item)} data-slide-index={index} data-autoplay={running} data-artwork={item.backdropPath ? "backdrop" : "poster"}
     onPointerEnter={event => { if (event.pointerType !== "touch") setHovered(true); }} onPointerLeave={() => setHovered(false)}
     onFocusCapture={() => setFocused(true)}
     onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false); }}
     onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => { touchStart.current = null; }}>
     <div key={mediaKey(item)} className="featured-slide" role="group" aria-roledescription="幻灯片" aria-label={`第 ${index + 1} 部，共 ${items.length} 部`} aria-live={running ? "off" : "polite"}>
-      <div className="featured-ambient" aria-hidden="true" style={currentImage ? { backgroundImage: `url("${currentImage}")` } : undefined}/>
       <div className="featured-image"><MediaImage item={item} backdrop={Boolean(item.backdropPath)}/></div>
       <div className="featured-shade" aria-hidden="true"/>
       <div className="featured-copy">
