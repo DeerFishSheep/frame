@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { ArrowRight, Bookmark, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { ArrowRight, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { imageUrl, mediaKey, type Media } from "@/lib/types";
 import { FEATURED_INTERVAL_MS, formatMediaDate, selectFeaturedMedia } from "@/lib/media-presentation";
 import { MediaImage } from "./media-card";
@@ -17,15 +17,16 @@ export function FeaturedFilm({ items, label }: { items: Media[]; label: string }
 function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
   const { isFavorite, toggle } = useFrame();
   const [index, setIndex] = useState(0);
-  const [playback, setPlayback] = useState<"auto" | "playing" | "paused">("auto");
+  const [interaction, setInteraction] = useState(0);
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [visible, setVisible] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(true);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const item = items[index];
   const saved = isFavorite(item);
-  const wantsPlaying = playback === "playing" || (playback === "auto" && !reducedMotion);
-  const running = wantsPlaying && visible && !hovered && items.length > 1;
+  const running = !reducedMotion && visible && !hovered && !focused && items.length > 1;
+  const currentImage = imageUrl(item.backdropPath || item.posterPath, item.backdropPath ? "w1280" : "w500");
   const nextItem = items[(index + 1) % items.length];
   const nextImage = imageUrl(nextItem.backdropPath || nextItem.posterPath, nextItem.backdropPath ? "w1280" : "w500");
 
@@ -52,11 +53,12 @@ function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
     if (!running) return;
     const timer = window.setTimeout(() => setIndex(current => (current + 1) % items.length), FEATURED_INTERVAL_MS);
     return () => window.clearTimeout(timer);
-  }, [running, index, items.length]);
+  }, [running, index, items.length, interaction]);
 
   function select(next: number) {
     setIndex((next + items.length) % items.length);
-    setPlayback("paused");
+    // Restart the interval after touch/manual selection, including the active dot.
+    setInteraction(current => current + 1);
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
@@ -81,11 +83,13 @@ function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
 
   return <section className="featured-film" aria-label={label} aria-roledescription="轮播" data-active-key={mediaKey(item)} data-slide-index={index} data-autoplay={running}
     onPointerEnter={event => { if (event.pointerType !== "touch") setHovered(true); }} onPointerLeave={() => setHovered(false)}
-    onFocusCapture={event => { if (!(event.target as Element).closest("[data-playback-control]")) setPlayback("paused"); }}
+    onFocusCapture={() => setFocused(true)}
+    onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false); }}
     onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => { touchStart.current = null; }}>
-    <div key={mediaKey(item)} className="featured-slide" role="group" aria-roledescription="幻灯片" aria-label={`第 ${index + 1} 部，共 ${items.length} 部`} aria-live={wantsPlaying ? "off" : "polite"}>
+    <div key={mediaKey(item)} className="featured-slide" role="group" aria-roledescription="幻灯片" aria-label={`第 ${index + 1} 部，共 ${items.length} 部`} aria-live={running ? "off" : "polite"}>
+      <div className="featured-ambient" aria-hidden="true" style={currentImage ? { backgroundImage: `url("${currentImage}")` } : undefined}/>
       <div className="featured-image"><MediaImage item={item} backdrop={Boolean(item.backdropPath)}/></div>
-      <div className="featured-shade"/>
+      <div className="featured-shade" aria-hidden="true"/>
       <div className="featured-copy">
         <span className="featured-label">{item.source === "demo" ? "精选预览" : label}</span>
         <h1 id="featured-title" title={item.title}>{item.title}</h1>
@@ -102,7 +106,6 @@ function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
       <button className="carousel-arrow" onClick={() => select(index - 1)} aria-label="上一部"><ChevronLeft size={18}/></button>
       <div className="carousel-dots" role="group" aria-label="选择轮播影片">{items.map((slide, position) => <button key={mediaKey(slide)} className={position === index ? "active" : ""} onClick={() => select(position)} aria-label={`切换到第 ${position + 1} 部：${slide.title}`} aria-pressed={position === index}><span/></button>)}</div>
       <button className="carousel-arrow" onClick={() => select(index + 1)} aria-label="下一部"><ChevronRight size={18}/></button>
-      <button className="carousel-playback" data-playback-control onClick={() => setPlayback(wantsPlaying ? "paused" : "playing")} aria-label={wantsPlaying ? "暂停自动轮播" : "开始自动轮播"} title="每 6 秒切换，悬停时暂停">{wantsPlaying ? <Pause size={14}/> : <Play size={14}/>}</button>
     </div>}
   </section>;
 }

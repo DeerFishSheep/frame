@@ -60,7 +60,7 @@ npm run start
 | 要改什么 | 入口 | 搜索关键词 |
 | --- | --- | --- |
 | 页面布局、顶部导航、统一搜索、主题 | `app/globals.css`、`components/shell.tsx`、`lib/navigation.ts`、`components/providers.tsx` | `FrameShell`、`buildSearchHref`、`toggleTheme` |
-| 各主榜单焦点轮播 | `components/featured-film.tsx`、`lib/media-presentation.ts` | `FeaturedFilm`、`FEATURED_INTERVAL_MS`、`selectFeaturedMedia` |
+| 各主榜单通栏轮播 | `components/featured-film.tsx`、`app/globals.css`、`lib/media-presentation.ts` | `FeaturedCarousel`、`featured-image`、`workspace--featured`、`FEATURED_INTERVAL_MS` |
 | 榜单、搜索、分页、收藏页 | `components/workspace.tsx` | `Workspace`、`loadMore` |
 | 找片全部类型 | `components/workspace.tsx`、`lib/ui.ts` | `quick-genres`、`GENRES` |
 | 筛选弹层、主题搜索 | `components/filter-panel.tsx` | `FilterPanel`、`KeywordPicker` |
@@ -130,3 +130,11 @@ npm run start
 3. `/movie/969681` 顶部没有横幅；左海报右名称与资料；演员区域位于 `detail-content` 之后。
 4. “猜你喜欢”首屏保留完整推荐页；滚动到末尾触发 `/api/recommendations/movie/969681?page=2`。分页按复合 ID 去重，最后一页禁用继续向右按钮，空结果和失败分别显示状态。
 5. `MediaDetail.recommendations` 现在是 `MediaPage`（`results/page/totalPages/totalResults`），缺失追加资源时以 `page: 0` 重试第一推荐页。
+
+## UI-05 轮播显示规则
+
+- `Workspace` 的 `workspace--featured` 只用于主榜单；CSS 让外层铺满页面，榜单卡片内容仍限制在 1440px 内。
+- `featured-image img` 使用原图比例、最大宽高和 `contain`；清晰层不使用 `cover`。只有装饰性的 `featured-ambient` 模糊背景允许裁切填充。
+- 页顶上下渐变、图片边缘蒙版匹配深浅主题；900px 以下图文上下排列。轮播外框用 `overflow: clip`，避免按钮聚焦时产生内部滚动偏移。
+- 移除暂停／继续按钮和永久暂停状态；`hovered`、`focused`、页面可见性、减少动画偏好共同控制自动切换。手动切换重置计时，离开交互区域恢复。
+- 复检 `/`、`/?media=tv`：调整窗口宽高，核对主图实际宽高比与原图一致、五部切换不跳动、无横向溢出；聚焦后应暂停，离开后等待 6 秒应继续。

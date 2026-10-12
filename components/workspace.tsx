@@ -144,7 +144,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
     { key: "upcoming", label: filters.media === "tv" ? "今日播出" : "即将上映" },
   ];
 
-  return <div className="workspace">
+  return <div className={`workspace ${showFeature ? "workspace--featured" : ""}`}>
     {showFeature && featuredItems.length > 0 && <FeaturedFilm key={`${filters.chart}:${filters.media}:${filters.period}:${preview}`} items={featuredItems} label={featuredLabel}/>}
     {showFeature && !featuredItems.length && loading && <div className="skeleton featured-loading" aria-label="正在加载焦点影片"/>}
     <section className="catalog" aria-labelledby="workspace-title">
