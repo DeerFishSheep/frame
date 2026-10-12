@@ -167,6 +167,9 @@ legend span{color:var(--dim);font-weight:400}
 .filter-count{font-size:10px;color:var(--accent)}
 .applied-filters{display:flex;gap:6px;flex-wrap:wrap;margin:13px 0 0;align-items:center}
 .applied-filters>button,.applied-filters>span{padding:4px 8px;background:var(--panel);border:1px solid var(--border);border-radius:5px;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px}
+.applied-filters>button{max-width:100%}
+.applied-filter-label{min-width:0;overflow-wrap:anywhere}
+.applied-filters>button>svg{flex-shrink:0}
 .applied-filters .clear-all{border:0;background:none;color:var(--accent)}
 .catalog-status{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--dim);font-size:10px;padding:13px 0 16px}
 .catalog-status>span:last-child{white-space:nowrap}

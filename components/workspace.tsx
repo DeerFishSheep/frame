@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Bookmark, ChevronDown, Grid2X2, List, LoaderCircle, RefreshCw, Search, X } from "lucide-react";
+import { ArrowRight, Bookmark, ChevronDown, Grid2X2, List, LoaderCircle, RefreshCw, Search } from "lucide-react";
 import { DEFAULT_FILTERS, mediaKey, type CatalogFilters, type CatalogResponse, type Chart, type Media } from "@/lib/types";
 import { getDemoCatalog } from "@/lib/demo";
 import { selectFeaturedMedia } from "@/lib/media-presentation";
 import { parseFilters } from "@/lib/query";
-import { getRegionLabel, getSortLabel, activeFilterCount, chartMeta, formatCount, formatTime, GENRES, serializeFilters } from "@/lib/ui";
+import { chartMeta, formatCount, formatTime, GENRES, serializeFilters } from "@/lib/ui";
 import { useFrame } from "./providers";
-import { matchesDateRange, resolveDateTo } from "@/lib/date-filters";
+import { matchesDateRange } from "@/lib/date-filters";
 import { useTodayDate } from "@/lib/use-today-date";
 import { MediaCard, MediaSkeletons } from "./media-card";
 import { FilterPanel } from "./filter-panel";
+import { AppliedFilters } from "./applied-filters";
 import { FeaturedFilm } from "./featured-film";
 
 function filterFavorites(items: Media[], filters: CatalogFilters) {
@@ -103,7 +104,6 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
 
   const favoriteItems = useMemo(() => filterFavorites(favorites, filters), [favorites, filters]);
   const items = favoriteMode ? favoriteItems.slice(0, favoriteCount) : strictUpcoming && responseKey !== requestKey ? [] : response?.results || [];
-  const filtered = activeFilterCount(filters) > 0;
   const title = searchMode ? `“${filters.query}” 的搜索结果` : meta.title;
   const showRank = !favoriteMode && !searchMode && !discoverMode;
   const shownTotal = favoriteMode ? favoriteItems.length : filters.media === "all" && response?.source === "tmdb" ? items.length : response?.totalResults || 0;
@@ -171,18 +171,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
         </div>
         {discoverMode && !searchMode && <div className="quick-genres" role="group" aria-label={filters.media === "tv" ? "电视剧全部类型" : "电影全部类型"}><button className={`filter-chip ${!filters.genres.length ? "active" : ""}`} aria-pressed={!filters.genres.length} onClick={() => updateFilters({ ...filters, genres: [] })}>全部类型</button>{genres.map(genre => <button key={genre.id} className={`filter-chip ${filters.genres.includes(String(genre.id)) ? "active" : ""}`} aria-pressed={filters.genres.includes(String(genre.id))} onClick={() => updateFilters({ ...filters, genres: filters.genres.includes(String(genre.id)) ? filters.genres.filter(id => id !== String(genre.id)) : [...filters.genres, String(genre.id)] })}>{genre.name}</button>)}</div>}
       </div>}
-      {(filtered || searchMode) && <div className="applied-filters">
-        {filters.genres.map(id => <button key={id} onClick={() => updateFilters({ ...filters, genres: filters.genres.filter(other => other !== id) })}>{genres.find(item => String(item.id) === id)?.name || "类型"}<X size={12}/></button>)}
-        {(filters.dateFrom || (filters.dateTo && filters.dateTo !== "today")) && <span>{filters.dateFrom || "最早"} — {resolveDateTo(filters.dateTo, today) || "不限"}</span>}
-        {(filters.scoreMin || filters.scoreMax) && <span>评分 {filters.scoreMin || 0} — {filters.scoreMax || 10}</span>}
-        {filters.votesMin && <span>≥ {filters.votesMin} 人评分</span>}
-        {filters.region && <span>{getRegionLabel(filters.region)}</span>}
-        {filters.language && <span>语言 {filters.language}</span>}
-        {filters.keywords && <span>主题筛选</span>}
-        {(filters.runtimeMin || filters.runtimeMax) && <span>时长 {filters.runtimeMin || 0} — {filters.runtimeMax || "不限"} 分钟</span>}
-        {(favoriteMode || (discoverMode && !searchMode)) && <span>{getSortLabel(filters.sort, filters.media === "tv" ? "tv" : "movie")}</span>}
-        <button className="clear-all" onClick={clearFilters}>清空条件<X size={12}/></button>
-      </div>}
+      <AppliedFilters filters={filters} today={today} onChange={updateFilters} onClear={clearFilters}/>
       <div className="catalog-status">
         <span>{favoriteMode ? "收藏保存在当前浏览器" : loading ? "正在加载…" : error ? "加载失败" : response?.source === "demo" ? "示例片单，非实时榜单" : `${response?.stale ? "缓存数据 · " : ""}TMDB · ${formatTime(response?.retrievedAt || null)} 更新`}</span>
         {!loading && !error && <span>{formatCount(shownTotal)} {filters.media === "all" && response?.source === "tmdb" ? "部已加载" : "部"}</span>}

@@ -174,3 +174,11 @@ npm run start
 3. `activeFilterCount` 仅为非默认排序加1，默认热度与 `dateTo=today` 不计。`Workspace.applied-filters` 因此在只选排序时出现；主榜单和全局名称搜索不添加排序标签。
 4. 复检 `/discover?media=movie&genres=28&region=US&sort=vote_count.desc`：已选区显示“动作／美国／评分数量”；刷新复现；清空后仅选评分数量仍有标签。电视剧显示最近开播，筛选面板选项也叫评分数量。
 5. 本次包括已选标签所需的地区／排序共享元数据。原有未提交的分页、找片轮播与关键词移除保留在工作树，不随此任务提交。
+
+
+## UI-13 已选条件移除复检
+
+1. `components/applied-filters.tsx` 的 `AppliedFilters` 把所有已选条件统一渲染为带小叉、明确无障碍名称的按钮。`Workspace` 将 `updateFilters`／`clearFilters` 传入；不要再把部分已选条件写成不可移除的 span。
+2. 点击单项仅合并该项的 reset，并设 `page:1`。日期清除 dateFrom/dateTo 后由找片解析器恢复 today；评分清除上下限，时长清除上下限；排序恢复 DEFAULT_FILTERS.sort，标签随后消失。默认排序和默认日期不生成无效按钮。
+3. 地区、语言、评分数量和搜索词分别清除自己的参数，收藏模式继续保留 chart/media 及其他条件。旧含 keywords 的筛选对象可移除主题，但不重新添加关键词入口。
+4. `tests/applied-filters.test.ts` 使用真实组件生成的按钮回调，检查其余条件不丢失、分页重置、URL往返、所有标签有小叉、默认标签隐藏、收藏搜索与全清分开。该检查不驱动浏览器；浏览器工具本轮因协议安全策略拒绝读取页面。
