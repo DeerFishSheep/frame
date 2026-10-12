@@ -6,6 +6,7 @@ dist
 *.tsbuildinfo
 .DS_Store
 artifacts
+.tmp
 playwright-report
 frame_preview_*.png
 frame_ranking_demo.html

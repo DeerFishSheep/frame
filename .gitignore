@@ -6,4 +6,5 @@ dist/
 *.tsbuildinfo
 .DS_Store
 artifacts/
+.tmp/
 playwright-report/
