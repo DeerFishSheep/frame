@@ -182,3 +182,11 @@ npm run start
 2. 点击单项仅合并该项的 reset，并设 `page:1`。日期清除 dateFrom/dateTo 后由找片解析器恢复 today；评分清除上下限，时长清除上下限；排序恢复 DEFAULT_FILTERS.sort，标签随后消失。默认排序和默认日期不生成无效按钮。
 3. 地区、语言、评分数量和搜索词分别清除自己的参数，收藏模式继续保留 chart/media 及其他条件。旧含 keywords 的筛选对象可移除主题，但不重新添加关键词入口。
 4. `tests/applied-filters.test.ts` 使用真实组件生成的按钮回调，检查其余条件不丢失、分页重置、URL往返、所有标签有小叉、默认标签隐藏、收藏搜索与全清分开。该检查不驱动浏览器；浏览器工具本轮因协议安全策略拒绝读取页面。
+
+
+## LOCAL-07 局域网开发访问
+
+- `npm run dev` 监听0.0.0.0；手机用Mac实际局域网IP访问。`next.config.ts` 的 `allowedDevOrigins` 调用 `lib/dev-origins.ts/getLocalDevOrigins`，启动时获取本机非回环、RFC1918私有IPv4地址，去重后按具体主机名放行。
+- 地址只接受本机接口记录，排除公网、无效、IPv6及通配符；不以手机的客户端IP或任意网段设置白名单。DHCP或Wi-Fi更换后重启即可重新获取。
+- Next.js 16.4的开发资源来源检查可造成HTML/API成功但JS脚本403，客户端无法启动后一直显示加载骨架。复检首页中实际script src，分别携带localhost、局域网IP和无关Origin：前两者应200，后者应403。
+- `tests/dev-origins.test.ts` 检查私有地址边界、重复、失效接口和地址更换。实体iPhone刷新另行确认，不能把Mac模拟Origin请求写成手机浏览器验收。
