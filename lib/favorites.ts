@@ -1,0 +1,90 @@
+import { mediaKey, type Media } from "./types";
+
+export const FAVORITES_KEY = "frame_favorites_v2";
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+const isId = (value: unknown): value is number =>
+  typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+const isNonNegative = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0;
+const isNullableString = (value: unknown): value is string | null =>
+  value === null || typeof value === "string";
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((entry) => typeof entry === "string");
+
+/** Restore only complete media records; local storage can contain old or damaged data. */
+function restoreMedia(value: unknown): Media | null {
+  if (!isRecord(value) || !isId(value.id)) return null;
+  if (value.mediaType !== "movie" && value.mediaType !== "tv") return null;
+  if (value.source !== "tmdb" && value.source !== "demo") return null;
+  if (typeof value.title !== "string" || !value.title.trim()) return null;
+  if (typeof value.originalTitle !== "string" || typeof value.overview !== "string") return null;
+  if (typeof value.releaseDate !== "string" || typeof value.year !== "string") return null;
+  if (!isNullableString(value.posterPath) || !isNullableString(value.backdropPath)) return null;
+  if (!Array.isArray(value.genreIds) || !value.genreIds.every(isId) || !isStringArray(value.genres)) return null;
+  if (!isNonNegative(value.voteAverage) || value.voteAverage > 10) return null;
+  if (!isNonNegative(value.voteCount) || !Number.isSafeInteger(value.voteCount)) return null;
+  if (!isNonNegative(value.popularity)) return null;
+  if (value.rank !== undefined && !isId(value.rank)) return null;
+
+  // Copy an explicit field allowlist instead of persisting detail data or extra properties.
+  return {
+    id: value.id,
+    mediaType: value.mediaType,
+    title: value.title,
+    originalTitle: value.originalTitle,
+    posterPath: value.posterPath,
+    backdropPath: value.backdropPath,
+    overview: value.overview,
+    releaseDate: value.releaseDate,
+    year: value.year,
+    genreIds: [...value.genreIds],
+    genres: [...value.genres],
+    voteAverage: value.voteAverage,
+    voteCount: value.voteCount,
+    popularity: value.popularity,
+    source: value.source,
+    ...(value.rank !== undefined ? { rank: value.rank as number } : {}),
+  };
+}
+
+function restoreCollection(value: unknown): Media[] {
+  if (!Array.isArray(value)) return [];
+  const keys = new Set<string>();
+  return value.flatMap((entry) => {
+    const item = restoreMedia(entry);
+    if (!item || keys.has(mediaKey(item))) return [];
+    keys.add(mediaKey(item));
+    return [item];
+  });
+}
+
+export function parseFavorites(raw: string | null): Media[] {
+  if (typeof raw !== "string" || !raw) return [];
+  try {
+    return restoreCollection(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+}
+
+export function readFavorites(storage: Pick<Storage, "getItem">): Media[] {
+  try {
+    return parseFavorites(storage.getItem(FAVORITES_KEY));
+  } catch {
+    return [];
+  }
+}
+
+/** Let quota/privacy errors reach the UI so it can explain that saving failed. */
+export function writeFavorites(storage: Pick<Storage, "setItem">, items: Media[]): void {
+  storage.setItem(FAVORITES_KEY, JSON.stringify(restoreCollection(items)));
+}
+
+export function toggleFavorite(items: Media[], item: Media): Media[] {
+  const key = mediaKey(item);
+  return items.some((saved) => mediaKey(saved) === key)
+    ? items.filter((saved) => mediaKey(saved) !== key)
+    : [...items, item];
+}
