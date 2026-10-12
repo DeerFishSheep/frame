@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { DEMO_MEDIA } from "../lib/demo";
-import { cardNumber, formatMediaDate, selectFeaturedMedia } from "../lib/media-presentation";
+import { cardNumber, formatMediaDate, mergeMediaPages, selectFeaturedMedia } from "../lib/media-presentation";
 import { mediaKey } from "../lib/types";
 
 test("featured media selects five distinct works in current catalog order", () => {
@@ -29,7 +29,7 @@ test("dates keep month and day without timezone conversion or fabricated precisi
 test("official ranks are preserved while discover numbering is explicitly a result index", () => {
   const item = { ...DEMO_MEDIA[0], source: "tmdb" as const, rank: 42 };
   assert.deepEqual(cardNumber(item, true, 1), { kind: "rank", value: 42, text: "#42", label: "官方榜单第 42 名" });
-  assert.equal(cardNumber(item, false, 21)?.text, "序 21");
+  assert.equal(cardNumber(item, false, 21)?.text, "#21");
   assert.equal(cardNumber(item, false, 21)?.kind, "result");
 });
 
@@ -37,4 +37,18 @@ test("preview works do not gain official ranks; invalid numbers are omitted", ()
   assert.equal(cardNumber({ ...DEMO_MEDIA[0], rank: 1 }, true), null);
   assert.equal(cardNumber(DEMO_MEDIA[0], false, 1)?.kind, "result");
   assert.equal(cardNumber(DEMO_MEDIA[0], false, 0), null);
+});
+
+
+test("all card numbers share visible text while their labels preserve meaning", () => {
+  const item = { ...DEMO_MEDIA[0], source: "tmdb" as const, rank: 1 };
+  assert.equal(cardNumber(item, true)?.text, cardNumber(item, false, 1)?.text);
+  assert.notEqual(cardNumber(item, true)?.label, cardNumber(item, false, 1)?.label);
+});
+
+test("recommendation pages append in order and deduplicate across and within pages", () => {
+  const [first, second] = DEMO_MEDIA;
+  const television = { ...first, mediaType: "tv" as const };
+  assert.deepEqual(mergeMediaPages([first], [first, second, second, television]).map(mediaKey), [mediaKey(first), mediaKey(second), mediaKey(television)]);
+  assert.deepEqual(mergeMediaPages([first], []), [first]);
 });

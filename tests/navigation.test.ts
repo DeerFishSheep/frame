@@ -13,9 +13,9 @@ test("global search clears discover constraints and preserves media", () => {
   assert.equal(filters.page, 1);
 });
 
-test("homepage search includes both films and television", () => {
+test("default movie page searches movies", () => {
   const href = buildSearchHref("/", new URLSearchParams(), "星际穿越");
-  assert.equal(buildCatalogRequest(parseFilters(new URL(href, "http://localhost").searchParams)).path, "/search/multi");
+  assert.equal(buildCatalogRequest(parseFilters(new URL(href, "http://localhost").searchParams)).path, "/search/movie");
 });
 
 test("search on a detail page uses the detail media type", () => {
@@ -32,4 +32,11 @@ test("favorite search keeps local filters and clearing removes the query", () =>
   const cleared = new URL(buildSearchHref("/favorites", searched.searchParams, ""), "http://localhost");
   assert.equal(cleared.searchParams.has("query"), false);
   assert.equal(cleared.searchParams.get("genres"), "18");
+});
+
+
+test("explicit combined search remains available without a separate homepage", () => {
+  const href = buildSearchHref("/", new URLSearchParams("media=all"), "星际穿越");
+  assert.equal(buildCatalogRequest(parseFilters(new URL(href, "http://localhost").searchParams)).path, "/search/multi");
+  assert.equal(buildCatalogRequest(parseFilters(new URLSearchParams())).path, "/trending/movie/day");
 });

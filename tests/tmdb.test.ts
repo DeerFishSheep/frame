@@ -174,3 +174,61 @@ test("malformed refresh preserves the last valid cache and invalid credentials n
   mode = "auth";
   await assert.rejects(client.request("/movie/popular"), (error: unknown) => error instanceof TmdbError && error.code === "TMDB_AUTH_FAILED");
 });
+
+
+test("detail keeps all recommendations in the first page and its pagination", () => {
+  const results = Array.from({ length: 20 }, (_, i) => ({ ...fixture, id: i + 1 }));
+  const detail = normalizeDetail({ ...fixture, recommendations: { results, page: 1, total_pages: 3, total_results: 47 } }, "movie");
+  assert.equal(detail.recommendations.results.length, 20);
+  assert.deepEqual(detail.recommendations.results.map(item => item.id), results.map(item => item.id));
+  assert.equal(detail.recommendations.totalPages, 3);
+  assert.equal(detail.recommendations.totalResults, 47);
+  // A missing appended resource retries page 1; a real empty response stays empty.
+  assert.equal(normalizeDetail(fixture, "movie").recommendations.page, 0);
+  assert.equal(normalizeDetail({ ...fixture, recommendations: { results: [], page: 1, total_pages: 0, total_results: 0 } }, "movie").recommendations.totalPages, 0);
+});
+
+test("movie and TV recommendation pagination uses the requested page and preserves order", async () => {
+  const requests: string[] = [];
+  const service = createTmdbService(createTmdbClient(options(async url => {
+    const request = new URL(String(url));
+    requests.push(request.pathname);
+    assert.equal(request.searchParams.get("language"), "zh-CN");
+    assert.equal(request.searchParams.get("page"), "2");
+    return json({ page: 2, total_pages: 3, total_results: 41, results: [{ ...fixture, id: 88 }, { ...fixture, id: 89 }] });
+  })));
+  for (const type of ["movie", "tv"] as const) {
+    const result = await service.recommendations(type, "42", "2");
+    assert.deepEqual(result.results.map(item => [item.mediaType, item.id, item.rank]), [[type, 88, undefined], [type, 89, undefined]]);
+    assert.deepEqual([result.page, result.totalPages, result.totalResults, result.source], [2, 3, 41, "tmdb"]);
+  }
+  assert.deepEqual(requests, ["/3/movie/42/recommendations", "/3/tv/42/recommendations"]);
+});
+
+test("recommendation IDs, page bounds and route whitelist reject invalid input before fetch", async () => {
+  let calls = 0;
+  const client = createTmdbClient(options(async () => { calls++; return json({ results: [] }); }));
+  const service = createTmdbService(client);
+  for (const page of ["0", "-1", "501", "1.5", "", "2x", "01"]) {
+    await assert.rejects(service.recommendations("movie", "42", page), (error: unknown) => error instanceof TmdbError && error.status === 400);
+  }
+  await assert.rejects(service.recommendations("person", "42"));
+  await assert.rejects(service.recommendations("tv", "../42"));
+  await assert.rejects(client.request("/movie/42/arbitrary"));
+  assert.equal(calls, 0);
+});
+
+test("recommendation malformed or mismatched pagination returns an error", async () => {
+  for (const response of [{ results: [] }, { results: [], page: 1, total_pages: 2, total_results: 30 }, { results: [], page: 2, total_pages: -1, total_results: 30 }]) {
+    const service = createTmdbService(createTmdbClient(options(async () => json(response))));
+    await assert.rejects(service.recommendations("movie", "42", "2"), (error: unknown) => error instanceof TmdbError && error.code === "TMDB_INVALID_RESPONSE");
+  }
+});
+
+test("the final recommendation page is returned in full, including an empty final page", async () => {
+  const service = createTmdbService(createTmdbClient(options(async () => json({ results: [], page: 500, total_pages: 800, total_results: 16000 }))));
+  const last = await service.recommendations("tv", "42", "500");
+  assert.equal(last.page, 500);
+  assert.equal(last.totalPages, 500);
+  assert.deepEqual(last.results, []);
+});

@@ -43,7 +43,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
     try {
       const params = new URLSearchParams(paramString);
       if (initialChart !== "trending") params.set("chart", initialChart);
-      if (!params.has("media") && (initialChart === "favorites" || (initialChart === "trending" && (!params.has("chart") || params.get("chart") === "trending")))) params.set("media", "all");
+      if (!params.has("media") && initialChart === "favorites") params.set("media", "all");
       return { filters: parseFilters(params), error: "" };
     } catch (error) {
       return { filters: { ...DEFAULT_FILTERS, chart: initialChart }, error: error instanceof Error ? error.message : "筛选链接无效" };
@@ -192,7 +192,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
         <h3>{favoriteMode && !favorites.length ? "还没有收藏" : previewSchedule ? "连接真实数据后查看" : "没有找到影片"}</h3>
         <p>{favoriteMode && !favorites.length ? "遇到想看的电影或剧集，点击书签即可收藏。" : response?.notice || "试试其他片名，或减少筛选条件。"}</p>
         {favoriteMode && !favorites.length ? <Link href="/" className="primary-button">去选片<ArrowRight size={15}/></Link> : previewSchedule ? <button className="secondary-button" onClick={() => window.dispatchEvent(new Event("frame:source"))}>数据说明</button> : <button className="secondary-button" onClick={clearFilters}>清空条件</button>}
-      </div> : <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={showRank} resultIndex={discoverMode ? (filters.page - 1) * 20 + index + 1 : undefined}/>)}</div>}
+      </div> : <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={showRank} resultIndex={(favoriteMode ? 0 : (filters.page - 1) * 20) + index + 1}/>)}</div>}
       {moreError && <p className="load-error" role="alert">{moreError}</p>}
       {hasMore && !loading && !error && <div className="load-more-row"><button className="load-more" onClick={loadMore} disabled={loadingMore}>{loadingMore ? <LoaderCircle size={16} className="spinning"/> : <ChevronDown size={16}/>} {loadingMore ? "正在加载" : "加载更多"}</button></div>}
     </section>

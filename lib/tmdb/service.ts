@@ -1,10 +1,16 @@
 import { buildCatalogRequest } from "../query";
 import type { CatalogFilters, CatalogResponse, MediaDetail, MediaType } from "../types";
 import { TmdbError, type createTmdbClient } from "./client";
-import { normalizeDetail, normalizeMedia, object } from "./normalize";
+import { normalizeDetail, normalizeMedia, normalizeRecommendations, object } from "./normalize";
 
 type Client = ReturnType<typeof createTmdbClient>;
 function integer(value: unknown, fallback: number) { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : fallback; }
+
+function validateMedia(mediaType: string, idText: string): asserts mediaType is MediaType {
+  if ((mediaType !== "movie" && mediaType !== "tv") || !/^[1-9]\d*$/.test(idText) || !Number.isSafeInteger(Number(idText))) {
+    throw new TmdbError("作品类型或 ID 无效。", "INVALID_MEDIA_ID", 400);
+  }
+}
 
 export function createTmdbService(client: Client) {
   async function catalog(filters: CatalogFilters): Promise<CatalogResponse> {
@@ -29,9 +35,7 @@ export function createTmdbService(client: Client) {
   }
 
   async function detail(mediaType: string, idText: string): Promise<{ detail: MediaDetail; retrievedAt: string; stale: boolean }> {
-    if ((mediaType !== "movie" && mediaType !== "tv") || !/^[1-9]\d*$/.test(idText) || !Number.isSafeInteger(Number(idText))) {
-      throw new TmdbError("作品类型或 ID 无效。", "INVALID_MEDIA_ID", 400);
-    }
+    validateMedia(mediaType, idText);
     const params = new URLSearchParams({
       language: "zh-CN", append_to_response: "credits,keywords,external_ids,images,recommendations",
       include_image_language: "zh,en,null",
@@ -40,6 +44,19 @@ export function createTmdbService(client: Client) {
     const raw = object(response.data);
     if (raw.id !== Number(idText)) throw new TmdbError("TMDB 返回的作品格式无效。", "TMDB_INVALID_RESPONSE", 502);
     return { detail: normalizeDetail(raw, mediaType as MediaType), retrievedAt: response.retrievedAt, stale: response.stale };
+  }
+
+  async function recommendations(mediaType: string, idText: string, pageText = "1"): Promise<CatalogResponse> {
+    validateMedia(mediaType, idText);
+    if (!/^[1-9]\d*$/.test(pageText) || Number(pageText) > 500) {
+      throw new TmdbError("推荐页码必须为 1 到 500 的整数。", "INVALID_PAGE", 400);
+    }
+    const response = await client.request<unknown>(`/${mediaType}/${idText}/recommendations`, new URLSearchParams({ language: "zh-CN", page: pageText }));
+    const raw = object(response.data);
+    if (!Array.isArray(raw.results) || raw.page !== Number(pageText) || integer(raw.total_pages, -1) < 0 || integer(raw.total_results, -1) < 0) {
+      throw new TmdbError("TMDB 返回的推荐分页无效。", "TMDB_INVALID_RESPONSE", 502);
+    }
+    return { ...normalizeRecommendations(raw, mediaType), retrievedAt: response.retrievedAt, source: "tmdb", stale: response.stale };
   }
 
   async function keywords(query: string) {
@@ -52,5 +69,5 @@ export function createTmdbService(client: Client) {
       .map((item) => ({ id: item.id as number, name: item.name as string })), retrievedAt: response.retrievedAt, stale: response.stale };
   }
 
-  return { catalog, detail, keywords };
+  return { catalog, detail, recommendations, keywords };
 }

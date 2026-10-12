@@ -14,6 +14,6 @@ export function buildSearchHref(pathname: string, current: URLSearchParams, quer
   const requested = current.get("media");
   const media: MediaType | "all" = pathname.startsWith("/tv/") ? "tv"
     : pathname.startsWith("/movie/") ? "movie"
-    : requested === "movie" || requested === "tv" ? requested : "all";
+    : requested === "movie" || requested === "tv" || requested === "all" ? requested : "movie";
   return `/?${serializeFilters({ ...DEFAULT_FILTERS, media, query: query.trim() })}`;
 }

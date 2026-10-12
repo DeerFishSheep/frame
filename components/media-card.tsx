@@ -26,7 +26,7 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
     <div className="poster-wrap">
       <Link href={`/${item.mediaType}/${item.id}`} className="poster-link" aria-label={`查看${item.title}详情`}>
         <MediaImage item={item}/><span className="poster-shade"/>
-        {number && <span className={`rank-badge ${number.kind === "rank" && number.value <= 3 ? "rank-top" : ""} ${number.kind === "result" ? "result-badge" : ""}`} title={number.label} aria-label={number.label}>{number.text}</span>}
+        {number && <span className={`rank-badge ${number.value <= 3 ? "rank-top" : ""}`} title={number.label} aria-label={number.label}>{number.text}</span>}
         <span className="poster-kind">{item.mediaType === "movie" ? "电影" : "剧集"}</span>
         <span className="poster-open"><ArrowUpRight size={20}/><span>查看详情</span></span>
         <div className="poster-info">

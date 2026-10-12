@@ -30,15 +30,18 @@ export interface MediaDetail extends Media {
   cast: { id: number; name: string; character: string; profilePath: string | null }[];
   keywords: { id: number; name: string }[];
   images: string[];
-  recommendations: Media[];
+  recommendations: MediaPage;
   imdbId: string | null;
 }
 
-export interface CatalogResponse {
+export interface MediaPage {
   results: Media[];
   page: number;
   totalPages: number;
   totalResults: number;
+}
+
+export interface CatalogResponse extends MediaPage {
   retrievedAt: string | null;
   source: DataSource;
   stale: boolean;

@@ -137,6 +137,6 @@ export function getDemoDetail(mediaType: MediaType, id: number): MediaDetail | n
   return {
     ...copyMedia(item), runtime: null, numberOfSeasons: null, status: "",
     countries: [], directors: [], cast: [], keywords: [],
-    images: item.backdropPath ? [item.backdropPath] : [], recommendations: [], imdbId: null,
+    images: item.backdropPath ? [item.backdropPath] : [], recommendations: { results: [], page: 1, totalPages: 0, totalResults: 0 }, imdbId: null,
   };
 }

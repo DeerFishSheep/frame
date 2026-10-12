@@ -1,2 +1,2 @@
 import { Workspace } from "@/components/workspace";
-export default function Home() { return <Workspace initialChart="trending"/>; }
+export default function MoviePage() { return <Workspace initialChart="trending"/>; }

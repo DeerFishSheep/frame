@@ -64,7 +64,8 @@ npm run start
 | 榜单、搜索、分页、收藏页 | `components/workspace.tsx` | `Workspace`、`loadMore` |
 | 筛选弹层、主题搜索 | `components/filter-panel.tsx` | `FilterPanel`、`KeywordPicker` |
 | 海报卡片、完整日期、全部类型、序号 | `components/media-card.tsx`、`lib/media-presentation.ts` | `MediaCard`、`formatMediaDate`、`cardNumber` |
-| 详情、演员、剧照、推荐 | `components/detail-view.tsx`、`lib/tmdb/normalize.ts` | `DetailView`、`normalizeDetail` |
+| 详情、演员、剧照 | `components/detail-view.tsx`、`lib/tmdb/normalize.ts` | `DetailView`、`normalizeDetail` |
+| 猜你喜欢横向分页 | `components/recommendations-rail.tsx`、`app/api/recommendations/[mediaType]/[id]/route.ts`、`lib/tmdb/service.ts` | `RecommendationsRail`、`recommendations`、`normalizeRecommendations` |
 | 参数白名单与上游接口选择 | `lib/query.ts` | `parseFilters`、`buildCatalogRequest` |
 | 缓存、超时、重试 | `lib/tmdb/client.ts` | `createTmdbClient` |
 | 真实数据路由 | `app/api/`、`lib/tmdb/server.ts`、`lib/tmdb/service.ts` | `createTmdbService`、`TMDB_NOT_CONFIGURED` |
@@ -120,3 +121,11 @@ npm run start
 - 服务器实际运行并验证：才记为“服务器部署通过”。
 
 单元测试不代替浏览器检查，预览不代替真实联调，部署文件不代替部署验收。
+
+## UI-03 复检路径
+
+1. `/` 默认电影，主导航只有电影／电视剧／找片／收藏；兼容已有 `?media=movie` 链接。
+2. `/discover` 的 `#N`、前三项颜色、海报标签和交互与榜单卡片一致；搜索、收藏、推荐也复用 `MediaCard`。
+3. `/movie/969681` 顶部没有横幅；左海报右名称与资料；演员区域位于 `detail-content` 之后。
+4. “猜你喜欢”首屏保留完整推荐页；滚动到末尾触发 `/api/recommendations/movie/969681?page=2`。分页按复合 ID 去重，最后一页禁用继续向右按钮，空结果和失败分别显示状态。
+5. `MediaDetail.recommendations` 现在是 `MediaPage`（`results/page/totalPages/totalResults`），缺失追加资源时以 `page: 0` 重试第一推荐页。

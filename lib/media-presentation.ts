@@ -27,7 +27,18 @@ export function cardNumber(item: Media, showRank: boolean, resultIndex?: number)
     return { kind: "rank" as const, value: item.rank!, text: `#${item.rank}`, label: `官方榜单第 ${item.rank} 名` };
   }
   if (Number.isInteger(resultIndex) && resultIndex! > 0) {
-    return { kind: "result" as const, value: resultIndex!, text: `序 ${String(resultIndex).padStart(2, "0")}`, label: `当前结果序号 ${resultIndex}，非官方榜单名次` };
+    return { kind: "result" as const, value: resultIndex!, text: `#${resultIndex}`, label: `当前结果序号 ${resultIndex}，非官方榜单名次` };
   }
   return null;
+}
+
+/** Append pages in provider order without losing movie/TV identity. */
+export function mergeMediaPages(current: Media[], incoming: Media[]): Media[] {
+  const seen = new Set<string>();
+  return [...current, ...incoming].filter(item => {
+    const key = mediaKey(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

@@ -1,4 +1,4 @@
-import type { Media, MediaDetail, MediaType } from "../types";
+import type { Media, MediaDetail, MediaPage, MediaType } from "../types";
 
 type Raw = Record<string, unknown>;
 const movieGenres: Record<number, string> = {
@@ -69,7 +69,22 @@ export function normalizeDetail(value: unknown, mediaType: MediaType): MediaDeta
     })),
     keywords: list(keywordData.keywords ?? keywordData.results).map(object).filter((keyword) => finite(keyword.id) > 0).map((keyword) => ({ id: finite(keyword.id), name: text(keyword.name) })),
     images: list(imageData.backdrops).map(object).map((item) => path(item.file_path)).filter((item): item is string => item !== null).slice(0, 12),
-    recommendations: list(object(raw.recommendations).results).map(object).filter((item) => finite(item.id) > 0).map((item) => normalizeMedia(item, mediaType)).slice(0, 12),
+    recommendations: Array.isArray(object(raw.recommendations).results)
+      ? normalizeRecommendations(raw.recommendations, mediaType)
+      : { results: [], page: 0, totalPages: 1, totalResults: 0 },
     imdbId: /^tt\d+$/.test(text(object(raw.external_ids).imdb_id ?? raw.imdb_id)) ? text(object(raw.external_ids).imdb_id ?? raw.imdb_id) : null,
+  };
+}
+
+export function normalizeRecommendations(value: unknown, mediaType: MediaType): MediaPage {
+  const raw = object(value);
+  const results = list(raw.results).map(object)
+    .filter(item => Number.isSafeInteger(item.id) && Number(item.id) > 0)
+    .map(item => normalizeMedia(item, mediaType));
+  const count = (value: unknown, fallback: number) => Number.isSafeInteger(value) && Number(value) >= 0 ? Number(value) : fallback;
+  return {
+    results, page: Math.max(1, count(raw.page, 1)),
+    totalPages: Math.min(500, count(raw.total_pages, results.length ? 1 : 0)),
+    totalResults: count(raw.total_results, results.length),
   };
 }

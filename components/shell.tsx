@@ -9,8 +9,7 @@ import { buildSearchHref } from "@/lib/navigation";
 import { useFrame } from "./providers";
 
 const navigation = [
-  { id: "home", label: "首页", href: "/" },
-  { id: "movie", label: "电影", href: "/?media=movie" },
+  { id: "movie", label: "电影", href: "/" },
   { id: "tv", label: "电视剧", href: "/?media=tv" },
   { id: "discover", label: "找片", href: "/discover" },
   { id: "favorites", label: "我的收藏", href: "/favorites" },
@@ -29,7 +28,7 @@ export function FrameShell({ children }: { children: ReactNode }) {
     : pathname === "/discover" ? "discover"
     : pathname.startsWith("/movie/") ? "movie"
     : pathname.startsWith("/tv/") ? "tv"
-    : pathname === "/" ? params.get("media") === "tv" ? "tv" : params.get("media") === "movie" ? "movie" : "home" : "";
+    : pathname === "/" ? params.get("media") === "tv" ? "tv" : "movie" : "";
 
   useEffect(() => setQuery(currentQuery), [currentQuery, pathname]);
   useEffect(() => {
@@ -62,7 +61,7 @@ export function FrameShell({ children }: { children: ReactNode }) {
   return <>
     <header className="site-header">
       <div className="site-header-inner">
-        <Link className="site-brand" href="/" aria-label="帧榜首页"><Film size={25} strokeWidth={1.7}/><strong>帧榜<span>FRAME</span></strong></Link>
+        <Link className="site-brand" href="/" aria-label="帧榜电影"><Film size={25} strokeWidth={1.7}/><strong>帧榜<span>FRAME</span></strong></Link>
         <nav className="site-nav" aria-label="主导航">
           {navigation.map(item => <Link key={item.id} href={item.href} className={active === item.id ? "active" : ""} aria-current={active === item.id ? "page" : undefined}>
             {item.label}{item.id === "favorites" && favorites.length > 0 && <span className="nav-count">{favorites.length}</span>}
