@@ -59,7 +59,8 @@ npm run start
 
 | 要改什么 | 入口 | 搜索关键词 |
 | --- | --- | --- |
-| 页面布局、导航、主题 | `app/globals.css`、`components/shell.tsx`、`components/providers.tsx` | `FrameShell`、`toggleTheme` |
+| 页面布局、顶部导航、统一搜索、主题 | `app/globals.css`、`components/shell.tsx`、`lib/navigation.ts`、`components/providers.tsx` | `FrameShell`、`buildSearchHref`、`toggleTheme` |
+| 首页焦点影片 | `components/featured-film.tsx` | `FeaturedFilm` |
 | 榜单、搜索、分页、收藏页 | `components/workspace.tsx` | `Workspace`、`loadMore` |
 | 筛选弹层、主题搜索 | `components/filter-panel.tsx` | `FilterPanel`、`KeywordPicker` |
 | 海报卡片、图片降级 | `components/media-card.tsx` | `MediaCard`、`MediaImage` |
@@ -70,7 +71,7 @@ npm run start
 | 预览样本 | `lib/demo.ts` | `DEMO_MEDIA`、`getDemoCatalog` |
 | 收藏校验与持久化 | `lib/favorites.ts` | `frame_favorites_v2`、`parseFavorites` |
 | 构建与本地生产包启动 | `scripts/`、`next.config.ts` | `prepare-standalone`、`loadEnvConfig` |
-| 自动测试 | `tests/` | `favorites.test.ts`、`query.test.ts`、`tmdb.test.ts` |
+| 自动测试 | `tests/` | `favorites.test.ts`、`navigation.test.ts`、`query.test.ts`、`tmdb.test.ts` |
 
 ## 目录职责与文件生命周期
 

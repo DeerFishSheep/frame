@@ -5,8 +5,8 @@ import { FrameShell } from "@/components/shell";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default:"FRAME 帧榜 · 把时间留给好故事", template:"%s · FRAME 帧榜" },
-  description:"电影与剧集的每日趋势、口碑佳作和内容发现。把热度交给数据，把选择留给自己。",
+  title: { default:"帧榜 · 电影与电视剧", template:"%s · 帧榜" },
+  description:"查看影视榜单，搜索电影与电视剧，浏览作品资料并收藏想看的影片。",
 };
 export const dynamic = "force-dynamic";
 

@@ -2,55 +2,99 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowUpRight, Bookmark, CalendarDays, ChevronRight, Compass, Film, Menu, Moon, Search, Sparkles, Star, Sun, TrendingUp, X, CircleHelp, Radio, Check } from "lucide-react";
+import { ArrowUpRight, Film, Moon, Search, Sun, X } from "lucide-react";
+import { buildSearchHref } from "@/lib/navigation";
 import { useFrame } from "./providers";
 
 const navigation = [
-  {label:"趋势榜单",href:"/",chart:"trending",icon:TrendingUp},
-  {label:"人气热门",href:"/?chart=popular",chart:"popular",icon:Sparkles},
-  {label:"口碑高分",href:"/?chart=top",chart:"top",icon:Star},
-  {label:"正在上映",href:"/?chart=now",chart:"now",icon:Film},
-  {label:"即将上映",href:"/?chart=upcoming",chart:"upcoming",icon:CalendarDays},
-  {label:"发现好故事",href:"/discover",chart:"discover",icon:Compass},
+  { id: "home", label: "首页", href: "/" },
+  { id: "movie", label: "电影", href: "/?media=movie" },
+  { id: "tv", label: "电视剧", href: "/?media=tv" },
+  { id: "discover", label: "片库", href: "/discover" },
+  { id: "favorites", label: "我的收藏", href: "/favorites" },
 ];
 
-export function FrameShell({children}:{children:ReactNode}) {
+export function FrameShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const params = useSearchParams();
   const router = useRouter();
-  const {favorites,theme,toggleTheme,preview,setPreview,configured} = useFrame();
-  const [menuOpen,setMenuOpen] = useState(false);
-  const [sourceOpen,setSourceOpen] = useState(false);
-  const chart = pathname === "/discover" ? "discover" : pathname === "/favorites" ? "favorites" : params.get("chart") || "trending";
-  const currentMedia = params.get("media") || (pathname.startsWith("/tv/") ? "tv" : "movie");
-  const search = () => {
-    if (["/","/discover","/favorites"].includes(pathname)) window.dispatchEvent(new Event("frame:search"));
-    else router.push("/?focus=search");
-  };
-  useEffect(()=> {
-    const onKey = (event:KeyboardEvent) => {if ((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="k") {event.preventDefault();search();}};
-    const source=()=>setSourceOpen(true);
-    window.addEventListener("keydown",onKey);
-    window.addEventListener("frame:source",source);
-    return ()=>{window.removeEventListener("keydown",onKey);window.removeEventListener("frame:source",source);};
-  });
-  const sideContent = <>
-    <Link href="/" className="brand" onClick={()=>setMenuOpen(false)} aria-label="FRAME 帧榜首页"><span className="brand-mark"><Film size={19} strokeWidth={1.3}/></span><span><strong>FRAME<span>.</span></strong><small>THE SCREEN INDEX</small></span></Link>
-    <div className="nav-label">EXPLORE <span>· 探索</span></div>
-    <nav aria-label="主导航" className="side-nav">{navigation.map(({label,href,chart:key,icon:Icon})=><Link key={key} href={key==="discover"?href:`/?chart=${key}&media=${currentMedia==="all"&&key!=="trending"?"movie":currentMedia}${key==="trending"?`&period=${params.get("period")||"day"}`:""}`} className={`nav-item ${chart===key && !pathname.startsWith("/movie") && !pathname.startsWith("/tv") && pathname!=="/about" ? "active" : ""}`} onClick={()=>setMenuOpen(false)}><Icon size={17} strokeWidth={1.6}/><span>{currentMedia==="tv"&&key==="now"?"近期在播":currentMedia==="tv"&&key==="upcoming"?"今日播出":label}</span>{chart===key&&<ChevronRight className="nav-chevron" size={14}/>}</Link>)}</nav>
-    <div className="nav-divider"/><div className="nav-label">COLLECTION <span>· 收藏</span></div>
-    <Link href="/favorites" onClick={()=>setMenuOpen(false)} className={`nav-item ${pathname==="/favorites"?"active":""}`}><Bookmark size={17} strokeWidth={1.6}/><span>我的收藏</span><span className="nav-count">{favorites.length}</span></Link>
-    <div className="side-bottom"><div className="editor-note"><span className="eyebrow">AN INVITATION TO WATCH</span><p>把时间，<br/>留给好故事。</p><span className="editor-signature">LESS SCROLLING. MORE FEELING.</span></div><Link href="/about" className="source-link" onClick={()=>setMenuOpen(false)}><CircleHelp size={14}/><span>关于帧榜与数据来源</span><ArrowUpRight size={13}/></Link><span className="side-caption">一帧一世界，一部一人生。</span></div>
-  </>;
+  const { favorites, theme, toggleTheme, preview, setPreview, configured } = useFrame();
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [query, setQuery] = useState(params.get("query") || "");
+  const searchInput = useRef<HTMLInputElement>(null);
+  const currentQuery = params.get("query") || "";
+  const active = pathname === "/favorites" ? "favorites"
+    : pathname === "/discover" ? "discover"
+    : pathname.startsWith("/movie/") ? "movie"
+    : pathname.startsWith("/tv/") ? "tv"
+    : pathname === "/" ? params.get("media") === "tv" ? "tv" : params.get("media") === "movie" ? "movie" : "home" : "";
+
+  useEffect(() => setQuery(currentQuery), [currentQuery, pathname]);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchInput.current?.focus();
+      }
+    };
+    const source = () => setSourceOpen(true);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("frame:source", source);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("frame:source", source);
+    };
+  }, []);
+
+  function search(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    router.push(buildSearchHref(pathname, new URLSearchParams(params), query));
+  }
+
+  function clearSearch() {
+    setQuery("");
+    searchInput.current?.focus();
+    if (currentQuery) router.push(buildSearchHref(pathname, new URLSearchParams(params), ""));
+  }
+
   return <>
-    <aside className="sidebar">{sideContent}</aside>
-    <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}><Dialog.Portal><Dialog.Overlay className="dialog-overlay"/><Dialog.Content className="mobile-sidebar"><Dialog.Title className="sr-only">导航菜单</Dialog.Title><Dialog.Description className="sr-only">浏览榜单、发现和收藏</Dialog.Description><Dialog.Close className="mobile-close icon-button" aria-label="关闭菜单"><X size={19}/></Dialog.Close>{sideContent}</Dialog.Content></Dialog.Portal></Dialog.Root>
-    <main className="main-shell"><header className="topbar"><button className="icon-button menu-trigger" onClick={()=>setMenuOpen(true)} aria-label="打开菜单"><Menu size={20}/></button><div className="topbar-note"><span className="tiny-star">✦</span><span>FILMS, FEELINGS & THE IN-BETWEEN</span></div><div className="topbar-actions"><button className="quick-search" onClick={search} aria-label="搜索电影和剧集"><Search size={16}/><span>搜索好故事</span><kbd>⌘ K</kbd></button><button className="icon-button" onClick={toggleTheme} aria-label={theme==="dark"?"切换浅色主题":"切换深色主题"}>{theme==="dark"?<Sun size={18} strokeWidth={1.5}/>:<Moon size={18} strokeWidth={1.5}/>}</button><button className={`data-status ${preview?"preview":""}`} onClick={()=>setSourceOpen(true)} aria-label={`数据来源：${preview?"设计预览":"TMDB 数据"}`}><span className="status-dot"/><span>{preview?"设计预览":"TMDB 数据"}</span></button></div></header>
-      {children}
-      <footer className="site-footer"><Link href="/" className="footer-brand">FRAME<span>.</span></Link><p>把好电影，留给好时光。</p><Link href="/about">数据来源 TMDB <ArrowUpRight size={12}/></Link></footer>
-    </main>
-    <Dialog.Root open={sourceOpen} onOpenChange={setSourceOpen}><Dialog.Portal><Dialog.Overlay className="dialog-overlay"/><Dialog.Content className="info-dialog"><Dialog.Close className="dialog-close icon-button" aria-label="关闭数据说明"><X size={19}/></Dialog.Close><span className="eyebrow">BEHIND THE FRAME</span><Dialog.Title>每一份榜单，都有出处。</Dialog.Title><Dialog.Description>帧榜通过服务器读取 TMDB 数据。日榜与周榜代表关注趋势，更新时间以页面标注为准。</Dialog.Description><div className="connection-info"><Radio size={19}/><div><strong>{configured?"服务器已配置 TMDB":"当前为设计预览"}</strong><p>{configured?"真实榜单由 TMDB 返回，按原始顺序展示。":"预览用于体验界面与交互。样本不代表当日榜单，评分不作展示。"}</p></div></div><p className="source-instruction">{configured?"可随时切换预览与真实数据。":"接入真实数据：在服务器 .env.local 中配置 TMDB_API_READ_ACCESS_TOKEN，然后重启应用。"}</p><button className="primary-button full-width" onClick={()=>{setPreview(!preview);setSourceOpen(false);}}><Check size={16}/>{preview?"查看真实数据模式":"浏览设计预览"}</button><Link className="text-link" href="/about" onClick={()=>setSourceOpen(false)}>查看完整数据说明 <ArrowUpRight size={14}/></Link></Dialog.Content></Dialog.Portal></Dialog.Root>
+    <header className="site-header">
+      <div className="site-header-inner">
+        <Link className="site-brand" href="/" aria-label="帧榜首页"><Film size={25} strokeWidth={1.7}/><strong>帧榜<span>FRAME</span></strong></Link>
+        <nav className="site-nav" aria-label="主导航">
+          {navigation.map(item => <Link key={item.id} href={item.href} className={active === item.id ? "active" : ""} aria-current={active === item.id ? "page" : undefined}>
+            {item.label}{item.id === "favorites" && favorites.length > 0 && <span className="nav-count">{favorites.length}</span>}
+          </Link>)}
+        </nav>
+        <form className="site-search" role="search" onSubmit={search} onKeyDown={event => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }}>
+          <Search size={18}/>
+          <input ref={searchInput} value={query} onChange={event => setQuery(event.target.value)} maxLength={200} placeholder={pathname === "/favorites" ? "搜索我的收藏" : "搜索电影、电视剧"} aria-label={pathname === "/favorites" ? "搜索收藏" : "搜索影视作品"}/>
+          {query && <button type="button" className="search-clear" onClick={clearSearch} aria-label="清空搜索"><X size={15}/></button>}
+          <button type="submit" className="search-submit">搜索</button>
+        </form>
+        <button className="theme-button icon-button" onClick={toggleTheme} aria-label={theme === "dark" ? "切换浅色主题" : "切换深色主题"}>{theme === "dark" ? <Sun size={19}/> : <Moon size={19}/>}</button>
+      </div>
+    </header>
+    <main className="main-shell">{children}</main>
+    <footer className="site-footer">
+      <Link href="/" className="footer-brand">帧榜<span>FRAME</span></Link>
+      <span>电影 · 电视剧 · 好片收藏</span>
+      <div className="footer-links"><button onClick={() => setSourceOpen(true)}>{preview ? "预览模式" : "TMDB 数据"}</button><Link href="/about">关于与数据来源</Link></div>
+    </footer>
+    <Dialog.Root open={sourceOpen} onOpenChange={setSourceOpen}>
+      <Dialog.Portal><Dialog.Overlay className="dialog-overlay"/>
+        <Dialog.Content className="info-dialog">
+          <Dialog.Close className="dialog-close icon-button" aria-label="关闭数据说明"><X size={19}/></Dialog.Close>
+          <Dialog.Title>数据来源</Dialog.Title>
+          <Dialog.Description>{preview ? "当前展示固定的预览影片，不代表今日榜单。" : "影视资料和榜单来自 TMDB，按接口返回顺序展示。"}</Dialog.Description>
+          <p className="source-instruction">{configured ? "已配置 TMDB，可以切换真实数据与预览影片。" : "真实榜单尚未启用。预览可以体验选片、详情和收藏。"}</p>
+          {!configured && <details className="connection-help"><summary>本地数据接入说明</summary><p>在本地 .env.local 中配置 <code>TMDB_API_READ_ACCESS_TOKEN</code>，重启应用后即可联调。</p></details>}
+          <button className="primary-button full-width" onClick={() => { setPreview(!preview); setSourceOpen(false); }}>{preview ? "切换真实数据" : "查看预览影片"}</button>
+          <Link className="text-link" href="/about" onClick={() => setSourceOpen(false)}>完整来源说明<ArrowUpRight size={14}/></Link>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   </>;
 }
