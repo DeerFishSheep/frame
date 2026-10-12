@@ -1,5 +1,5 @@
 import { DEFAULT_FILTERS, type CatalogFilters, type MediaType } from "./types";
-import { getTodayDate, isCalendarDate, resolveDateTo } from "./date-filters";
+import { getTodayDate, getTomorrowDate, isCalendarDate, resolveDateTo } from "./date-filters";
 
 export class QueryError extends Error {
   readonly status = 400;
@@ -155,6 +155,14 @@ export function buildCatalogRequest(input: CatalogFilters, now = new Date()): Ca
     return { path: `/discover/${media}`, params, mediaType: media, ranked: false };
   }
   if (chart === "trending") return { path: `/trending/${media}/${filters.period}`, params, mediaType: media, ranked: true };
+  if (media === "movie" && chart === "upcoming") {
+    // Match the primary date shown on cards, rather than another release event.
+    params.set("include_video", "false");
+    params.set("with_release_type", "2|3");
+    params.set("primary_release_date.gte", getTomorrowDate(now));
+    params.set("sort_by", "popularity.desc");
+    return { path: "/discover/movie", params, mediaType: media, ranked: false };
+  }
   const endpoints = {
     popular: "popular", top: "top_rated",
     now: media === "movie" ? "now_playing" : "on_the_air",

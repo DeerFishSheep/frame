@@ -7,6 +7,13 @@ export function getTodayDate(now = new Date()): string {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
+/** Strict upcoming starts on the next Beijing calendar day. */
+export function getTomorrowDate(now = new Date()): string {
+  const next = new Date(`${getTodayDate(now)}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
+}
+
 export function isCalendarDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const year = Number(value.slice(0, 4));

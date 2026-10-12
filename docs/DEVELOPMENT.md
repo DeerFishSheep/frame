@@ -156,3 +156,12 @@ npm run start
 3. `lib/query.ts` 的 `parseFilters` 保留旧 `yearFrom/yearTo` 链接：起始年转 01-01，结束年转 12-31，当年结束转动态今天；新日期字段优先。`buildCatalogRequest` 分别使用电影 `primary_release_date.gte/lte`、剧集 `first_air_date.gte/lte`，不再扩成年范围。
 4. `lib/date-filters.ts` 负责日期合法性、北京时间今天及含首尾的区间；`lib/use-today-date.ts` 在北京午夜、回到页面或窗口聚焦时更新。`Workspace` 续页请求使用同一条件；默认今天不改变主榜单或名称搜索的接口。
 5. `tests/date-filters.test.ts` 覆盖闰年、非法日、反向范围、旧链接、动态/固定日期和预览范围。收藏也用 `matchesDateRange`，有范围时缺日期不会补造为满足条件。手机 400px 以下日期框上下排列。
+
+
+## UI-11 即将上映复检
+
+1. `/?chart=upcoming` 的电影卡片和精选日期都必须晚于北京时间当天；2026-10-12 当天从 10-13 起，不包含今天和早前日期。`lib/query.ts` 的 `buildCatalogRequest` 使用 `/discover/movie`、`primary_release_date.gte=getTomorrowDate()`、`with_release_type=2|3`、`sort_by=popularity.desc`，不限定人为未来上限。
+2. 正在上映仍是 `/movie/now_playing`；电视剧“近期在播／今日播出”仍是 `/tv/on_the_air`、`/tv/airing_today`。电影两类都保留上游默认热度顺序，没有在本地按日期重排。
+3. `ranked:false` 防止把新的自定义范围标成原官方榜单名次，`MediaCard` 自动显示结果序号。筛选在上游完成后分页，不在浏览器仅剔除当前页。
+4. `Workspace` 的 `strictUpcoming` 让请求标识包含北京当天；沿用 `useTodayDate` 午夜及页面恢复更新，取消旧分页、重载第一页并隐藏旧请求内容。上游缓存因明天日期参数不同而换键。
+5. 正式测试 `tests/upcoming.test.ts` 覆盖午夜、月末、闰年、年末、分页、路径隔离、跨日缓存与编号含义。真实分页复检 `/api/catalog?chart=upcoming&media=movie&page=2`；预览模式仍明确不提供上映榜样本。

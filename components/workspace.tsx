@@ -65,8 +65,9 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   const favoriteMode = filters.chart === "favorites";
   const discoverMode = filters.chart === "discover";
   const searchMode = Boolean(filters.query.trim());
+  const strictUpcoming = filters.chart === "upcoming" && filters.media === "movie" && !searchMode;
   const meta = chartMeta(filters.chart, filters.media, filters.period);
-  const requestKey = `${preview}:${serializeFilters(filters)}:${filters.dateTo === "today" ? today : ""}`;
+  const requestKey = `${preview}:${serializeFilters(filters)}:${filters.dateTo === "today" || strictUpcoming ? today : ""}`;
 
   const updateFilters = useCallback((next: CatalogFilters) => {
     const destination = next.chart === "discover" ? "/discover" : next.chart === "favorites" ? "/favorites" : "/";
@@ -101,7 +102,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   }, [filters, parsed.error, preview, refresh, favoriteMode, requestKey]);
 
   const favoriteItems = useMemo(() => filterFavorites(favorites, filters), [favorites, filters]);
-  const items = favoriteMode ? favoriteItems.slice(0, favoriteCount) : response?.results || [];
+  const items = favoriteMode ? favoriteItems.slice(0, favoriteCount) : strictUpcoming && responseKey !== requestKey ? [] : response?.results || [];
   const filtered = activeFilterCount(filters) > 0;
   const title = searchMode ? `“${filters.query}” 的搜索结果` : meta.title;
   const showRank = !favoriteMode && !searchMode && !discoverMode;

@@ -122,7 +122,7 @@ test("default end dates leave all original ranking endpoint paths intact", () =>
     ["media=tv", "/trending/tv/day"], ["media=tv&period=week", "/trending/tv/week"],
     ["chart=popular", "/movie/popular"], ["chart=top&media=tv", "/tv/top_rated"],
     ["chart=now", "/movie/now_playing"], ["chart=now&media=tv", "/tv/on_the_air"],
-    ["chart=upcoming", "/movie/upcoming"], ["chart=upcoming&media=tv", "/tv/airing_today"],
+    ["chart=upcoming", "/discover/movie"], ["chart=upcoming&media=tv", "/tv/airing_today"],
   ];
   for (const [query, path] of cases) {
     const request = buildCatalogRequest(filters(query), beforeMidnight);

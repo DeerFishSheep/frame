@@ -17,7 +17,7 @@ test("each chart maps to its real movie/TV endpoint", () => {
     ["", "/trending/movie/day"], ["period=week&media=tv", "/trending/tv/week"],
     ["media=all", "/trending/all/day"], ["chart=popular", "/movie/popular"],
     ["chart=top&media=tv", "/tv/top_rated"], ["chart=now", "/movie/now_playing"],
-    ["chart=now&media=tv", "/tv/on_the_air"], ["chart=upcoming", "/movie/upcoming"],
+    ["chart=now&media=tv", "/tv/on_the_air"], ["chart=upcoming", "/discover/movie"],
     ["chart=upcoming&media=tv", "/tv/airing_today"],
   ];
   for (const [query, path] of cases) assert.equal(buildCatalogRequest(filters(query)).path, path);
