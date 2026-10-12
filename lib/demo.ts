@@ -1,4 +1,5 @@
 import type { CatalogFilters, CatalogResponse, Media, MediaDetail, MediaType } from "./types";
+import { matchesDateRange } from "./date-filters";
 
 /**
  * Deliberately small design-preview catalog, not a snapshot of any TMDB chart.
@@ -90,16 +91,13 @@ export function getDemoCatalog(filters: CatalogFilters): CatalogResponse {
   }
 
   const query = filters.query.trim().toLocaleLowerCase();
-  const yearFrom = numericFilter(filters.yearFrom);
-  const yearTo = numericFilter(filters.yearTo);
   const scoreMin = numericFilter(filters.scoreMin);
   const scoreMax = numericFilter(filters.scoreMax);
   const votesMin = numericFilter(filters.votesMin);
   let items = DEMO_MEDIA.filter((item) => {
     if (filters.media !== "all" && item.mediaType !== filters.media) return false;
     if (query && !`${item.title} ${item.originalTitle} ${item.overview}`.toLocaleLowerCase().includes(query)) return false;
-    if (yearFrom !== null && Number(item.year) < yearFrom) return false;
-    if (yearTo !== null && Number(item.year) > yearTo) return false;
+    if (!matchesDateRange(item.releaseDate, filters.dateFrom, filters.dateTo)) return false;
     if (scoreMin !== null && item.voteAverage < scoreMin) return false;
     if (scoreMax !== null && item.voteAverage > scoreMax) return false;
     if (votesMin !== null && item.voteCount < votesMin) return false;

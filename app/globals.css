@@ -257,6 +257,13 @@ legend span{color:var(--dim);font-weight:400}
 .filter-fields input,.filter-fields select{width:100%;font-size:12px;height:41px}
 .range-fields{display:flex;align-items:center;gap:8px;color:var(--dim)}
 .range-fields input{width:calc(50% - 10px);flex:1}
+.date-range-fields{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:8px}
+.date-range-fields label{display:grid;gap:8px;color:var(--dim);font-size:11px;min-width:0}
+.date-range-fields input{min-width:0;color:var(--text);color-scheme:inherit}
+.date-range-fields>span{height:41px;display:flex;align-items:center;color:var(--dim)}
+.date-range-hint{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:11px;color:var(--dim)}
+.date-range-hint button{padding:0;border:0;background:none;color:var(--accent);font-size:inherit;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:400px){.date-range-fields{grid-template-columns:minmax(0,1fr);gap:12px}.date-range-fields>span{display:none}}
 .span-two{grid-column:span 2}
 .input-with-icon{display:flex;align-items:center;border:1px solid var(--border);background:var(--input);border-radius:8px;padding-left:12px;color:var(--dim)}
 .input-with-icon:focus-within{border-color:var(--accent)}

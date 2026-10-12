@@ -10,6 +10,8 @@ import { selectFeaturedMedia } from "@/lib/media-presentation";
 import { parseFilters } from "@/lib/query";
 import { activeFilterCount, chartMeta, formatCount, formatTime, GENRES, serializeFilters } from "@/lib/ui";
 import { useFrame } from "./providers";
+import { matchesDateRange, resolveDateTo } from "@/lib/date-filters";
+import { useTodayDate } from "@/lib/use-today-date";
 import { MediaCard, MediaSkeletons } from "./media-card";
 import { FilterPanel } from "./filter-panel";
 import { FeaturedFilm } from "./featured-film";
@@ -22,8 +24,7 @@ function filterFavorites(items: Media[], filters: CatalogFilters) {
     && (!filters.genres.length || (filters.genreLogic === "and"
       ? filters.genres.every(id => item.genreIds.includes(Number(id)))
       : filters.genres.some(id => item.genreIds.includes(Number(id)))))
-    && (!filters.yearFrom || Number(item.year) >= Number(filters.yearFrom))
-    && (!filters.yearTo || Number(item.year) <= Number(filters.yearTo))
+    && matchesDateRange(item.releaseDate, filters.dateFrom, filters.dateTo)
     && (!filters.scoreMin || item.voteAverage >= Number(filters.scoreMin))
     && (!filters.scoreMax || item.voteAverage <= Number(filters.scoreMax))
     && (!filters.votesMin || item.voteCount >= Number(filters.votesMin)));
@@ -39,6 +40,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   const router = useRouter();
   const { preview, setPreview, favorites, favoritesReady } = useFrame();
   const paramString = searchParams.toString();
+  const today = useTodayDate();
   const parsed = useMemo(() => {
     try {
       const params = new URLSearchParams(paramString);
@@ -48,7 +50,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
     } catch (error) {
       return { filters: { ...DEFAULT_FILTERS, chart: initialChart }, error: error instanceof Error ? error.message : "筛选链接无效" };
     }
-  }, [paramString, initialChart]);
+  }, [paramString, initialChart, today]);
   const { filters } = parsed;
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [response, setResponse] = useState<CatalogResponse | null>(null);
@@ -64,7 +66,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   const discoverMode = filters.chart === "discover";
   const searchMode = Boolean(filters.query.trim());
   const meta = chartMeta(filters.chart, filters.media, filters.period);
-  const requestKey = `${preview}:${serializeFilters(filters)}`;
+  const requestKey = `${preview}:${serializeFilters(filters)}:${filters.dateTo === "today" ? today : ""}`;
 
   const updateFilters = useCallback((next: CatalogFilters) => {
     const destination = next.chart === "discover" ? "/discover" : next.chart === "favorites" ? "/favorites" : "/";
@@ -170,7 +172,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
       </div>}
       {(filtered || searchMode) && <div className="applied-filters">
         {filters.genres.map(id => <button key={id} onClick={() => updateFilters({ ...filters, genres: filters.genres.filter(other => other !== id) })}>{genres.find(item => String(item.id) === id)?.name || "类型"}<X size={12}/></button>)}
-        {(filters.yearFrom || filters.yearTo) && <span>{filters.yearFrom || "最早"} — {filters.yearTo || "至今"}</span>}
+        {(filters.dateFrom || (filters.dateTo && filters.dateTo !== "today")) && <span>{filters.dateFrom || "最早"} — {resolveDateTo(filters.dateTo, today) || "不限"}</span>}
         {(filters.scoreMin || filters.scoreMax) && <span>评分 {filters.scoreMin || 0} — {filters.scoreMax || 10}</span>}
         {filters.votesMin && <span>≥ {filters.votesMin} 人评分</span>}
         {filters.region && <span>地区 {filters.region}</span>}

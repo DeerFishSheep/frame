@@ -55,8 +55,9 @@ export interface CatalogFilters {
   query: string;
   genres: string[];
   genreLogic: "or" | "and";
-  yearFrom: string;
-  yearTo: string;
+  dateFrom: string;
+  /** Empty outside Discover; "today" follows the current Beijing calendar date. */
+  dateTo: string;
   scoreMin: string;
   scoreMax: string;
   votesMin: string;
@@ -71,7 +72,7 @@ export interface CatalogFilters {
 
 export const DEFAULT_FILTERS: CatalogFilters = {
   chart: "trending", media: "movie", period: "day", query: "", genres: [],
-  genreLogic: "or", yearFrom: "", yearTo: "", scoreMin: "", scoreMax: "",
+  genreLogic: "or", dateFrom: "", dateTo: "", scoreMin: "", scoreMax: "",
   votesMin: "", region: "", language: "", keywords: "", runtimeMin: "", runtimeMax: "",
   sort: "popularity.desc", page: 1,
 };

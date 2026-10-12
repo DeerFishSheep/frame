@@ -167,3 +167,16 @@
 - **位置**：`app/globals.css` 的 `film-facts`、`detail-section`、`detail-rating-row`；保留现有区域留白和图片／按钮边框。
 - **验证**：42 项既有测试、生产构建（含类型检查）与本地启动通过。390／595／1440px 下，评分、基本资料、剧照、猜你喜欢分隔边框均为 0px，主要演员顶部为 1px；无横向溢出。
 - **记录与清理**：规则同步至 AGENTS 和进度；截图保存在本机 `artifacts/previews/frame-detail-single-divider.jpg`，未留下临时脚本或响应文件。
+
+
+## 2026-10-12 — 完整日期筛选与默认实时今天
+
+- **关联任务**：UI-10、MVP-06、MVP-07、LOCAL-03。
+- **原因与改动**：旧筛选只收四位年份，并把年范围扩成 01-01／12-31。改为年月日原生日期框，电影显示“上映日期”，剧集显示“首播日期”；起始可空，结束默认北京时间当天。手动结束日期固定，可点“使用今天”恢复动态。
+- **动态规则**：URL 使用 `dateTo=today`，服务端每次请求解析当天；客户端在北京午夜、窗口聚焦或页面重新可见时更新，避免把今天永久写成某个日期。旧年份链接兼容，当年结束年转换为 today；新日期字段优先。默认今天仅自动用于找片非名称搜索，不改变原主榜单与搜索路径。
+- **数据入口**：`lib/query.ts` 的 `parseFilters`／`buildCatalogRequest` 直接传电影 `primary_release_date.gte/lte` 或剧集 `first_air_date.gte/lte`。`lib/date-filters.ts`、`lib/use-today-date.ts` 负责有效日历日期和动态当天；预览与收藏也按完整 `releaseDate` 比较，包含首尾，有范围时排除缺日期。
+- **界面入口**：`components/filter-panel.tsx` 的 `FilterPanel`，`components/workspace.tsx` 的 `filterFavorites`／`Workspace`，`app/globals.css` 的 `date-range-fields`；日期编辑同时处理原生 input/change 事件，400px 以下上下排列。
+- **验证**：当前工作树（含本轮开始前已有未提交改动）类型检查、64 项自动测试、生产构建与启动通过；生产找片页及动态今天 API 均 HTTP 200，开发服务已恢复。新增 15 项正式日期测试。真实电影／剧集 Discover 2026-10-01～2026-10-10 均 HTTP 200、source 为 tmdb，各 20 条日期均在范围内。浏览器验证日期提交、刷新复现、固定日期切回今天；320／390px 无横向溢出。跨日变化通过模拟时间验证，未等待实际午夜。
+- **提交隔离验证**：仅本次日期改动叠加到原提交的独立快照，类型检查和 57 / 57 测试通过；没有把既有未提交功能纳入本次 commit。
+- **范围与保留**：本次只提交日期筛选及对应记录，开始前已有的 UI-09、找片精选／快捷筛选／关键词移除等改动继续保留在工作树。原始资料不改动；没有服务器部署。
+- **产物与复检**：交付截图 `artifacts/previews/frame-date-filter.jpg` 仅在本机保存；先读进度 UI-10，再看 `FilterPanel` 和 `tests/date-filters.test.ts`。一次性检查文件在系统临时目录，交付前清理。

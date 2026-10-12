@@ -6,6 +6,8 @@ import { Check, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import { DEFAULT_FILTERS, type CatalogFilters } from "@/lib/types";
 import { activeFilterCount, GENRES } from "@/lib/ui";
 import { useFrame } from "./providers";
+import { resolveDateTo } from "@/lib/date-filters";
+import { useTodayDate } from "@/lib/use-today-date";
 
 function KeywordPicker({value,onChange}:{value:string;onChange:(value:string)=>void}) {
   const {preview} = useFrame();
@@ -35,6 +37,7 @@ function KeywordPicker({value,onChange}:{value:string;onChange:(value:string)=>v
 
 export function FilterPanel({ filters, onApply }: { filters: CatalogFilters; onApply: (next: CatalogFilters) => void }) {
   const { preview } = useFrame();
+  const today = useTodayDate();
   const [open, setOpen] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [draft, setDraft] = useState(filters);
@@ -46,29 +49,29 @@ export function FilterPanel({ filters, onApply }: { filters: CatalogFilters; onA
   function openPanel(value: boolean) {
     setOpen(value);
     if (value) {
-      setDraft(filters); setError("");
+      setDraft({ ...filters, dateTo: filters.dateTo || "today" }); setError("");
       setAdvanced(Boolean(filters.scoreMin || filters.scoreMax || filters.votesMin || filters.language || filters.keywords || filters.runtimeMin || filters.runtimeMax || filters.genreLogic === "and"));
     }
   }
   function apply(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (draft.yearFrom && draft.yearTo && Number(draft.yearFrom) > Number(draft.yearTo)) { setError("起始年份不能晚于结束年份"); return; }
+    if (draft.dateFrom && draft.dateFrom > resolveDateTo(draft.dateTo || "today", today)) { setError("起始日期不能晚于结束日期"); return; }
     if (draft.scoreMin && draft.scoreMax && Number(draft.scoreMin) > Number(draft.scoreMax)) { setError("最低评分不能高于最高评分"); return; }
     if (draft.runtimeMin && draft.runtimeMax && Number(draft.runtimeMin) > Number(draft.runtimeMax)) { setError("最短时长不能大于最长时长"); return; }
-    onApply({ ...draft, keywords: draft.keywords.split(/[,|]/).filter(Boolean).join(draft.genreLogic === "and" ? "," : "|"), media: favorites ? draft.media : media, chart: favorites ? "favorites" : "discover", query: favorites ? draft.query : "", page: 1 });
+    onApply({ ...draft, dateTo: draft.dateTo || "today", keywords: draft.keywords.split(/[,|]/).filter(Boolean).join(draft.genreLogic === "and" ? "," : "|"), media: favorites ? draft.media : media, chart: favorites ? "favorites" : "discover", query: favorites ? draft.query : "", page: 1 });
     setOpen(false);
   }
   return <Dialog.Root open={open} onOpenChange={openPanel}>
     <Dialog.Trigger asChild><button className={`filter-button ${count ? "has-filters" : ""}`}><SlidersHorizontal size={15}/>筛选{count > 0 && <span className="filter-count">{count}</span>}</button></Dialog.Trigger>
     <Dialog.Portal><Dialog.Overlay className="dialog-overlay"/>
       <Dialog.Content className="filter-dialog">
-        <div className="filter-dialog-head"><div><Dialog.Title>{favorites ? "筛选收藏" : "筛选影片"}</Dialog.Title><Dialog.Description>{favorites ? "在收藏中查找作品。" : preview ? "预览模式：条件只用于固定样本。" : "选择你想看的类型和年代。"}</Dialog.Description></div><Dialog.Close className="icon-button" aria-label="关闭筛选"><X size={20}/></Dialog.Close></div>
+        <div className="filter-dialog-head"><div><Dialog.Title>{favorites ? "筛选收藏" : "筛选影片"}</Dialog.Title><Dialog.Description>{favorites ? "在收藏中查找作品。" : preview ? "预览模式：条件只用于固定样本。" : "选择你想看的类型和上映／首播日期。"}</Dialog.Description></div><Dialog.Close className="icon-button" aria-label="关闭筛选"><X size={20}/></Dialog.Close></div>
         <form onSubmit={apply}>
           <div className="filter-dialog-body">
             {!favorites && <fieldset><legend>作品类型</legend><div className="media-tabs">{(["movie", "tv"] as const).map(type => <button type="button" key={type} className={media === type ? "selected" : ""} aria-pressed={media === type} onClick={() => update({ media: type, genres: [] })}>{type === "movie" ? "电影" : "电视剧"}</button>)}</div></fieldset>}
             <fieldset><legend>类型 <span>可多选</span></legend><div className="genre-options">{GENRES[media].map(genre => <button type="button" key={genre.id} className={`filter-chip ${draft.genres.includes(String(genre.id)) ? "active" : ""}`} aria-pressed={draft.genres.includes(String(genre.id))} onClick={() => update({ genres: draft.genres.includes(String(genre.id)) ? draft.genres.filter(id => id !== String(genre.id)) : [...draft.genres, String(genre.id)] })}>{draft.genres.includes(String(genre.id)) && <Check size={12}/>} {genre.name}</button>)}</div></fieldset>
             <div className="filter-fields">
-              <fieldset className="span-two"><legend>年份</legend><div className="range-fields"><input type="number" min="1870" max="2100" placeholder="起始年份" aria-label="起始年份" value={draft.yearFrom} onChange={event => update({ yearFrom: event.target.value })}/><span>—</span><input type="number" min="1870" max="2100" placeholder="结束年份" aria-label="结束年份" value={draft.yearTo} onChange={event => update({ yearTo: event.target.value })}/></div></fieldset>
+              <fieldset className="span-two"><legend>{media === "tv" ? "首播日期" : "上映日期"}</legend><div className="date-range-fields"><label>起始日期<input type="date" min="1800-01-01" max="2200-12-31" aria-label="起始日期" value={draft.dateFrom} onInput={event => update({ dateFrom: event.currentTarget.value })} onChange={event => update({ dateFrom: event.target.value })}/></label><span>—</span><label>结束日期<input type="date" min="1800-01-01" max="2200-12-31" aria-label="结束日期" value={resolveDateTo(draft.dateTo || "today", today)} onInput={event => update({ dateTo: event.currentTarget.value || "today" })} onChange={event => update({ dateTo: event.target.value || "today" })}/></label></div><div className="date-range-hint"><span>{!draft.dateTo || draft.dateTo === "today" ? "结束日期跟随当天（北京时间）" : "结束日期已固定"}</span>{draft.dateTo && draft.dateTo !== "today" && <button type="button" onClick={() => update({ dateTo: "today" })}>使用今天</button>}</div></fieldset>
               {!favorites && <fieldset><legend>地区</legend><select value={draft.region} onChange={event => update({ region: event.target.value })} aria-label="制片地区"><option value="">全部地区</option><option value="CN">中国大陆</option><option value="HK">中国香港</option><option value="TW">中国台湾</option><option value="US">美国</option><option value="GB">英国</option><option value="FR">法国</option><option value="JP">日本</option><option value="KR">韩国</option><option value="IN">印度</option></select></fieldset>}
               <fieldset className={favorites ? "span-two" : undefined}><legend>排序</legend><select value={draft.sort} onChange={event => update({ sort: event.target.value })} aria-label="排序方式"><option value="popularity.desc">热度优先</option><option value="vote_average.desc">评分最高</option><option value={media === "tv" ? "first_air_date.desc" : "primary_release_date.desc"}>最近上映</option><option value="vote_count.desc">评分人数最多</option></select></fieldset>
             </div>

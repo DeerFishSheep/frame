@@ -147,3 +147,12 @@ npm run start
 2. `detail-rating` 禁止换行；人数不再使用 `flex-basis: 100%`。手机外链显示简短的 TMDB／IMDb，完整含义保留在无障碍名称。
 3. `DetailMediaStrip` 负责演员与剧照的单行、箭头、键盘、边界状态；演员显示已返回的最多 18 位，剧照显示已返回的最多 12 张，未增加上游取数范围。
 4. “相关主题”区域与专属 CSS 已删除；找片中的关键词筛选继续保留。
+
+
+## UI-10 日期筛选复检
+
+1. `/discover` 打开筛选：电影显示“上映日期”，电视剧显示“首播日期”；两个原生日期框精确到年月日，结束默认北京时间当天。
+2. 选择范围并查看结果，URL 保存 `dateFrom=YYYY-MM-DD` 和 `dateTo=YYYY-MM-DD`；刷新后日期复现。默认结束值用 `dateTo=today` 保持动态，手动日期固定，可用“使用今天”恢复。
+3. `lib/query.ts` 的 `parseFilters` 保留旧 `yearFrom/yearTo` 链接：起始年转 01-01，结束年转 12-31，当年结束转动态今天；新日期字段优先。`buildCatalogRequest` 分别使用电影 `primary_release_date.gte/lte`、剧集 `first_air_date.gte/lte`，不再扩成年范围。
+4. `lib/date-filters.ts` 负责日期合法性、北京时间今天及含首尾的区间；`lib/use-today-date.ts` 在北京午夜、回到页面或窗口聚焦时更新。`Workspace` 续页请求使用同一条件；默认今天不改变主榜单或名称搜索的接口。
+5. `tests/date-filters.test.ts` 覆盖闰年、非法日、反向范围、旧链接、动态/固定日期和预览范围。收藏也用 `matchesDateRange`，有范围时缺日期不会补造为满足条件。手机 400px 以下日期框上下排列。
