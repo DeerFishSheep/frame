@@ -165,3 +165,12 @@ npm run start
 3. `ranked:false` 防止把新的自定义范围标成原官方榜单名次，`MediaCard` 自动显示结果序号。筛选在上游完成后分页，不在浏览器仅剔除当前页。
 4. `Workspace` 的 `strictUpcoming` 让请求标识包含北京当天；沿用 `useTodayDate` 午夜及页面恢复更新，取消旧分页、重载第一页并隐藏旧请求内容。上游缓存因明天日期参数不同而换键。
 5. 正式测试 `tests/upcoming.test.ts` 覆盖午夜、月末、闰年、年末、分页、路径隔离、跨日缓存与编号含义。真实分页复检 `/api/catalog?chart=upcoming&media=movie&page=2`；预览模式仍明确不提供上映榜样本。
+
+
+## UI-12 找片类型与已选标签复检
+
+1. `lib/ui.ts` 的 `GENRES` 为常用优先的固定界面顺序，电影19／剧集16种完整保留，不据此声称实时热门排名。`Workspace` 快捷类型与 `FilterPanel` 使用同一列表。
+2. `getRegionLabel` 复用 `REGIONS` 中文名称，其他有效地区码用 `Intl.DisplayNames` 解析；`getSortLabel` 复用 `getSortOptions`，日期排序先按电影／剧集归一，旧升序等链接有字段中文回退。
+3. `activeFilterCount` 仅为非默认排序加1，默认热度与 `dateTo=today` 不计。`Workspace.applied-filters` 因此在只选排序时出现；主榜单和全局名称搜索不添加排序标签。
+4. 复检 `/discover?media=movie&genres=28&region=US&sort=vote_count.desc`：已选区显示“动作／美国／评分数量”；刷新复现；清空后仅选评分数量仍有标签。电视剧显示最近开播，筛选面板选项也叫评分数量。
+5. 本次包括已选标签所需的地区／排序共享元数据。原有未提交的分页、找片轮播与关键词移除保留在工作树，不随此任务提交。

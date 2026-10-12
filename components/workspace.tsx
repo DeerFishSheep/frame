@@ -8,7 +8,7 @@ import { DEFAULT_FILTERS, mediaKey, type CatalogFilters, type CatalogResponse, t
 import { getDemoCatalog } from "@/lib/demo";
 import { selectFeaturedMedia } from "@/lib/media-presentation";
 import { parseFilters } from "@/lib/query";
-import { activeFilterCount, chartMeta, formatCount, formatTime, GENRES, serializeFilters } from "@/lib/ui";
+import { getRegionLabel, getSortLabel, activeFilterCount, chartMeta, formatCount, formatTime, GENRES, serializeFilters } from "@/lib/ui";
 import { useFrame } from "./providers";
 import { matchesDateRange, resolveDateTo } from "@/lib/date-filters";
 import { useTodayDate } from "@/lib/use-today-date";
@@ -176,10 +176,11 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
         {(filters.dateFrom || (filters.dateTo && filters.dateTo !== "today")) && <span>{filters.dateFrom || "最早"} — {resolveDateTo(filters.dateTo, today) || "不限"}</span>}
         {(filters.scoreMin || filters.scoreMax) && <span>评分 {filters.scoreMin || 0} — {filters.scoreMax || 10}</span>}
         {filters.votesMin && <span>≥ {filters.votesMin} 人评分</span>}
-        {filters.region && <span>地区 {filters.region}</span>}
+        {filters.region && <span>{getRegionLabel(filters.region)}</span>}
         {filters.language && <span>语言 {filters.language}</span>}
         {filters.keywords && <span>主题筛选</span>}
         {(filters.runtimeMin || filters.runtimeMax) && <span>时长 {filters.runtimeMin || 0} — {filters.runtimeMax || "不限"} 分钟</span>}
+        {(favoriteMode || (discoverMode && !searchMode)) && <span>{getSortLabel(filters.sort, filters.media === "tv" ? "tv" : "movie")}</span>}
         <button className="clear-all" onClick={clearFilters}>清空条件<X size={12}/></button>
       </div>}
       <div className="catalog-status">
