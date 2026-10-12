@@ -69,12 +69,11 @@ export function DetailView({mediaType,id}:{mediaType:MediaType;id:number}) {
         <div className="detail-poster"><MediaImage item={item}/></div>
         <button className={`primary-button full-width ${saved ? "is-saved" : ""}`} onClick={() => toggle(item)} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "加入收藏"}</button>
         <a className="secondary-button full-width" href={`https://www.themoviedb.org/${mediaType}/${id}`} target="_blank" rel="noopener noreferrer">在 TMDB 查看<ArrowUpRight size={15}/></a>
-        {item.imdbId && <a className="text-link" href={`https://www.imdb.com/title/${item.imdbId}/`} target="_blank" rel="noopener noreferrer">IMDb 作品页面<ArrowUpRight size={14}/></a>}
+        {item.imdbId && <a className="secondary-button full-width" href={`https://www.imdb.com/title/${item.imdbId}/`} target="_blank" rel="noopener noreferrer">在 IMDb 查看<ArrowUpRight size={15}/></a>}
       </aside>
       <div className="detail-summary">
         <header className="detail-title">
-          <h1>{item.title}</h1>
-          {item.originalTitle && item.originalTitle !== item.title && <p className="detail-original">{item.originalTitle}</p>}
+          <h1>{item.title}{item.originalTitle && item.originalTitle !== item.title && <> <span className="detail-original">（{item.originalTitle}）</span></>}</h1>
           <div className="detail-tags">
             <time dateTime={item.releaseDate || undefined}>{formatMediaDate(item.releaseDate)}</time>
             {item.genres.map(genre => <span key={genre}>{genre}</span>)}

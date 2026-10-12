@@ -109,7 +109,6 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   const showFeature = initialChart === "trending" && !searchMode && !parsed.error;
   const featuredLabel = filters.chart === "trending" ? filters.period === "day" ? "今日焦点" : "本周焦点" : `${meta.title}精选`;
   const genres = GENRES[filters.media === "tv" ? "tv" : "movie"];
-  const quickGenres = genres.filter(item => [18, 35, 878, 9648, 16, 10765].includes(item.id));
   const changeMedia = (media: CatalogFilters["media"]) => updateFilters({ ...filters, media, genres: [], sort: filters.sort.includes("date") ? media === "tv" ? "first_air_date.desc" : "primary_release_date.desc" : filters.sort });
   const changeChart = (chart: Chart) => updateFilters({ ...DEFAULT_FILTERS, chart, period: filters.period, media: filters.media === "all" && chart !== "trending" ? "movie" : filters.media });
   const clearFilters = () => updateFilters({ ...DEFAULT_FILTERS, chart: filters.chart, media: filters.media, period: filters.period });
@@ -167,7 +166,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
         <div className="media-tabs" role="group" aria-label="作品类型">
           {(discoverMode ? ["movie", "tv"] as const : ["all", "movie", "tv"] as const).map(media => <button key={media} className={filters.media === media ? "selected" : ""} aria-pressed={filters.media === media} onClick={() => changeMedia(media)}>{media === "all" ? "全部" : media === "movie" ? "电影" : "电视剧"}</button>)}
         </div>
-        {discoverMode && !searchMode && <div className="quick-genres"><button className={`filter-chip ${!filters.genres.length ? "active" : ""}`} onClick={() => updateFilters({ ...filters, genres: [] })}>全部类型</button>{quickGenres.map(genre => <button key={genre.id} className={`filter-chip ${filters.genres.includes(String(genre.id)) ? "active" : ""}`} aria-pressed={filters.genres.includes(String(genre.id))} onClick={() => updateFilters({ ...filters, genres: filters.genres.includes(String(genre.id)) ? filters.genres.filter(id => id !== String(genre.id)) : [...filters.genres, String(genre.id)] })}>{genre.name}</button>)}</div>}
+        {discoverMode && !searchMode && <div className="quick-genres" role="group" aria-label={filters.media === "tv" ? "电视剧全部类型" : "电影全部类型"}><button className={`filter-chip ${!filters.genres.length ? "active" : ""}`} aria-pressed={!filters.genres.length} onClick={() => updateFilters({ ...filters, genres: [] })}>全部类型</button>{genres.map(genre => <button key={genre.id} className={`filter-chip ${filters.genres.includes(String(genre.id)) ? "active" : ""}`} aria-pressed={filters.genres.includes(String(genre.id))} onClick={() => updateFilters({ ...filters, genres: filters.genres.includes(String(genre.id)) ? filters.genres.filter(id => id !== String(genre.id)) : [...filters.genres, String(genre.id)] })}>{genre.name}</button>)}</div>}
       </div>}
       {(filtered || searchMode) && <div className="applied-filters">
         {filters.genres.map(id => <button key={id} onClick={() => updateFilters({ ...filters, genres: filters.genres.filter(other => other !== id) })}>{genres.find(item => String(item.id) === id)?.name || "类型"}<X size={12}/></button>)}

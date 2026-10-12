@@ -62,6 +62,7 @@ npm run start
 | 页面布局、顶部导航、统一搜索、主题 | `app/globals.css`、`components/shell.tsx`、`lib/navigation.ts`、`components/providers.tsx` | `FrameShell`、`buildSearchHref`、`toggleTheme` |
 | 各主榜单焦点轮播 | `components/featured-film.tsx`、`lib/media-presentation.ts` | `FeaturedFilm`、`FEATURED_INTERVAL_MS`、`selectFeaturedMedia` |
 | 榜单、搜索、分页、收藏页 | `components/workspace.tsx` | `Workspace`、`loadMore` |
+| 找片全部类型 | `components/workspace.tsx`、`lib/ui.ts` | `quick-genres`、`GENRES` |
 | 筛选弹层、主题搜索 | `components/filter-panel.tsx` | `FilterPanel`、`KeywordPicker` |
 | 海报卡片、完整日期、全部类型、序号 | `components/media-card.tsx`、`lib/media-presentation.ts` | `MediaCard`、`formatMediaDate`、`cardNumber` |
 | 详情、演员、剧照 | `components/detail-view.tsx`、`lib/tmdb/normalize.ts` | `DetailView`、`normalizeDetail` |
