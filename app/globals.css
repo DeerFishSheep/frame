@@ -287,7 +287,7 @@ legend span{color:var(--dim);font-weight:400}
 .story-section{margin-top:26px}
 .story-section h2,.detail-section h2{font-size:18px;font-weight:500;line-height:1.8;margin:5px 0 13px}
 .synopsis{font-size:12px;line-height:2.2;color:var(--muted);text-wrap:pretty;white-space:pre-line}
-.film-facts{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px;padding:22px 0;margin:23px 0 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.film-facts{display:grid;grid-template-columns:1fr 1fr;gap:18px 28px;padding:22px 0;margin:23px 0 0}
 .film-facts>div{display:flex;gap:14px;font-size:11px}
 .film-facts dt{color:var(--dim);min-width:50px}
 .film-facts dd{margin:0;color:var(--muted)}
@@ -295,7 +295,8 @@ legend span{color:var(--dim);font-weight:400}
 .subsection-head h2{margin-bottom:0}
 .subsection-head>span{font-size:8px;letter-spacing:1.2px;color:var(--dim)}
 
-.detail-section{margin-top:30px;padding-top:22px;border-top:1px solid var(--border)}
+.detail-section{margin-top:30px;padding-top:22px}
+.detail-content + .detail-section{border-top:1px solid var(--border)}
 
 .recommendations-heading{display:flex;align-items:baseline;gap:12px}
 .recommendations-heading>span{color:var(--dim);font-size:12px}
@@ -413,7 +414,7 @@ legend span{color:var(--dim);font-weight:400}
 .detail-original{font-size:clamp(12px,.6em,20px);font-weight:400;letter-spacing:0;color:var(--muted)}
 .detail-tags{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:13px;font-size:12px;color:var(--muted)}
 .detail-tags span:before{content:"·";color:var(--dim);margin-right:12px}
-.detail-rating-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 0;border-bottom:1px solid var(--border)}
+.detail-rating-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 0}
 .detail-rating-row .eyebrow{font-size:11px;letter-spacing:0}
 .detail-rating{display:flex;align-items:center;flex-wrap:nowrap;gap:8px;margin-top:5px;color:var(--accent);white-space:nowrap}
 .detail-rating>svg{flex-shrink:0}
