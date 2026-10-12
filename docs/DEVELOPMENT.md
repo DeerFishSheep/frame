@@ -60,10 +60,10 @@ npm run start
 | 要改什么 | 入口 | 搜索关键词 |
 | --- | --- | --- |
 | 页面布局、顶部导航、统一搜索、主题 | `app/globals.css`、`components/shell.tsx`、`lib/navigation.ts`、`components/providers.tsx` | `FrameShell`、`buildSearchHref`、`toggleTheme` |
-| 首页焦点影片 | `components/featured-film.tsx` | `FeaturedFilm` |
+| 各主榜单焦点轮播 | `components/featured-film.tsx`、`lib/media-presentation.ts` | `FeaturedFilm`、`FEATURED_INTERVAL_MS`、`selectFeaturedMedia` |
 | 榜单、搜索、分页、收藏页 | `components/workspace.tsx` | `Workspace`、`loadMore` |
 | 筛选弹层、主题搜索 | `components/filter-panel.tsx` | `FilterPanel`、`KeywordPicker` |
-| 海报卡片、图片降级 | `components/media-card.tsx` | `MediaCard`、`MediaImage` |
+| 海报卡片、完整日期、全部类型、序号 | `components/media-card.tsx`、`lib/media-presentation.ts` | `MediaCard`、`formatMediaDate`、`cardNumber` |
 | 详情、演员、剧照、推荐 | `components/detail-view.tsx`、`lib/tmdb/normalize.ts` | `DetailView`、`normalizeDetail` |
 | 参数白名单与上游接口选择 | `lib/query.ts` | `parseFilters`、`buildCatalogRequest` |
 | 缓存、超时、重试 | `lib/tmdb/client.ts` | `createTmdbClient` |
@@ -71,7 +71,7 @@ npm run start
 | 预览样本 | `lib/demo.ts` | `DEMO_MEDIA`、`getDemoCatalog` |
 | 收藏校验与持久化 | `lib/favorites.ts` | `frame_favorites_v2`、`parseFavorites` |
 | 构建与本地生产包启动 | `scripts/`、`next.config.ts` | `prepare-standalone`、`loadEnvConfig` |
-| 自动测试 | `tests/` | `favorites.test.ts`、`navigation.test.ts`、`query.test.ts`、`tmdb.test.ts` |
+| 自动测试 | `tests/` | `favorites.test.ts`、`navigation.test.ts`、`media-presentation.test.ts`、`query.test.ts`、`tmdb.test.ts` |
 
 ## 目录职责与文件生命周期
 

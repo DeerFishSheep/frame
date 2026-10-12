@@ -12,7 +12,7 @@ const navigation = [
   { id: "home", label: "首页", href: "/" },
   { id: "movie", label: "电影", href: "/?media=movie" },
   { id: "tv", label: "电视剧", href: "/?media=tv" },
-  { id: "discover", label: "片库", href: "/discover" },
+  { id: "discover", label: "找片", href: "/discover" },
   { id: "favorites", label: "我的收藏", href: "/favorites" },
 ];
 

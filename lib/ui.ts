@@ -13,7 +13,7 @@ export function chartMeta(chart: Chart, media: MediaType | "all", period: "day" 
     top: {title:"高分影片"},
     now: {title:tv?"近期在播":"正在上映"},
     upcoming: {title:tv?"今日播出":"即将上映"},
-    discover: {title:"影视片库"},
+    discover: {title:"找片"},
     favorites: {title:"我的收藏"},
   };
   return entries[chart];

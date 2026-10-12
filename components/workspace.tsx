@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Bookmark, ChevronDown, Grid2X2, List, LoaderCircle, RefreshCw, Search, X } from "lucide-react";
 import { DEFAULT_FILTERS, mediaKey, type CatalogFilters, type CatalogResponse, type Chart, type Media } from "@/lib/types";
-import { DEMO_MEDIA, getDemoCatalog } from "@/lib/demo";
+import { getDemoCatalog } from "@/lib/demo";
+import { selectFeaturedMedia } from "@/lib/media-presentation";
 import { parseFilters } from "@/lib/query";
 import { activeFilterCount, chartMeta, formatCount, formatTime, GENRES, serializeFilters } from "@/lib/ui";
 import { useFrame } from "./providers";
@@ -51,6 +52,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   const { filters } = parsed;
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [response, setResponse] = useState<CatalogResponse | null>(null);
+  const [responseKey, setResponseKey] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
@@ -62,6 +64,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   const discoverMode = filters.chart === "discover";
   const searchMode = Boolean(filters.query.trim());
   const meta = chartMeta(filters.chart, filters.media, filters.period);
+  const requestKey = `${preview}:${serializeFilters(filters)}`;
 
   const updateFilters = useCallback((next: CatalogFilters) => {
     const destination = next.chart === "discover" ? "/discover" : next.chart === "favorites" ? "/favorites" : "/";
@@ -86,14 +89,14 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
           if (!result.ok) throw new Error(json.error || "暂时无法获取影片");
           return json as CatalogResponse;
         });
-        if (generation === requestGeneration.current) setResponse(data);
+        if (generation === requestGeneration.current) { setResponse(data); setResponseKey(requestKey); }
       } catch (error) {
         if (!controller.signal.aborted && generation === requestGeneration.current) setError(error instanceof Error ? error.message : "连接中断，请重试");
       } finally { if (generation === requestGeneration.current) setLoading(false); }
     }
     load();
     return () => controller.abort();
-  }, [filters, parsed.error, preview, refresh, favoriteMode]);
+  }, [filters, parsed.error, preview, refresh, favoriteMode, requestKey]);
 
   const favoriteItems = useMemo(() => filterFavorites(favorites, filters), [favorites, filters]);
   const items = favoriteMode ? favoriteItems.slice(0, favoriteCount) : response?.results || [];
@@ -102,8 +105,9 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   const showRank = !favoriteMode && !searchMode && !discoverMode;
   const shownTotal = favoriteMode ? favoriteItems.length : filters.media === "all" && response?.source === "tmdb" ? items.length : response?.totalResults || 0;
   const previewSchedule = response?.source === "demo" && (filters.chart === "now" || filters.chart === "upcoming");
-  const feature = response?.results.find(item => item.backdropPath) || (preview ? DEMO_MEDIA.find(item => filters.media === "all" || item.mediaType === filters.media) : null);
-  const showFeature = initialChart === "trending" && filters.chart === "trending" && !searchMode && !parsed.error;
+  const featuredItems = useMemo(() => responseKey === requestKey ? selectFeaturedMedia(response?.results || []) : [], [response, responseKey, requestKey]);
+  const showFeature = initialChart === "trending" && !searchMode && !parsed.error;
+  const featuredLabel = filters.chart === "trending" ? filters.period === "day" ? "今日焦点" : "本周焦点" : `${meta.title}精选`;
   const genres = GENRES[filters.media === "tv" ? "tv" : "movie"];
   const quickGenres = genres.filter(item => [18, 35, 878, 9648, 16, 10765].includes(item.id));
   const changeMedia = (media: CatalogFilters["media"]) => updateFilters({ ...filters, media, genres: [], sort: filters.sort.includes("date") ? media === "tv" ? "first_air_date.desc" : "primary_release_date.desc" : filters.sort });
@@ -142,8 +146,8 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   ];
 
   return <div className="workspace">
-    {showFeature && feature && <FeaturedFilm key={mediaKey(feature)} item={feature} period={filters.period}/>}
-    {showFeature && !feature && loading && <div className="skeleton featured-loading" aria-label="正在加载焦点影片"/>}
+    {showFeature && featuredItems.length > 0 && <FeaturedFilm key={`${filters.chart}:${filters.media}:${filters.period}:${preview}`} items={featuredItems} label={featuredLabel}/>}
+    {showFeature && !featuredItems.length && loading && <div className="skeleton featured-loading" aria-label="正在加载焦点影片"/>}
     <section className="catalog" aria-labelledby="workspace-title">
       <div className="catalog-heading">
         <div className="catalog-title"><h2 id="workspace-title">{title}</h2>{preview && !favoriteMode && <span className="preview-label">预览影片</span>}</div>
@@ -188,7 +192,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
         <h3>{favoriteMode && !favorites.length ? "还没有收藏" : previewSchedule ? "连接真实数据后查看" : "没有找到影片"}</h3>
         <p>{favoriteMode && !favorites.length ? "遇到想看的电影或剧集，点击书签即可收藏。" : response?.notice || "试试其他片名，或减少筛选条件。"}</p>
         {favoriteMode && !favorites.length ? <Link href="/" className="primary-button">去选片<ArrowRight size={15}/></Link> : previewSchedule ? <button className="secondary-button" onClick={() => window.dispatchEvent(new Event("frame:source"))}>数据说明</button> : <button className="secondary-button" onClick={clearFilters}>清空条件</button>}
-      </div> : <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map(item => <MediaCard key={mediaKey(item)} item={item} showRank={showRank}/>)}</div>}
+      </div> : <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={showRank} resultIndex={discoverMode ? (filters.page - 1) * 20 + index + 1 : undefined}/>)}</div>}
       {moreError && <p className="load-error" role="alert">{moreError}</p>}
       {hasMore && !loading && !error && <div className="load-more-row"><button className="load-more" onClick={loadMore} disabled={loadingMore}>{loadingMore ? <LoaderCircle size={16} className="spinning"/> : <ChevronDown size={16}/>} {loadingMore ? "正在加载" : "加载更多"}</button></div>}
     </section>
