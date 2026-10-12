@@ -4,13 +4,26 @@
 
 原始项目资料只有 `PLAN.md`、开发任务书、HTML 原型和预览图。当前工程将原型整理为 Next.js 16 + React 19 + TypeScript 应用，可在自己的服务器运行。
 
+**当前在本地开发和测试；服务器部署尚未开始。** 真实 TMDB 接口已实现，但仍待有效凭证的本地联调。
+
+## 项目状态与交接
+
+| 文档 | 用途 |
+| --- | --- |
+| [PLAN.md](PLAN.md) | 项目目标、阶段与开发路线 |
+| [当前进度](docs/PROGRESS.md) | 已实现、已验证、待联调与未完成项 |
+| [开发记录](docs/CHANGELOG.md) | 每次开发的改动、证据和下一步 |
+| [本地开发与代码定位](docs/DEVELOPMENT.md) | 本地流程、组件入口和记录更新方式 |
+
+后续 Agent 按 [AGENTS.md](AGENTS.md) 接手。每完成一部分开发，同时更新进度和开发记录。
+
 ## 本地运行
 
 需要 Node.js 22 和 npm。
 
 ```bash
 npm ci
-cp .env.example .env.local
+test -e .env.local || cp .env.example .env.local
 npm run dev
 ```
 
@@ -24,6 +37,8 @@ TMDB_CACHE_SECONDS=1800
 令牌仅供服务端读取；不使用 `NEXT_PUBLIC_` 前缀，不需要访客输入 Key。`.env.local`、`.env` 已加入 Git 和 Docker 忽略规则。
 
 ## 当前功能
+
+以下描述已实现的代码能力；验证状态与剩余缺口以 [当前进度](docs/PROGRESS.md) 为准。
 
 - 今日/本周趋势、热门、高分、正在上映/即将上映；电影和剧集独立切换，剧集使用“近期在播”“今日播出”。
 - 搜索、Discover 高级筛选、类型多选 AND/OR、年份、评分、投票数、地区、语言、关键词、片长和排序；筛选参数保存在 URL。
@@ -59,7 +74,9 @@ TMDB_CACHE_SECONDS=1800
 
 浏览器仅访问本站接口。服务端选择 TMDB 路径并验证查询参数，不接收任意上游 URL。
 
-## 部署到自己的服务器
+## 后续部署到自己的服务器
+
+当前开发阶段不执行这部分。以下步骤保留作后续服务器部署参考。
 
 服务器需要 Docker 与 Docker Compose。把项目放到服务器后执行：
 
@@ -103,3 +120,5 @@ docker compose --env-file .env.example config --quiet
 ## 第二阶段
 
 历史榜单快照与名次升降、人工精选片单、个性化推荐、账户同步、IMDb/豆瓣评分聚合尚未实现。当前不生成虚构的排名变化，也不将 TMDB 评分显示为 IMDb 评分。
+
+阶段与优先顺序见 [PLAN.md](PLAN.md)，各项状态在 [当前进度](docs/PROGRESS.md) 持续更新。
