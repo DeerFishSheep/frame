@@ -25,7 +25,7 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
   const href = mediaHref(item), external = typeof item.id === "string";
   const ratingLabel = item.source === "imdb" ? "IMDB" : "TMDB";
   return <article className="media-card" data-scroll-anchor={`media:${mediaKey(item)}`}>
-    <div className="poster-wrap">
+    <div className="poster-wrap" data-skeleton="block">
       <Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="poster-link" aria-label={external ? `在 IMDB 查看${item.title}` : `查看${item.title}详情`}>
         <MediaImage item={item}/><span className="poster-shade"/>
         {number && <span className={`rank-badge ${number.value <= 3 ? "rank-top" : ""}`} title={number.label} aria-label={number.label}>{number.text}</span>}
@@ -41,10 +41,10 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
       </Link>
     </div>
     <div className="media-card-copy">
-      <div className="card-title-line"><Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="card-title" title={item.title}>{item.title}</Link><button className={`card-save ${saved ? "saved" : ""}`} onClick={() => toggle(item)} aria-label={`${saved ? "取消收藏" : "收藏"}${item.title}`} aria-pressed={saved}><Bookmark size={16} fill={saved ? "currentColor" : "none"}/></button></div>
-      <p className="card-original" title={item.originalTitle}>{item.originalTitle || "原名未提供"}</p>
-      {item.source !== "demo" && item.voteCount > 0 && <p className="card-votes">{formatCount(item.voteCount)} 人评分</p>}
-      <div className="list-extra"><p>{item.overview || "暂无剧情简介。"}</p>{item.source !== "demo" && <span>{ratingLabel} · {item.voteAverage > 0 ? `${item.voteAverage.toFixed(1)} 分 · ${formatCount(item.voteCount)} 人评分` : "暂无评分"}</span>}</div>
+      <div className="card-title-line" data-skeleton="line"><Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="card-title" title={item.title}>{item.title}</Link><button className={`card-save ${saved ? "saved" : ""}`} onClick={() => toggle(item)} aria-label={`${saved ? "取消收藏" : "收藏"}${item.title}`} aria-pressed={saved}><Bookmark size={16} fill={saved ? "currentColor" : "none"}/></button></div>
+      <p className="card-original" data-skeleton="line" title={item.originalTitle}>{item.originalTitle || "原名未提供"}</p>
+      {item.source !== "demo" && item.voteCount > 0 && <p className="card-votes" data-skeleton="line">{formatCount(item.voteCount)} 人评分</p>}
+      <div className="list-extra" data-skeleton="text"><p>{item.overview || "暂无剧情简介。"}</p>{item.source !== "demo" && <span>{ratingLabel} · {item.voteAverage > 0 ? `${item.voteAverage.toFixed(1)} 分 · ${formatCount(item.voteCount)} 人评分` : "暂无评分"}</span>}</div>
     </div>
   </article>;
 }

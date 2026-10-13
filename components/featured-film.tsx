@@ -9,6 +9,7 @@ import { useStableUpdate } from "@/lib/use-stable-update";
 import { useViewState } from "@/lib/view-state";
 import { MediaImage } from "./media-card";
 import { useFrame } from "./providers";
+import { resourceLoadingProps } from "./resource-feedback";
 
 export function FeaturedFilm({ items, label, pending = false, stateKey = "featured:catalog" }: { items: Media[]; label: string; pending?: boolean; stateKey?: string }) {
   const slides = selectFeaturedMedia(items);
@@ -95,26 +96,26 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
     if (Math.abs(horizontal) > 45 && Math.abs(event.clientY - start.y) < 60) select(index + (horizontal < 0 ? 1 : -1));
   }
 
-  return <section className="featured-film" aria-label={label} aria-busy={pending} aria-roledescription="轮播" data-active-key={mediaKey(item)} data-slide-index={index} data-autoplay={running} data-artwork={item.backdropPath ? "backdrop" : "poster"}
+  return <section className="featured-film" aria-label={label} {...resourceLoadingProps(pending)} aria-roledescription="轮播" data-active-key={mediaKey(item)} data-slide-index={index} data-autoplay={running} data-artwork={item.backdropPath ? "backdrop" : "poster"}
     onPointerEnter={event => { if (event.pointerType !== "touch") setHovered(true); }} onPointerLeave={() => setHovered(false)}
     onFocusCapture={() => setFocused(true)}
     onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false); }}
     onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => { touchStart.current = null; }}>
     <div key={mediaKey(item)} className="featured-slide" role="group" aria-roledescription="幻灯片" aria-label={`第 ${index + 1} 部，共 ${items.length} 部`} aria-live={running ? "off" : "polite"}>
-      <div className="featured-image"><MediaImage item={item} backdrop={Boolean(item.backdropPath)}/></div>
+      <div className="featured-image" data-skeleton="block"><MediaImage item={item} backdrop={Boolean(item.backdropPath)}/></div>
       <div className="featured-shade" aria-hidden="true"/>
       <div className="featured-copy">
-        <span className="featured-label">{item.source === "demo" ? "精选预览" : label}</span>
-        <h1 id="featured-title" title={item.title}>{item.title}</h1>
-        <div className="featured-meta"><span>{item.mediaType === "tv" ? "电视剧" : "电影"}</span><time dateTime={item.releaseDate || undefined}>{formatMediaDate(item.releaseDate)}</time><span className="featured-genres">{item.genres.join(" / ") || "类型待补充"}</span></div>
-        <p>{item.overview || "点击查看作品资料。"}</p>
-        <div className="featured-actions">
+        <span className="featured-label" data-skeleton="line">{item.source === "demo" ? "精选预览" : label}</span>
+        <h1 data-skeleton="line" id="featured-title" title={item.title}>{item.title}</h1>
+        <div className="featured-meta" data-skeleton="line"><span>{item.mediaType === "tv" ? "电视剧" : "电影"}</span><time dateTime={item.releaseDate || undefined}>{formatMediaDate(item.releaseDate)}</time><span className="featured-genres">{item.genres.join(" / ") || "类型待补充"}</span></div>
+        <p data-skeleton="text">{item.overview || "点击查看作品资料。"}</p>
+        <div className="featured-actions" data-skeleton="block">
           <Link className="primary-button" href={mediaHref(item)} target={typeof item.id === "string" ? "_blank" : undefined} rel={typeof item.id === "string" ? "noopener noreferrer" : undefined}>{typeof item.id === "string" ? "在 IMDB 查看" : "查看详情"}<ArrowRight size={16}/></Link>
           <button className="featured-save" onClick={() => toggle(item)} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "收藏"}</button>
         </div>
       </div>
     </div>
-    {items.length > 1 && <div className="featured-controls" onKeyDown={onKeyDown}>
+    {items.length > 1 && <div className="featured-controls" data-skeleton="line" onKeyDown={onKeyDown}>
       <span className="featured-counter" aria-hidden="true">{String(index + 1).padStart(2, "0")}<span> / {String(items.length).padStart(2, "0")}</span></span>
       <button className="carousel-arrow" onClick={() => select(index - 1)} aria-label="上一部"><ChevronLeft size={18}/></button>
       <div className="carousel-dots" role="group" aria-label="选择轮播影片">{items.map((slide, position) => <button key={mediaKey(slide)} className={position === index ? "active" : ""} onClick={() => select(position)} aria-label={`切换到第 ${position + 1} 部：${slide.title}`} aria-pressed={position === index}><span/></button>)}</div>

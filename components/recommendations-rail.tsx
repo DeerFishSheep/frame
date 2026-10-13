@@ -6,10 +6,10 @@ import { mergeMediaPages } from "@/lib/media-presentation";
 import { mediaKey, type CatalogResponse, type MediaPage, type MediaType } from "@/lib/types";
 import { usePagedResource } from "@/lib/use-paged-resource";
 import { useScrollMemory } from "@/lib/view-state";
-import { ResourceFeedback } from "./resource-feedback";
+import { ResourceFeedback, resourceLoadingProps } from "./resource-feedback";
 import { MediaCard } from "./media-card";
 
-export function RecommendationsRail({ initial, mediaType, id, source = "tmdb" }: { initial: MediaPage; mediaType: MediaType; id: number; source?: string }) {
+export function RecommendationsRail({ initial, mediaType, id, source = "tmdb", pending = false }: { pending?: boolean; initial: MediaPage; mediaType: MediaType; id: number; source?: string }) {
   const key = `recommendations:${source}:${mediaType}:${id}`;
   const resource = usePagedResource<MediaPage & { stale?: boolean }>({
     key, group: key, initial: { ...initial, results: mergeMediaPages([], initial.results) }, keepPrevious: false,
@@ -85,7 +85,7 @@ export function RecommendationsRail({ initial, mediaType, id, source = "tmdb" }:
   }
 
   return <section className="detail-section recommendations-section resource-region" aria-labelledby="recommendations-heading">
-    <ResourceFeedback pending={resource.pending} error={resource.error} retained={Boolean(resource.data)} onRetry={resource.refresh}/>
+    <ResourceFeedback pending={pending || resource.pending} error={resource.error} retained={Boolean(resource.data)} onRetry={resource.refresh}/>
     <div className="subsection-head" data-scroll-anchor="recommendations-heading">
       <div className="recommendations-heading"><h2 id="recommendations-heading">猜你喜欢</h2>{feed.totalResults > 0 && <span>{feed.totalResults} 部</span>}</div>
       <div className="rail-controls">
@@ -93,7 +93,7 @@ export function RecommendationsRail({ initial, mediaType, id, source = "tmdb" }:
         <button aria-label="向右浏览猜你喜欢" disabled={(edges.end && !hasMore) || busy && edges.end} onClick={() => move(1)}><ChevronRight size={18}/></button>
       </div>
     </div>
-    <div className="recommendations-rail" ref={rememberRail} onScroll={measure} tabIndex={0} role="region" aria-label="猜你喜欢，左右滑动查看更多"
+    <div className="recommendations-rail" {...resourceLoadingProps(pending || resource.pending)} ref={rememberRail} onScroll={measure} tabIndex={0} role="region" aria-label="猜你喜欢，左右滑动查看更多"
       onKeyDown={event => { if (event.target === event.currentTarget && (event.key === "ArrowLeft" || event.key === "ArrowRight")) { event.preventDefault(); move(event.key === "ArrowLeft" ? -1 : 1); } }}>
       {feed.results.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={false} resultIndex={index + 1}/>)}
       {hasMore && <div className="recommendations-tail" ref={tail}>

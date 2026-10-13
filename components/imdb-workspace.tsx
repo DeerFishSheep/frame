@@ -6,7 +6,7 @@ import { ArrowUpRight, ChevronDown, Grid2X2, List, LoaderCircle, RefreshCw } fro
 import { useViewState } from "@/lib/view-state";
 import { usePagedResource } from "@/lib/use-paged-resource";
 import type { CatalogView } from "@/lib/catalog-view";
-import { ResourceRegion } from "./resource-feedback";
+import { ResourceRegion, resourceLoadingProps } from "./resource-feedback";
 import { mediaKey, type CatalogResponse } from "@/lib/types";
 import { IMDB_PAGE_SIZE, IMDB_SORTS, imdbChart, imdbParams, parseImdbFilters, type ImdbFilters } from "@/lib/imdb/query";
 import { formatCount, formatTime } from "@/lib/ui";
@@ -62,12 +62,12 @@ export function ImdbWorkspace() {
       chartAction={<a className="catalog-more" href={chart.url} target="_blank" rel="noopener noreferrer">查看原榜<ArrowUpRight size={14}/></a>}
       sortLabel="IMDB 排序方式"
       sort={IMDB_SORTS.map(option => <button key={option.value} className={`filter-chip ${filters.sort === option.value ? "active" : ""}`} aria-pressed={filters.sort === option.value} onClick={() => change({ sort: option.value })}>{option.label}</button>)}>
-      <div className="catalog-status"><span>{loading ? "正在加载 IMDB…" : error ? current ? "更新失败，已保留上次内容" : "加载失败" : `${current?.stale ? "缓存数据 · " : ""}${current?.source === "tmdb" ? "TMDB" : "IMDB"} · ${formatTime(current?.retrievedAt || null)} 更新`}</span>{current && <span>{formatCount(current.totalResults)} 部 · {current.context.ranked ? "原榜顺序" : "当前排序结果"}</span>}</div>
+      <div className="catalog-status" {...resourceLoadingProps(loading)}><span data-skeleton="line">{loading ? "正在加载 IMDB…" : error ? current ? "更新失败，已保留上次内容" : "加载失败" : `${current?.stale ? "缓存数据 · " : ""}${current?.source === "tmdb" ? "TMDB" : "IMDB"} · ${formatTime(current?.retrievedAt || null)} 更新`}</span>{current && <span data-skeleton="line">{formatCount(current.totalResults)} 部 · {current.context.ranked ? "原榜顺序" : "当前排序结果"}</span>}</div>
       {current?.notice && <p className="imdb-notice" role="status">{current.notice}</p>}
       <ResourceRegion pending={loading} error={error} retained={Boolean(current)} onRetry={() => parsed.error ? change({ media: "movie", chart: "top", sort: "rank" }) : resource.refresh()}>
-      {loading && !current ? <MediaSkeletons/> : error && !current ? <div className="empty-state" role="alert"><RefreshCw size={28}/><h3>{parsed.error ? "榜单条件无效" : "暂时无法加载 IMDB"}</h3><p>{error}</p><button className="primary-button" onClick={() => parsed.error ? change({ media: "movie", chart: "top", sort: "rank" }) : resource.refresh()}>{parsed.error ? "重置条件" : "重试"}</button></div>
+      {loading && !current ? <MediaSkeletons/> : error && !current ? <div className="empty-state" data-skeleton="block" role="alert"><RefreshCw size={28}/><h3>{parsed.error ? "榜单条件无效" : "暂时无法加载 IMDB"}</h3><p>{error}</p><button className="primary-button" onClick={() => parsed.error ? change({ media: "movie", chart: "top", sort: "rank" }) : resource.refresh()}>{parsed.error ? "重置条件" : "重试"}</button></div>
         : items.length ? <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={current?.context.ranked} resultIndex={((current?.context.startPage ?? filters.page) - 1) * IMDB_PAGE_SIZE + index + 1}/>)}</div>
-        : <div className="empty-state"><h3>这一页没有更多作品</h3><button className="secondary-button" onClick={() => change({})}>返回第一页</button></div>}
+        : <div className="empty-state" data-skeleton="block"><h3>这一页没有更多作品</h3><button className="secondary-button" onClick={() => change({})}>返回第一页</button></div>}
       </ResourceRegion>
       {moreError && <p className="load-error" role="alert">{moreError}</p>}
       {!loading && !error && hasMore && <div ref={moreAnchor} className="load-more-row"><button className="load-more" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? <LoaderCircle size={16} className="spinning"/> : moreError ? <RefreshCw size={16}/> : <ChevronDown size={16}/>} {loadingMore ? "正在加载" : moreError ? "重试加载" : "加载更多"}</button></div>}

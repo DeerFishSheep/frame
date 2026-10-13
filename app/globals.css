@@ -476,7 +476,7 @@ legend span{color:var(--dim);font-weight:400}
 .cast-card strong,.cast-card>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:500;line-height:1.5;margin-top:8px}
 .cast-card>span{font-size:10px;font-weight:400;color:var(--dim);margin-top:3px}
 .detail-media-strip--stills{grid-auto-columns:clamp(260px,31vw,360px)}
-.detail-media-strip--stills>img,.still-placeholder{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:var(--panel);border:1px solid var(--border);border-radius:8px}
+.detail-media-strip--stills img,.still-placeholder{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:var(--panel);border:1px solid var(--border);border-radius:8px}
 .still-placeholder{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--dim);font-size:12px}
 @media(max-width:1000px){
   .detail-content{grid-template-columns:190px minmax(0,1fr);gap:28px}
@@ -530,11 +530,15 @@ legend span{color:var(--dim);font-weight:400}
 /* Shared provider chart actions stay accessible inside the common navigation row. */
 .catalog .chart-tabs>.catalog-more{display:inline-flex;white-space:nowrap}
 
-/* Shared async regions retain their content; feedback never changes document height. */
+/* Errors overlay only the affected region without changing document height. */
 .resource-region{position:relative;min-width:0}
 .resource-feedback{position:absolute;z-index:5;top:8px;left:8px;right:8px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:9px 13px;border:1px solid var(--border);border-radius:7px;background:var(--panel);color:var(--text);font-size:12px;box-shadow:0 5px 20px rgba(0,0,0,.15)}
 .resource-feedback>svg{flex-shrink:0;color:var(--accent)}
 .resource-feedback .text-button{padding:0;color:var(--accent);min-height:28px}
-.resource-region[aria-busy=true]>.media-grid{opacity:.65}
 .detail-workspace>.resource-feedback{top:42px}
-.featured-film[aria-busy=true] .featured-label::after{content:" · 更新中";color:var(--muted)}
+/* One loading treatment for every data source and content region. Keep original boxes. */
+:where([data-skeleton]){position:relative}
+[data-loading=true] [data-skeleton]{visibility:hidden}
+[data-loading=true] [data-skeleton]::after{content:"";position:absolute;inset:0;visibility:visible;border-radius:7px;background:linear-gradient(100deg,var(--panel) 30%,var(--panel-hover) 45%,var(--panel) 60%);background-size:200% 100%;animation:shimmer 1.7s ease infinite;pointer-events:none}
+[data-loading=true] [data-skeleton=line]::after{top:50%;bottom:auto;width:80%;height:.7em;transform:translateY(-50%);border-radius:4px}
+[data-loading=true] [data-skeleton=text]::after{mask-image:repeating-linear-gradient(to bottom,transparent 0,transparent .25em,#000 .25em,#000 .95em,transparent .95em,transparent 1.7em);border-radius:0}

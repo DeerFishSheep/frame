@@ -10,7 +10,7 @@ import { useViewState } from "@/lib/view-state";
 import { usePagedResource } from "@/lib/use-paged-resource";
 import { useStableUpdate } from "@/lib/use-stable-update";
 import type { CatalogView } from "@/lib/catalog-view";
-import { ResourceRegion } from "./resource-feedback";
+import { ResourceRegion, resourceLoadingProps } from "./resource-feedback";
 import { selectFeaturedMedia } from "@/lib/media-presentation";
 import { parseFilters } from "@/lib/query";
 import { chartMeta, formatCount, formatTime, GENRES, serializeFilters } from "@/lib/ui";
@@ -159,15 +159,15 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
         {discoverMode && !searchMode && <div className="quick-genres" role="group" aria-label={filters.media === "tv" ? "电视剧全部类型" : "电影全部类型"}><button className={`filter-chip ${!filters.genres.length ? "active" : ""}`} aria-pressed={!filters.genres.length} onClick={() => updateFilters({ ...filters, genres: [] })}>全部类型</button>{genres.map(genre => <button key={genre.id} className={`filter-chip ${filters.genres.includes(String(genre.id)) ? "active" : ""}`} aria-pressed={filters.genres.includes(String(genre.id))} onClick={() => updateFilters({ ...filters, genres: filters.genres.includes(String(genre.id)) ? filters.genres.filter(id => id !== String(genre.id)) : [...filters.genres, String(genre.id)] })}>{genre.name}</button>)}</div>}
       </div>}
       <AppliedFilters filters={filters} today={today} onChange={updateFilters} onClear={clearFilters}/>
-      <div className="catalog-status">
-        <span>{favoriteMode ? "收藏保存在当前浏览器" : loading ? "正在加载…" : error ? response ? "更新失败，已保留上次内容" : "加载失败" : response?.source === "demo" ? "示例片单，非实时榜单" : `${response?.stale ? "缓存数据 · " : ""}${response?.source === "imdb" ? "IMDB" : "TMDB"} · ${formatTime(response?.retrievedAt || null)} 更新`}</span>
-        {!loading && !error && <span>{formatCount(shownTotal)} {filters.media === "all" && response?.source === "tmdb" ? "部已加载" : "部"}</span>}
+      <div className="catalog-status" {...resourceLoadingProps(loading)}>
+        <span data-skeleton="line">{favoriteMode ? "收藏保存在当前浏览器" : loading ? "正在加载…" : error ? response ? "更新失败，已保留上次内容" : "加载失败" : response?.source === "demo" ? "示例片单，非实时榜单" : `${response?.stale ? "缓存数据 · " : ""}${response?.source === "imdb" ? "IMDB" : "TMDB"} · ${formatTime(response?.retrievedAt || null)} 更新`}</span>
+        {!loading && !error && <span data-skeleton="line">{formatCount(shownTotal)} {filters.media === "all" && response?.source === "tmdb" ? "部已加载" : "部"}</span>}
       </div>
       <ResourceRegion pending={loading} error={error} retained={Boolean(response) && !favoriteMode} onRetry={parsed.error ? clearFilters : resource.refresh}>
-      {(loading && !response) || (favoriteMode && !favoritesReady) ? <MediaSkeletons/> : error && !response ? <div className="empty-state" role="alert">
+      {(loading && !response) || (favoriteMode && !favoritesReady) ? <MediaSkeletons/> : error && !response ? <div className="empty-state" data-skeleton="block" role="alert">
         <RefreshCw size={28}/><h3>{parsed.error ? "筛选条件无效" : "暂时无法加载影片"}</h3><p>{error}</p>
         <div className="empty-actions"><button className="primary-button" onClick={() => parsed.error ? clearFilters() : resource.refresh()}>{parsed.error ? "重置条件" : "重试"}</button>{!parsed.error && <button className="secondary-button" onClick={() => setPreview(true)}>查看预览影片</button>}</div>
-      </div> : !items.length ? <div className="empty-state">
+      </div> : !items.length ? <div className="empty-state" data-skeleton="block">
         {favoriteMode ? <Bookmark size={29}/> : <Search size={29}/>}
         <h3>{favoriteMode && !favorites.length ? "还没有收藏" : previewSchedule ? "连接真实数据后查看" : "没有找到影片"}</h3>
         <p>{favoriteMode && !favorites.length ? "遇到想看的电影或剧集，点击书签即可收藏。" : response?.notice || "试试其他片名，或减少筛选条件。"}</p>
