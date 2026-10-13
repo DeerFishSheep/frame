@@ -4,19 +4,23 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { ArrowRight, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { imageUrl, mediaHref, mediaKey, type Media } from "@/lib/types";
-import { FEATURED_INTERVAL_MS, formatMediaDate, selectFeaturedMedia } from "@/lib/media-presentation";
+import { FEATURED_INTERVAL_MS, featuredIndex, formatMediaDate, selectFeaturedMedia } from "@/lib/media-presentation";
+import { useStableUpdate } from "@/lib/use-stable-update";
+import { useViewState } from "@/lib/view-state";
 import { MediaImage } from "./media-card";
 import { useFrame } from "./providers";
 
-export function FeaturedFilm({ items, label }: { items: Media[]; label: string }) {
+export function FeaturedFilm({ items, label, pending = false, stateKey = "featured:catalog" }: { items: Media[]; label: string; pending?: boolean; stateKey?: string }) {
   const slides = selectFeaturedMedia(items);
   if (!slides.length) return null;
-  return <FeaturedCarousel key={slides.map(mediaKey).join("|")} items={slides} label={label}/>;
+  return <FeaturedCarousel items={slides} label={label} pending={pending} stateKey={stateKey}/>;
 }
 
-function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
+function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[]; label: string; pending: boolean; stateKey: string }) {
   const { isFavorite, toggle } = useFrame();
-  const [index, setIndex] = useState(0);
+  const [selection, setSelection] = useViewState(stateKey, { key: mediaKey(items[0]), index: 0 });
+  const index = featuredIndex(selection, items);
+  const prepareUpdate = useStableUpdate();
   const [interaction, setInteraction] = useState(0);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -25,9 +29,14 @@ function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const item = items[index];
   const saved = isFavorite(item);
-  const running = !reducedMotion && visible && !hovered && !focused && items.length > 1;
+  const running = !pending && !reducedMotion && visible && !hovered && !focused && items.length > 1;
   const nextItem = items[(index + 1) % items.length];
+  const activeKey = mediaKey(item), nextKey = mediaKey(nextItem);
   const nextImage = imageUrl(nextItem.backdropPath || nextItem.posterPath, nextItem.backdropPath ? "w1280" : "w500");
+
+  useEffect(() => {
+    if (selection.key !== activeKey || selection.index !== index) setSelection({ key: activeKey, index });
+  }, [selection.key, selection.index, activeKey, index, setSelection]);
 
   useEffect(() => {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -50,12 +59,18 @@ function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
 
   useEffect(() => {
     if (!running) return;
-    const timer = window.setTimeout(() => setIndex(current => (current + 1) % items.length), FEATURED_INTERVAL_MS);
+    const timer = window.setTimeout(() => {
+      prepareUpdate();
+      const next = (index + 1) % items.length;
+      setSelection({ key: mediaKey(items[next]), index: next });
+    }, FEATURED_INTERVAL_MS);
     return () => window.clearTimeout(timer);
-  }, [running, index, items.length, interaction]);
+  }, [running, index, items.length, activeKey, nextKey, interaction, prepareUpdate, setSelection]);
 
   function select(next: number) {
-    setIndex((next + items.length) % items.length);
+    prepareUpdate();
+    const position = (next + items.length) % items.length;
+    setSelection({ key: mediaKey(items[position]), index: position });
     // Restart the interval after touch/manual selection, including the active dot.
     setInteraction(current => current + 1);
   }
@@ -80,7 +95,7 @@ function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
     if (Math.abs(horizontal) > 45 && Math.abs(event.clientY - start.y) < 60) select(index + (horizontal < 0 ? 1 : -1));
   }
 
-  return <section className="featured-film" aria-label={label} aria-roledescription="轮播" data-active-key={mediaKey(item)} data-slide-index={index} data-autoplay={running} data-artwork={item.backdropPath ? "backdrop" : "poster"}
+  return <section className="featured-film" aria-label={label} aria-busy={pending} aria-roledescription="轮播" data-active-key={mediaKey(item)} data-slide-index={index} data-autoplay={running} data-artwork={item.backdropPath ? "backdrop" : "poster"}
     onPointerEnter={event => { if (event.pointerType !== "touch") setHovered(true); }} onPointerLeave={() => setHovered(false)}
     onFocusCapture={() => setFocused(true)}
     onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false); }}

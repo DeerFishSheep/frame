@@ -529,3 +529,12 @@ legend span{color:var(--dim);font-weight:400}
 
 /* Shared provider chart actions stay accessible inside the common navigation row. */
 .catalog .chart-tabs>.catalog-more{display:inline-flex;white-space:nowrap}
+
+/* Shared async regions retain their content; feedback never changes document height. */
+.resource-region{position:relative;min-width:0}
+.resource-feedback{position:absolute;z-index:5;top:8px;left:8px;right:8px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:9px 13px;border:1px solid var(--border);border-radius:7px;background:var(--panel);color:var(--text);font-size:12px;box-shadow:0 5px 20px rgba(0,0,0,.15)}
+.resource-feedback>svg{flex-shrink:0;color:var(--accent)}
+.resource-feedback .text-button{padding:0;color:var(--accent);min-height:28px}
+.resource-region[aria-busy=true]>.media-grid{opacity:.65}
+.detail-workspace>.resource-feedback{top:42px}
+.featured-film[aria-busy=true] .featured-label::after{content:" · 更新中";color:var(--muted)}

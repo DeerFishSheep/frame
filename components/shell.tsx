@@ -7,6 +7,8 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowUpRight, Film, Moon, Search, Sun, X } from "lucide-react";
 import { buildSearchHref } from "@/lib/navigation";
 import { useFrame } from "./providers";
+import { readViewState } from "@/lib/view-state";
+import { usePageContinuity } from "@/lib/use-page-continuity";
 
 const navigation = [
   { id: "movie", label: "电影", href: "/" },
@@ -18,6 +20,7 @@ const navigation = [
 export function FrameShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const params = useSearchParams();
+  usePageContinuity(pathname, params.toString());
   const router = useRouter();
   const { favorites, theme, toggleTheme, preview, setPreview, configured } = useFrame();
   const [sourceOpen, setSourceOpen] = useState(false);
@@ -25,9 +28,14 @@ export function FrameShell({ children }: { children: ReactNode }) {
   const searchInput = useRef<HTMLInputElement>(null);
   const currentQuery = params.get("query") || "";
   const imdbMode = pathname === "/" && params.get("source") === "imdb";
-  const mediaNavigation = (item: typeof navigation[number]) => imdbMode && (item.id === "movie" || item.id === "tv")
-    ? `/?${new URLSearchParams({ source: "imdb", media: item.id, chart: params.get("chart") === "popular" ? "popular" : "top", sort: ["rank", "user_rating", "popularity", "num_votes"].includes(params.get("sort") || "") ? params.get("sort")! : "rank" })}`
-    : item.href;
+  const mediaNavigation = (item: typeof navigation[number]) => {
+    if (pathname !== "/" || currentQuery || (item.id !== "movie" && item.id !== "tv")) return item.href;
+    const source = imdbMode ? "imdb" : "tmdb";
+    const remembered = readViewState<string | null>(`catalog-location:${item.id}:${source}`, null);
+    if (remembered) return remembered;
+    const next = new URLSearchParams(params); next.set("media", item.id); next.delete("page");
+    return `/?${next}`;
+  };
   const active = pathname === "/favorites" ? "favorites"
     : pathname === "/discover" ? "discover"
     : pathname.startsWith("/movie/") ? "movie"
@@ -53,13 +61,13 @@ export function FrameShell({ children }: { children: ReactNode }) {
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push(buildSearchHref(pathname, new URLSearchParams(params), query));
+    router.push(buildSearchHref(pathname, new URLSearchParams(params), query), { scroll: false });
   }
 
   function clearSearch() {
     setQuery("");
     searchInput.current?.focus();
-    if (currentQuery) router.push(buildSearchHref(pathname, new URLSearchParams(params), ""));
+    if (currentQuery) router.push(buildSearchHref(pathname, new URLSearchParams(params), ""), { scroll: false });
   }
 
   return <>
@@ -67,7 +75,7 @@ export function FrameShell({ children }: { children: ReactNode }) {
       <div className="site-header-inner">
         <Link className="site-brand" href="/" aria-label="帧榜电影"><Film size={25} strokeWidth={1.7}/><strong>帧榜<span>FRAME</span></strong></Link>
         <nav className="site-nav" aria-label="主导航">
-          {navigation.map(item => <Link key={item.id} href={mediaNavigation(item)} className={active === item.id ? "active" : ""} aria-current={active === item.id ? "page" : undefined}>
+          {navigation.map(item => <Link key={item.id} href={mediaNavigation(item)} scroll={pathname === "/" && (item.id === "movie" || item.id === "tv") ? false : undefined} className={active === item.id ? "active" : ""} aria-current={active === item.id ? "page" : undefined}>
             {item.label}{item.id === "favorites" && favorites.length > 0 && <span className="nav-count">{favorites.length}</span>}
           </Link>)}
         </nav>

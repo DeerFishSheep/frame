@@ -3,6 +3,11 @@ import { mediaKey, type Media } from "./types";
 export const FEATURED_LIMIT = 5;
 export const FEATURED_INTERVAL_MS = 6000;
 
+export function featuredIndex(selection: { key: string; index: number }, items: Media[]) {
+  const matching = items.findIndex(item => mediaKey(item) === selection.key);
+  return matching >= 0 ? matching : Math.max(0, Math.min(selection.index, items.length - 1));
+}
+
 export function selectFeaturedMedia(items: Media[]): Media[] {
   const seen = new Set<string>();
   const selected: Media[] = [];

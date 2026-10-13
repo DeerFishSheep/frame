@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowUpRight, Bookmark, Film, Star } from "lucide-react";
-import { imageUrl, mediaHref, type Media } from "@/lib/types";
+import { imageUrl, mediaHref, mediaKey, type Media } from "@/lib/types";
 import { formatCount } from "@/lib/ui";
 import { cardNumber, formatMediaDate } from "@/lib/media-presentation";
 import { useFrame } from "./providers";
@@ -24,7 +24,7 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
   const genres = [...new Set(item.genres)];
   const href = mediaHref(item), external = typeof item.id === "string";
   const ratingLabel = item.source === "imdb" ? "IMDB" : "TMDB";
-  return <article className="media-card">
+  return <article className="media-card" data-scroll-anchor={`media:${mediaKey(item)}`}>
     <div className="poster-wrap">
       <Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="poster-link" aria-label={external ? `在 IMDB 查看${item.title}` : `查看${item.title}详情`}>
         <MediaImage item={item}/><span className="poster-shade"/>

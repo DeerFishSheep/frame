@@ -2,10 +2,15 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { ArrowRight, Bookmark, ChevronDown, Grid2X2, List, LoaderCircle, RefreshCw, Search } from "lucide-react";
 import { DEFAULT_FILTERS, mediaKey, type CatalogFilters, type CatalogResponse, type Chart, type Media } from "@/lib/types";
 import { getDemoCatalog } from "@/lib/demo";
+import { useViewState } from "@/lib/view-state";
+import { usePagedResource } from "@/lib/use-paged-resource";
+import { useStableUpdate } from "@/lib/use-stable-update";
+import type { CatalogView } from "@/lib/catalog-view";
+import { ResourceRegion } from "./resource-feedback";
 import { selectFeaturedMedia } from "@/lib/media-presentation";
 import { parseFilters } from "@/lib/query";
 import { chartMeta, formatCount, formatTime, GENRES, serializeFilters } from "@/lib/ui";
@@ -54,94 +59,79 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
     }
   }, [paramString, initialChart, today]);
   const { filters } = parsed;
-  const [layout, setLayout] = useState<"grid" | "list">("grid");
-  const [response, setResponse] = useState<CatalogResponse | null>(null);
-  const [responseKey, setResponseKey] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState("");
-  const [moreError, setMoreError] = useState("");
-  const [refresh, setRefresh] = useState(0);
-  const [favoriteCount, setFavoriteCount] = useState(20);
-  const requestGeneration = useRef(0);
-  const favoriteMode = filters.chart === "favorites";
-  const discoverMode = filters.chart === "discover";
-  const searchMode = Boolean(filters.query.trim());
+  const [layout, setLayout] = useViewState<"grid" | "list">("catalog-layout", "grid");
+  const moreAnchor = useRef<HTMLDivElement>(null);
+  const prepareUpdate = useStableUpdate();
+  const favoriteMode = filters.chart === "favorites", discoverMode = filters.chart === "discover", searchMode = Boolean(filters.query.trim());
   const strictUpcoming = filters.chart === "upcoming" && filters.media === "movie" && !searchMode;
   const meta = chartMeta(filters.chart, filters.media, filters.period);
-  const requestKey = `${preview}:${serializeFilters(filters)}:${filters.dateTo === "today" || strictUpcoming ? today : ""}`;
-
+  const requestKey = `catalog:tmdb:${preview}:${serializeFilters(filters)}:${filters.dateTo === "today" || strictUpcoming ? today : ""}`;
+  const [favoriteCount, setFavoriteCount] = useViewState(`favorite-count:${requestKey}`, 20);
+  const requestedTitle = searchMode ? `“${filters.query}” 的搜索结果` : meta.title;
+  const requestedFeatureLabel = filters.chart === "trending" ? filters.period === "day" ? "今日焦点" : "本周焦点" : `${meta.title}精选`;
+  const resource = usePagedResource<CatalogView>({
+    key: requestKey, group: initialChart === "trending" ? "catalog" : initialChart, page: filters.page,
+    enabled: !parsed.error && !favoriteMode,
+    loadPage: async (page, signal) => {
+      const nextFilters = { ...filters, page };
+      const data = preview ? getDemoCatalog(nextFilters) : await fetch(`/api/catalog?${serializeFilters(nextFilters)}`, { signal }).then(async result => {
+        const json = await result.json();
+        if (!result.ok) throw new Error(json.error || "暂时无法获取影片");
+        return json as CatalogResponse;
+      });
+      return { ...data, context: { title: requestedTitle, featuredLabel: requestedFeatureLabel,
+        ranked: !favoriteMode && !searchMode && !discoverMode, startPage: filters.page, feature: initialChart === "trending" && !searchMode } };
+    },
+  });
+  const response = favoriteMode ? null : resource.data, loading = !favoriteMode && resource.pending;
+  const error = parsed.error || (favoriteMode ? "" : resource.error);
+  const { loadingMore, moreError, autoPaused } = resource;
   const updateFilters = useCallback((next: CatalogFilters) => {
+    prepareUpdate();
     const destination = next.chart === "discover" ? "/discover" : next.chart === "favorites" ? "/favorites" : "/";
     router.replace(`${destination}?${serializeFilters({ ...next, page: 1 })}`, { scroll: false });
-  }, [router]);
-
+  }, [router, prepareUpdate]);
   useEffect(() => {
-    try { setLayout(localStorage.getItem("frame_layout_v2") === "list" ? "list" : "grid"); } catch { /* The default grid remains available. */ }
+    try { setLayout(localStorage.getItem("frame_layout_v2") === "list" ? "list" : "grid"); } catch { /* Default grid remains available. */ }
   }, []);
-
-  useEffect(() => {
-    const generation = ++requestGeneration.current;
-    setError(""); setMoreError(""); setLoadingMore(false); setFavoriteCount(20);
-    if (parsed.error) { setLoading(false); setError(parsed.error); setResponse(null); return; }
-    if (favoriteMode) { setLoading(false); setResponse(null); return; }
-    const controller = new AbortController();
-    setLoading(true); setResponse(null);
-    async function load() {
-      try {
-        const data = preview ? getDemoCatalog(filters) : await fetch(`/api/catalog?${serializeFilters(filters)}`, { signal: controller.signal }).then(async result => {
-          const json = await result.json();
-          if (!result.ok) throw new Error(json.error || "暂时无法获取影片");
-          return json as CatalogResponse;
-        });
-        if (generation === requestGeneration.current) { setResponse(data); setResponseKey(requestKey); }
-      } catch (error) {
-        if (!controller.signal.aborted && generation === requestGeneration.current) setError(error instanceof Error ? error.message : "连接中断，请重试");
-      } finally { if (generation === requestGeneration.current) setLoading(false); }
-    }
-    load();
-    return () => controller.abort();
-  }, [filters, parsed.error, preview, refresh, favoriteMode, requestKey]);
-
   const favoriteItems = useMemo(() => filterFavorites(favorites, filters), [favorites, filters]);
-  const items = favoriteMode ? favoriteItems.slice(0, favoriteCount) : strictUpcoming && responseKey !== requestKey ? [] : response?.results || [];
-  const title = searchMode ? `“${filters.query}” 的搜索结果` : meta.title;
-  const showRank = !favoriteMode && !searchMode && !discoverMode;
+  const items = favoriteMode ? favoriteItems.slice(0, favoriteCount) : response?.results || [];
+  const title = !favoriteMode && response ? response.context.title : requestedTitle;
+  const showRank = !favoriteMode && Boolean(response?.context.ranked);
   const shownTotal = favoriteMode ? favoriteItems.length : filters.media === "all" && response?.source === "tmdb" ? items.length : response?.totalResults || 0;
   const previewSchedule = response?.source === "demo" && (filters.chart === "now" || filters.chart === "upcoming");
-  const featuredItems = useMemo(() => responseKey === requestKey ? selectFeaturedMedia(response?.results || []) : [], [response, responseKey, requestKey]);
-  const showFeature = initialChart === "trending" && !searchMode && !parsed.error;
-  const featuredLabel = filters.chart === "trending" ? filters.period === "day" ? "今日焦点" : "本周焦点" : `${meta.title}精选`;
+  const featuredItems = useMemo(() => selectFeaturedMedia(response?.results || []), [response]);
+  const showFeature = initialChart === "trending" && (response?.context.feature ?? !searchMode);
+  const featuredLabel = response?.context.featuredLabel || requestedFeatureLabel;
   const genres = GENRES[filters.media === "tv" ? "tv" : "movie"];
   const changeMedia = (media: CatalogFilters["media"]) => updateFilters({ ...filters, media, genres: [], sort: filters.sort.includes("date") ? media === "tv" ? "first_air_date.desc" : "primary_release_date.desc" : filters.sort });
   const changeChart = (chart: Chart) => updateFilters({ ...DEFAULT_FILTERS, chart, period: filters.period, media: filters.media === "all" && chart !== "trending" ? "movie" : filters.media });
   const clearFilters = () => updateFilters({ ...DEFAULT_FILTERS, chart: filters.chart, media: filters.media, period: filters.period });
   const toggleLayout = () => {
+    prepareUpdate();
     const next = layout === "grid" ? "list" : "grid";
     setLayout(next);
     try { localStorage.setItem("frame_layout_v2", next); } catch { /* This visit still uses the selected view. */ }
   };
 
-  async function loadMore() {
-    if (favoriteMode) { setFavoriteCount(previous => previous + 20); return; }
-    if (!response || loadingMore) return;
-    const generation = requestGeneration.current;
-    setLoadingMore(true); setMoreError("");
-    try {
-      const nextFilters = { ...filters, page: response.page + 1 };
-      const next = preview ? getDemoCatalog(nextFilters) : await fetch(`/api/catalog?${serializeFilters(nextFilters)}`).then(async result => {
-        const data = await result.json();
-        if (!result.ok) throw new Error(data.error || "更多影片加载失败");
-        return data as CatalogResponse;
-      });
-      if (generation !== requestGeneration.current) return;
-      setResponse(previous => previous ? { ...next, results: [...previous.results, ...next.results.filter(item => !previous.results.some(existing => mediaKey(existing) === mediaKey(item)))] } : next);
-    } catch (error) {
-      if (generation === requestGeneration.current) setMoreError(error instanceof Error ? error.message : "加载失败，请重试");
-    } finally { if (generation === requestGeneration.current) setLoadingMore(false); }
-  }
+  const loadMore = useCallback(async () => {
+    if (favoriteMode) {
+      if (favoritesReady) { prepareUpdate(); setFavoriteCount(count => Math.min(count + 20, favoriteItems.length)); }
+      return;
+    }
+    await resource.loadMore();
+  }, [favoriteMode, favoritesReady, favoriteItems.length, prepareUpdate, resource.loadMore]);
+  const hasMore = favoriteMode ? favoriteItems.length > favoriteCount : resource.hasMore;
+  useEffect(() => {
+    const target = moreAnchor.current;
+    if (!target || !hasMore || loading || loadingMore || error || moreError || autoPaused || !favoritesReady || typeof IntersectionObserver === "undefined") return;
+    let active = true;
+    const observer = new IntersectionObserver(entries => {
+      if (active && entries.some(entry => entry.isIntersecting)) void loadMore();
+    }, { rootMargin: `0px 0px ${Math.round(Math.min(1000, Math.max(400, window.innerHeight * .8)))}px 0px` });
+    observer.observe(target); return () => { active = false; observer.disconnect(); };
+  }, [hasMore, loading, loadingMore, error, moreError, autoPaused, favoritesReady, loadMore]);
 
-  const hasMore = favoriteMode ? favoriteItems.length > favoriteCount : response && response.page < response.totalPages;
   const chartTabs: { key: Chart; label: string }[] = [
     { key: "trending", label: "趋势" }, { key: "popular", label: "热门" }, { key: "top", label: "高分" },
     { key: "now", label: filters.media === "tv" ? "近期在播" : "正在上映" },
@@ -149,7 +139,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   ];
 
   return <div className={`workspace ${showFeature ? "workspace--featured" : ""}`}>
-    {showFeature && featuredItems.length > 0 && <FeaturedFilm key={`${filters.chart}:${filters.media}:${filters.period}:${preview}`} items={featuredItems} label={featuredLabel}/>}
+    {showFeature && featuredItems.length > 0 && <FeaturedFilm items={featuredItems} label={featuredLabel} pending={loading}/>}
     {showFeature && !featuredItems.length && loading && <div className="skeleton featured-loading" aria-label="正在加载焦点影片"/>}
     <CatalogSection id="workspace-title" title={title}
       badge={preview && !favoriteMode && <span className="preview-label">预览影片</span>}
@@ -170,20 +160,22 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
       </div>}
       <AppliedFilters filters={filters} today={today} onChange={updateFilters} onClear={clearFilters}/>
       <div className="catalog-status">
-        <span>{favoriteMode ? "收藏保存在当前浏览器" : loading ? "正在加载…" : error ? "加载失败" : response?.source === "demo" ? "示例片单，非实时榜单" : `${response?.stale ? "缓存数据 · " : ""}TMDB · ${formatTime(response?.retrievedAt || null)} 更新`}</span>
+        <span>{favoriteMode ? "收藏保存在当前浏览器" : loading ? "正在加载…" : error ? response ? "更新失败，已保留上次内容" : "加载失败" : response?.source === "demo" ? "示例片单，非实时榜单" : `${response?.stale ? "缓存数据 · " : ""}${response?.source === "imdb" ? "IMDB" : "TMDB"} · ${formatTime(response?.retrievedAt || null)} 更新`}</span>
         {!loading && !error && <span>{formatCount(shownTotal)} {filters.media === "all" && response?.source === "tmdb" ? "部已加载" : "部"}</span>}
       </div>
-      {loading || (favoriteMode && !favoritesReady) ? <MediaSkeletons/> : error ? <div className="empty-state" role="alert">
+      <ResourceRegion pending={loading} error={error} retained={Boolean(response) && !favoriteMode} onRetry={parsed.error ? clearFilters : resource.refresh}>
+      {(loading && !response) || (favoriteMode && !favoritesReady) ? <MediaSkeletons/> : error && !response ? <div className="empty-state" role="alert">
         <RefreshCw size={28}/><h3>{parsed.error ? "筛选条件无效" : "暂时无法加载影片"}</h3><p>{error}</p>
-        <div className="empty-actions"><button className="primary-button" onClick={() => parsed.error ? clearFilters() : setRefresh(previous => previous + 1)}>{parsed.error ? "重置条件" : "重试"}</button>{!parsed.error && <button className="secondary-button" onClick={() => setPreview(true)}>查看预览影片</button>}</div>
+        <div className="empty-actions"><button className="primary-button" onClick={() => parsed.error ? clearFilters() : resource.refresh()}>{parsed.error ? "重置条件" : "重试"}</button>{!parsed.error && <button className="secondary-button" onClick={() => setPreview(true)}>查看预览影片</button>}</div>
       </div> : !items.length ? <div className="empty-state">
         {favoriteMode ? <Bookmark size={29}/> : <Search size={29}/>}
         <h3>{favoriteMode && !favorites.length ? "还没有收藏" : previewSchedule ? "连接真实数据后查看" : "没有找到影片"}</h3>
         <p>{favoriteMode && !favorites.length ? "遇到想看的电影或剧集，点击书签即可收藏。" : response?.notice || "试试其他片名，或减少筛选条件。"}</p>
         {favoriteMode && !favorites.length ? <Link href="/" className="primary-button">去选片<ArrowRight size={15}/></Link> : previewSchedule ? <button className="secondary-button" onClick={() => window.dispatchEvent(new Event("frame:source"))}>数据说明</button> : <button className="secondary-button" onClick={clearFilters}>清空条件</button>}
-      </div> : <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={showRank} resultIndex={(favoriteMode ? 0 : (filters.page - 1) * 20) + index + 1}/>)}</div>}
+      </div> : <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={showRank} resultIndex={(favoriteMode ? 0 : ((response?.context.startPage ?? filters.page) - 1) * 20) + index + 1}/>)}</div>}
+      </ResourceRegion>
       {moreError && <p className="load-error" role="alert">{moreError}</p>}
-      {hasMore && !loading && !error && <div className="load-more-row"><button className="load-more" onClick={loadMore} disabled={loadingMore}>{loadingMore ? <LoaderCircle size={16} className="spinning"/> : <ChevronDown size={16}/>} {loadingMore ? "正在加载" : "加载更多"}</button></div>}
+      {hasMore && !loading && !error && <div className="load-more-row" ref={moreAnchor}><button className="load-more" onClick={loadMore} disabled={loadingMore}>{loadingMore ? <LoaderCircle size={16} className="spinning"/> : <ChevronDown size={16}/>} {loadingMore ? "正在加载" : "加载更多"}</button></div>}
     </CatalogSection>
   </div>;
 }

@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useScrollMemory } from "@/lib/view-state";
 
 /** Compact, keyboard-accessible rows for cast and stills. */
-export function DetailMediaStrip({ title, kind, children }: { title: string; kind: "cast" | "stills"; children: ReactNode }) {
+export function DetailMediaStrip({ title, kind, stateKey, children }: { title: string; kind: "cast" | "stills"; stateKey: string; children: ReactNode }) {
   const id = useId();
   const rail = useRef<HTMLDivElement>(null);
+  const rememberRail = useScrollMemory(`media-strip:${stateKey}:${kind}`, rail);
   const [edges, setEdges] = useState({ start: true, end: true });
   const measure = useCallback(() => {
     const node = rail.current;
@@ -38,7 +40,7 @@ export function DetailMediaStrip({ title, kind, children }: { title: string; kin
         <button onClick={() => move(1)} disabled={edges.end} aria-label={`向右浏览${title}`} aria-controls={id}><ChevronRight size={18}/></button>
       </div>}
     </div>
-    <div id={id} ref={rail} className={`detail-media-strip detail-media-strip--${kind}`} role="region" aria-label={`${title}，左右滑动查看更多`} tabIndex={0} onScroll={measure}
+    <div id={id} ref={rememberRail} className={`detail-media-strip detail-media-strip--${kind}`} role="region" aria-label={`${title}，左右滑动查看更多`} tabIndex={0} onScroll={measure}
       onKeyDown={event => { if (event.target === event.currentTarget && ["ArrowLeft", "ArrowRight"].includes(event.key)) { event.preventDefault(); move(event.key === "ArrowLeft" ? -1 : 1); } }}>
       {children}
     </div>
