@@ -219,5 +219,14 @@ npm run start
 5. `createImdbService.catalog` 先按完整榜单切页，再以最多6个并发调用 `tmdb.findByImdbId` 补充当前页资料；通过固定 `/find/tt...` 和 `external_source=imdb_id` 查找，仅采用当前媒介结果。IMDB评分／人数／原rank始终保留，匹配失败不丢条目。
 6. `Media.id` 支持数字TMDB ID或原始tt ID。`mediaHref`／`mediaKey` 对未匹配IMDB生成独立键和原站外链，已匹配作品沿用TMDB复合键与本站详情。`imageUrl` 只额外允许IMDB海报的固定Amazon图片域；收藏恢复校验并保存imdbId。
 7. `ImdbWorkspace` 复用 `CatalogPager` 自动续页；generation、AbortController、observer active与completedPage共同避免旧条件或重复请求回写。加载失败保留手动重试。旧收藏面板的评分标签改为“评分（按卡片来源）”。
-8. CSS搜索 `IMDB provider navigation`：来源和排序在轮播上方，取消原轮播的负外边距遮挡；卡片小屏也显示评分来源。320／390／760px三列、1440px六列，未见横向溢出或日期评分重叠。
+8. CSS搜索 `IMDB provider navigation`：平台来源在轮播上方；分类与排序位置由UI-15统一放到轮播下方、榜单标题下方，取消原轮播的负外边距遮挡；卡片小屏也显示评分来源。320／390／760px三列、1440px六列，未见横向溢出或日期评分重叠。
 9. 复检 `tests/imdb.test.ts`、`tests/catalog-pager.test.ts`，再检查四榜×四排序、Top250第13页与热门第5页。真实热门剧集中的Monster（tt13207736）验证未匹配仍保留第9位，点击链接在IMDB打开。
+
+
+## UI-15 统一平台榜单区域
+
+- `components/catalog-section.tsx` 的 `CatalogSection` 固定渲染标题／操作、`charts` 分类栏、可选 `sort` 排序、children内容。`Workspace` 与 `ImdbWorkspace` 在轮播后调用同一组件；新增平台也走此入口，不再自行放置分类区。
+- `charts` 仅提供ID、标签、选中态和回调；`chartAction` 提供原榜／全部影片链接；排序按钮通过 `sort` 提供。数据加载、取消请求、URL与分页仍由各平台原逻辑负责。
+- 删除 `imdb-controls` 顶部容器及其宽度、留白、窄屏分类样式；排序使用共用 `catalog-sort-row`。分类链接在共同的横向分类栏中保持可访问，长分类栏沿用横向滚动。
+- 复检两个平台DOM顺序：`.featured-film` 后是 `.catalog`，内部为 `.catalog-heading` → `.chart-tabs` → 可选 `.catalog-sort-row` → `.catalog-status` → `.media-grid`。649px下两平台标题到分类间距均15px、按钮高40px；IMDB在320／390／649／1440px顺序正确且无横向溢出，前三个宽度三列。
+- 本轮为位置／组件复用修正，没有新增机械重复测试。浏览器已点选热门电影与评分数量并刷新验证保留；本机截图 `artifacts/previews/frame-unified-chart-controls.jpg`。

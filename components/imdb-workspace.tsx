@@ -9,6 +9,7 @@ import { IMDB_PAGE_SIZE, IMDB_SORTS, imdbChart, imdbParams, parseImdbFilters, ty
 import { formatCount, formatTime } from "@/lib/ui";
 import { MediaCard, MediaSkeletons } from "./media-card";
 import { FeaturedFilm } from "./featured-film";
+import { CatalogSection } from "./catalog-section";
 
 export function ImdbWorkspace() {
   const params = useSearchParams(), router = useRouter(), parameterString = params.toString();
@@ -74,19 +75,15 @@ export function ImdbWorkspace() {
   }
 
   return <div className="workspace workspace--featured imdb-workspace">
-    <div className="imdb-controls">
-      <div className="chart-tabs" role="group" aria-label="IMDB 榜单分类">
-        {(["top", "popular"] as const).map(value => <button key={value} className={filters.chart === value ? "selected" : ""} aria-pressed={filters.chart === value} onClick={() => change({ chart: value })}>{imdbChart({ ...filters, chart: value }).label}</button>)}
-        <a className="catalog-more" href={chart.url} target="_blank" rel="noopener noreferrer">查看原榜<ArrowUpRight size={14}/></a>
-      </div>
-      <div className="imdb-sort-row"><span>排序</span><div className="quick-options" role="group" aria-label="IMDB 排序方式">
-        {IMDB_SORTS.map(option => <button key={option.value} className={`filter-chip ${filters.sort === option.value ? "active" : ""}`} aria-pressed={filters.sort === option.value} onClick={() => change({ sort: option.value })}>{option.label}</button>)}
-      </div></div>
-    </div>
     {items.length > 0 && <FeaturedFilm items={items.slice(0, 5)} label={`IMDB · ${chart.label}`}/>}
     {loading && <div className="skeleton featured-loading" aria-label="正在加载 IMDB 焦点影片"/>}
-    <section className="catalog" aria-labelledby="imdb-heading">
-      <div className="catalog-heading"><div className="catalog-title"><h2 id="imdb-heading">IMDB · {chart.label}</h2></div><div className="catalog-actions"><button className="icon-button view-toggle" onClick={toggleLayout} aria-label={layout === "grid" ? "切换列表视图" : "切换海报视图"}>{layout === "grid" ? <List size={18}/> : <Grid2X2 size={18}/>}</button></div></div>
+    <CatalogSection id="imdb-heading" title={`IMDB · ${chart.label}`}
+      actions={<button className="icon-button view-toggle" onClick={toggleLayout} aria-label={layout === "grid" ? "切换列表视图" : "切换海报视图"}>{layout === "grid" ? <List size={18}/> : <Grid2X2 size={18}/>}</button>}
+      charts={(["top", "popular"] as const).map(value => ({ id: value, label: imdbChart({ ...filters, chart: value }).label, selected: filters.chart === value, onSelect: () => change({ chart: value }) }))}
+      chartLabel="IMDB 榜单分类"
+      chartAction={<a className="catalog-more" href={chart.url} target="_blank" rel="noopener noreferrer">查看原榜<ArrowUpRight size={14}/></a>}
+      sortLabel="IMDB 排序方式"
+      sort={IMDB_SORTS.map(option => <button key={option.value} className={`filter-chip ${filters.sort === option.value ? "active" : ""}`} aria-pressed={filters.sort === option.value} onClick={() => change({ sort: option.value })}>{option.label}</button>)}>
       <div className="catalog-status"><span>{loading ? "正在加载 IMDB…" : error ? "加载失败" : `${current?.stale ? "缓存数据 · " : ""}IMDB · ${formatTime(current?.retrievedAt || null)} 更新`}</span>{current && <span>{formatCount(current.totalResults)} 部 · {filters.sort === "rank" ? "原榜顺序" : IMDB_SORTS.find(option => option.value === filters.sort)?.label}</span>}</div>
       {current?.notice && <p className="imdb-notice" role="status">{current.notice}</p>}
       {loading ? <MediaSkeletons/> : error ? <div className="empty-state" role="alert"><RefreshCw size={28}/><h3>{parsed.error ? "榜单条件无效" : "暂时无法加载 IMDB"}</h3><p>{error}</p><button className="primary-button" onClick={() => parsed.error ? change({ media: "movie", chart: "top", sort: "rank" }) : setRefresh(value => value + 1)}>{parsed.error ? "重置条件" : "重试"}</button></div>
@@ -94,7 +91,7 @@ export function ImdbWorkspace() {
         : <div className="empty-state"><h3>这一页没有更多作品</h3><button className="secondary-button" onClick={() => change({})}>返回第一页</button></div>}
       {moreError && <p className="load-error" role="alert">{moreError}</p>}
       {!loading && !error && hasMore && <div ref={moreAnchor} className="load-more-row"><button className="load-more" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? <LoaderCircle size={16} className="spinning"/> : moreError ? <RefreshCw size={16}/> : <ChevronDown size={16}/>} {loadingMore ? "正在加载" : moreError ? "重试加载" : "加载更多"}</button></div>}
-    </section>
+    </CatalogSection>
   </div>;
 }
 

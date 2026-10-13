@@ -191,3 +191,8 @@ docker compose --env-file .env.example config --quiet
 - IMDB榜单不读取浏览器凭证。TMDB凭证仅用于服务端补充资料；缺失或匹配失败时仍可浏览原始榜单。首次获取后缓存30分钟，同榜不同页复用完整榜单；这是请求触发缓存，不是定时下载。
 
 接口：`/api/imdb?media=movie|tv&chart=top|popular&sort=rank|user_rating|popularity|num_votes&page=1`。参数只接受上述枚举和合法页码，不接收任意上游URL；Top250最多13页，热门榜最多5页。
+
+
+### 跨平台榜单布局（UI-15）
+
+所有平台共用同一顺序：轮播 → 榜单标题与视图按钮 → 榜单分类 → 可选排序 → 更新时间与影片列表。IMDB分类和排序与TMDB一样位于轮播下方；顶部只保留平台来源切换。后续平台继续复用此布局。

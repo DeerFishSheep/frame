@@ -16,6 +16,7 @@ import { MediaCard, MediaSkeletons } from "./media-card";
 import { FilterPanel } from "./filter-panel";
 import { AppliedFilters } from "./applied-filters";
 import { FeaturedFilm } from "./featured-film";
+import { CatalogSection } from "./catalog-section";
 
 function filterFavorites(items: Media[], filters: CatalogFilters) {
   const query = filters.query.trim().toLowerCase();
@@ -150,21 +151,17 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   return <div className={`workspace ${showFeature ? "workspace--featured" : ""}`}>
     {showFeature && featuredItems.length > 0 && <FeaturedFilm key={`${filters.chart}:${filters.media}:${filters.period}:${preview}`} items={featuredItems} label={featuredLabel}/>}
     {showFeature && !featuredItems.length && loading && <div className="skeleton featured-loading" aria-label="正在加载焦点影片"/>}
-    <section className="catalog" aria-labelledby="workspace-title">
-      <div className="catalog-heading">
-        <div className="catalog-title"><h2 id="workspace-title">{title}</h2>{preview && !favoriteMode && <span className="preview-label">预览影片</span>}</div>
-        <div className="catalog-actions">
+    <CatalogSection id="workspace-title" title={title}
+      badge={preview && !favoriteMode && <span className="preview-label">预览影片</span>}
+      actions={<>
           {!favoriteMode && !discoverMode && !searchMode && filters.chart === "trending" && <div className="period-tabs" role="group" aria-label="趋势时间">
             {(["day", "week"] as const).map(period => <button key={period} className={filters.period === period ? "selected" : ""} aria-pressed={filters.period === period} onClick={() => updateFilters({ ...filters, period })}>{period === "day" ? "今天" : "本周"}</button>)}
           </div>}
           {(discoverMode || favoriteMode) && <FilterPanel filters={filters} onApply={updateFilters}/>}
           <button className="icon-button view-toggle" onClick={toggleLayout} aria-label={layout === "grid" ? "切换列表视图" : "切换海报视图"}>{layout === "grid" ? <List size={18}/> : <Grid2X2 size={18}/>}</button>
-        </div>
-      </div>
-      {!favoriteMode && !discoverMode && !searchMode && <div className="chart-tabs" role="group" aria-label="榜单分类">
-        {chartTabs.map(tab => <button key={tab.key} className={filters.chart === tab.key ? "selected" : ""} aria-pressed={filters.chart === tab.key} onClick={() => changeChart(tab.key)}>{tab.label}</button>)}
-        <Link href={`/discover?media=${filters.media === "tv" ? "tv" : "movie"}`} className="catalog-more">全部影片<ArrowRight size={14}/></Link>
-      </div>}
+      </>}
+      charts={!favoriteMode && !discoverMode && !searchMode ? chartTabs.map(tab => ({ id: tab.key, label: tab.label, selected: filters.chart === tab.key, onSelect: () => changeChart(tab.key) })) : undefined}
+      chartAction={<Link href={`/discover?media=${filters.media === "tv" ? "tv" : "movie"}`} className="catalog-more">全部影片<ArrowRight size={14}/></Link>}>
       {(favoriteMode || discoverMode || searchMode) && <div className="catalog-filters">
         <div className="media-tabs" role="group" aria-label="作品类型">
           {(discoverMode ? ["movie", "tv"] as const : ["all", "movie", "tv"] as const).map(media => <button key={media} className={filters.media === media ? "selected" : ""} aria-pressed={filters.media === media} onClick={() => changeMedia(media)}>{media === "all" ? "全部" : media === "movie" ? "电影" : "电视剧"}</button>)}
@@ -187,6 +184,6 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
       </div> : <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={showRank} resultIndex={(favoriteMode ? 0 : (filters.page - 1) * 20) + index + 1}/>)}</div>}
       {moreError && <p className="load-error" role="alert">{moreError}</p>}
       {hasMore && !loading && !error && <div className="load-more-row"><button className="load-more" onClick={loadMore} disabled={loadingMore}>{loadingMore ? <LoaderCircle size={16} className="spinning"/> : <ChevronDown size={16}/>} {loadingMore ? "正在加载" : "加载更多"}</button></div>}
-    </section>
+    </CatalogSection>
   </div>;
 }
