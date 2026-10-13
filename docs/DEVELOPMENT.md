@@ -198,3 +198,13 @@ npm run start
 2. 窄屏卡片标题最多两行；保留全部类型、完整日期和评分，底部空间不足时换行。收藏按钮保留30×36px最小触达区域。详细列表和详情横向推荐不套用该规则。
 3. 浏览器视口验证320／350／375／390／430／480／600／760px均3列、1440px为6列；页面无横向溢出，已加载卡片日期和评分无重叠。320px切换详细列表为1列，切回恢复3列。这是本机浏览器模拟尺寸，不是实体iPhone验收。
 4. 复检首页并切换到上述宽度；本机截图位于 `artifacts/previews/frame-mobile-three-columns.jpg`。
+
+
+## LOCAL-08 macOS 双击启停
+
+- 根目录 `启动.command`／`停止.command` 为可执行Bash入口，按自身路径定位项目，支持中文／空格目录，从任意工作目录启动。交互终端保留中文结果，按回车退出；非交互调用直接返回退出码。
+- `scripts/dev-control.sh` 的 `start_dev`／`stop_dev` 统一控制。启动调用 `npm run dev -- --port 3000`，Node detached进程组与重定向标准流使其独立于终端；探测首页HTTP 200后才提示就绪。PATH补充Apple Silicon／Intel Homebrew目录，缺Node／npm或依赖时明确报错，不自动安装。
+- `dev_parent` 同时检查实际3000监听进程的cwd、next-server命令、父进程cwd和next dev命令，再向开发父进程发送SIGTERM；不按端口直接杀进程，不用陈旧PID文件，也不自动升级SIGKILL。生产服务或无关进程不会被停止。
+- `.tmp/dev.log` 是当前运行日志，每次启动覆盖，权限0600；启动超时保留日志并明确告知后台状态。快捷停止处理已经监听3000端口的开发服务。
+- 复检：`bash -n 启动.command 停止.command scripts/dev-control.sh`；依次启动→重复启动→停止→重复停止→恢复启动；再用临时HTTP服务占用3000验证两个入口均退出1且临时服务存活。不要停止用户其他服务来抢占端口。
+- 本轮直接执行实际.command文件并使用PTY验证回车退出后服务持续运行、最小系统PATH仍能找到Homebrew Node；未驱动Finder实际双击。真实API返回HTTP 200、source=tmdb、20条。
