@@ -79,7 +79,7 @@ export function DetailView({mediaType,id}:{mediaType:MediaType;id:number}) {
         <div className="detail-actions">
           <button className={`primary-button full-width ${saved ? "is-saved" : ""}`} onClick={() => toggle(item)} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "加入收藏"}</button>
           <a className="secondary-button full-width" aria-label="在 TMDB 查看" href={`https://www.themoviedb.org/${mediaType}/${id}`} target="_blank" rel="noopener noreferrer"><span><span className="detail-action-verb">在 </span>TMDB<span className="detail-action-verb"> 查看</span></span><ArrowUpRight size={15}/></a>
-          {item.imdbId && <a className="secondary-button full-width" aria-label="在 IMDb 查看" href={`https://www.imdb.com/title/${item.imdbId}/`} target="_blank" rel="noopener noreferrer"><span><span className="detail-action-verb">在 </span>IMDb<span className="detail-action-verb"> 查看</span></span><ArrowUpRight size={15}/></a>}
+          {item.imdbId && <a className="secondary-button full-width" aria-label="在 IMDB 查看" href={`https://www.imdb.com/title/${item.imdbId}/`} target="_blank" rel="noopener noreferrer"><span><span className="detail-action-verb">在 </span>IMDB<span className="detail-action-verb"> 查看</span></span><ArrowUpRight size={15}/></a>}
         </div>
       </aside>
       <div className="detail-main">

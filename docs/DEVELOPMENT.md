@@ -208,3 +208,16 @@ npm run start
 - `.tmp/dev.log` 是当前运行日志，每次启动覆盖，权限0600；启动超时保留日志并明确告知后台状态。快捷停止处理已经监听3000端口的开发服务。
 - 复检：`bash -n 启动.command 停止.command scripts/dev-control.sh`；依次启动→重复启动→停止→重复停止→恢复启动；再用临时HTTP服务占用3000验证两个入口均退出1且临时服务存活。不要停止用户其他服务来抢占端口。
 - 本轮直接执行实际.command文件并使用PTY验证回车退出后服务持续运行、最小系统PATH仍能找到Homebrew Node；未驱动Finder实际双击。真实API返回HTTP 200、source=tmdb、20条。
+
+
+## IMDB-01 四榜与四种排序
+
+1. `app/page.tsx` → `CatalogEntry` 根据source选择原 `Workspace` 或 `ImdbWorkspace`，来源独立于TMDB筛选词表。`FrameShell.mediaNavigation` 保留IMDB来源／榜单／排序切换媒介；URL恢复状态，换条件回第一页并取消旧请求。
+2. `lib/imdb/query.ts` 的 `parseImdbFilters` 校验media／chart／sort／page及重复、未知参数；`imdbChart` 映射四个GraphQL chartType。模块范围只有四榜、四排序与分页，不宣称已接入自定义片单或高级筛选。可见品牌文案统一IMDB。
+3. `buildImdbRequest` 请求完整有限榜单（Top250=250、热门=100），用encodeURIComponent编码GraphQL，避免空格转加号导致上游解析失败。`parseImdbChart` 拒绝GraphQL错误、缺页、重复ID、非法评分和人数；不把错误当空榜。日期缺日月则留空，不补造完整日期。
+4. `createImdbClient` 缓存16种媒介／榜单／排序组合30分钟，并发去重，短暂失败重试一次；上游失败时可用24小时内旧榜，时间戳仍为原获取时间。没有定时预取或持久数据库。
+5. `createImdbService.catalog` 先按完整榜单切页，再以最多6个并发调用 `tmdb.findByImdbId` 补充当前页资料；通过固定 `/find/tt...` 和 `external_source=imdb_id` 查找，仅采用当前媒介结果。IMDB评分／人数／原rank始终保留，匹配失败不丢条目。
+6. `Media.id` 支持数字TMDB ID或原始tt ID。`mediaHref`／`mediaKey` 对未匹配IMDB生成独立键和原站外链，已匹配作品沿用TMDB复合键与本站详情。`imageUrl` 只额外允许IMDB海报的固定Amazon图片域；收藏恢复校验并保存imdbId。
+7. `ImdbWorkspace` 复用 `CatalogPager` 自动续页；generation、AbortController、observer active与completedPage共同避免旧条件或重复请求回写。加载失败保留手动重试。旧收藏面板的评分标签改为“评分（按卡片来源）”。
+8. CSS搜索 `IMDB provider navigation`：来源和排序在轮播上方，取消原轮播的负外边距遮挡；卡片小屏也显示评分来源。320／390／760px三列、1440px六列，未见横向溢出或日期评分重叠。
+9. 复检 `tests/imdb.test.ts`、`tests/catalog-pager.test.ts`，再检查四榜×四排序、Top250第13页与热门第5页。真实热门剧集中的Monster（tt13207736）验证未匹配仍保留第9位，点击链接在IMDB打开。

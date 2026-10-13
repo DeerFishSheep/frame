@@ -4,7 +4,7 @@
 
 原始项目资料只有 `PLAN.md`、开发任务书、HTML 原型和预览图。当前工程将原型整理为 Next.js 16 + React 19 + TypeScript 应用，可在自己的服务器运行。
 
-**当前在本地开发和测试；服务器部署尚未开始。** 本地已接通 TMDB 真实数据，逐项验收状态见当前进度。
+**当前在本地开发和测试；服务器部署尚未开始。** 本地已接通 TMDB 与 IMDB 榜单真实数据，逐项验收状态见当前进度。
 
 ## 项目状态与交接
 
@@ -79,7 +79,7 @@ API Key 由服务端通过 `api_key` 参数认证，Token 使用 Bearer 请求�
 | `/api/recommendations/[mediaType]/[id]?page=1` | 猜你喜欢，按页获取完整 TMDB 推荐 |
 | `/api/keywords?query=时间循环` | 搜索 TMDB 关键词供探索筛选使用 |
 
-浏览器仅访问本站接口。服务端选择 TMDB 路径并验证查询参数，不接收任意上游 URL。
+榜单资料经本站接口获取；服务端选择固定TMDB／IMDB请求并校验参数，不接收任意上游URL。海报使用对应来源的图片地址。
 
 ## 后续部署到自己的服务器
 
@@ -179,3 +179,15 @@ docker compose --env-file .env.example config --quiet
 重复启动不会另开一个服务；重复停止会提示未运行。固定使用3000端口，其他程序占用时提示冲突，不自动改端口、不结束其他程序。入口均已设置执行权限；Node.js与依赖需提前安装（缺依赖时在根目录运行 `npm ci`）。
 
 日志保存在 `.tmp/dev.log`，每次新启动覆盖旧日志，不进入Git。仍可手动运行 `npm run dev`；停止快捷方式只处理此目录、3000端口的Next开发服务。
+
+
+### IMDB 榜单（IMDB-01）
+
+电影／电视剧页面新增“TMDB／IMDB”来源切换。打开 `/?source=imdb&media=movie&chart=top&sort=rank` 即可体验IMDB电影Top250；切换电视剧会保留来源、榜单和排序。
+
+- 完整范围：电影Top250、热门电影100、剧集Top250、热门剧集100；原榜顺序、IMDB评分、人气优先、评分数量四种排序，每页20条，接近底部自动续页，失败可重试。
+- 对齐参考模块 [IMDB_New.js](https://raw.githubusercontent.com/DeerFishSheep/ForwardWidget/refs/heads/main/IMDB_New.js) 的现有能力。按用户确认，本轮不包含该模块没有的公开片单导入、地区／类型等高级筛选；现有找片仍使用TMDB。
+- IMDB评分／人数／排名与TMDB补充资料分开；仅原榜顺序显示官方名次，其他排序显示结果序号。通过IMDB编号匹配到TMDB后使用现有详情和收藏；未匹配条目保留原始IMDB编号、海报和外链，不被删除。
+- IMDB榜单不读取浏览器凭证。TMDB凭证仅用于服务端补充资料；缺失或匹配失败时仍可浏览原始榜单。首次获取后缓存30分钟，同榜不同页复用完整榜单；这是请求触发缓存，不是定时下载。
+
+接口：`/api/imdb?media=movie|tv&chart=top|popular&sort=rank|user_rating|popularity|num_votes&page=1`。参数只接受上述枚举和合法页码，不接收任意上游URL；Top250最多13页，热门榜最多5页。

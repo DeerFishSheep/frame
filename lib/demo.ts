@@ -133,7 +133,7 @@ export function getDemoDetail(mediaType: MediaType, id: number): MediaDetail | n
   const item = DEMO_MEDIA.find((media) => media.mediaType === mediaType && media.id === id);
   if (!item) return null;
   return {
-    ...copyMedia(item), runtime: null, numberOfSeasons: null, status: "",
+    ...copyMedia(item), id, runtime: null, numberOfSeasons: null, status: "",
     countries: [], directors: [], cast: [], keywords: [],
     images: item.backdropPath ? [item.backdropPath] : [], recommendations: { results: [], page: 1, totalPages: 0, totalResults: 0 }, imdbId: null,
   };

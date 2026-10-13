@@ -15,9 +15,13 @@ const isStringArray = (value: unknown): value is string[] =>
 
 /** Restore only complete media records; local storage can contain old or damaged data. */
 function restoreMedia(value: unknown): Media | null {
-  if (!isRecord(value) || !isId(value.id)) return null;
+  if (!isRecord(value)) return null;
+  const imdbId = typeof value.imdbId === "string" && /^tt\d{5,12}$/.test(value.imdbId) ? value.imdbId : null;
+  if (!isId(value.id) && !(value.source === "imdb" && imdbId && value.id === imdbId)) return null;
+  if (value.imdbId !== undefined && value.imdbId !== null && !imdbId) return null;
+  if (value.source === "imdb" && !imdbId) return null;
   if (value.mediaType !== "movie" && value.mediaType !== "tv") return null;
-  if (value.source !== "tmdb" && value.source !== "demo") return null;
+  if (value.source !== "tmdb" && value.source !== "imdb" && value.source !== "demo") return null;
   if (typeof value.title !== "string" || !value.title.trim()) return null;
   if (typeof value.originalTitle !== "string" || typeof value.overview !== "string") return null;
   if (typeof value.releaseDate !== "string" || typeof value.year !== "string") return null;
@@ -30,7 +34,8 @@ function restoreMedia(value: unknown): Media | null {
 
   // Copy an explicit field allowlist instead of persisting detail data or extra properties.
   return {
-    id: value.id,
+    id: value.id as number | string,
+    ...(imdbId ? { imdbId } : {}),
     mediaType: value.mediaType,
     title: value.title,
     originalTitle: value.originalTitle,

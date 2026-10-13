@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { ArrowRight, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
-import { imageUrl, mediaKey, type Media } from "@/lib/types";
+import { imageUrl, mediaHref, mediaKey, type Media } from "@/lib/types";
 import { FEATURED_INTERVAL_MS, formatMediaDate, selectFeaturedMedia } from "@/lib/media-presentation";
 import { MediaImage } from "./media-card";
 import { useFrame } from "./providers";
@@ -94,7 +94,7 @@ function FeaturedCarousel({ items, label }: { items: Media[]; label: string }) {
         <div className="featured-meta"><span>{item.mediaType === "tv" ? "电视剧" : "电影"}</span><time dateTime={item.releaseDate || undefined}>{formatMediaDate(item.releaseDate)}</time><span className="featured-genres">{item.genres.join(" / ") || "类型待补充"}</span></div>
         <p>{item.overview || "点击查看作品资料。"}</p>
         <div className="featured-actions">
-          <Link className="primary-button" href={`/${item.mediaType}/${item.id}`}>查看详情<ArrowRight size={16}/></Link>
+          <Link className="primary-button" href={mediaHref(item)} target={typeof item.id === "string" ? "_blank" : undefined} rel={typeof item.id === "string" ? "noopener noreferrer" : undefined}>{typeof item.id === "string" ? "在 IMDB 查看" : "查看详情"}<ArrowRight size={16}/></Link>
           <button className="featured-save" onClick={() => toggle(item)} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "收藏"}</button>
         </div>
       </div>

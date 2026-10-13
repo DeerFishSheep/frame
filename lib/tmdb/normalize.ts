@@ -60,7 +60,7 @@ export function normalizeDetail(value: unknown, mediaType: MediaType): MediaDeta
     ? crew.filter((person) => person.job === "Director").map((person) => text(person.name))
     : creators.map((person) => text(person.name));
   return {
-    ...normalizeMedia(raw, mediaType), runtime: runtime && runtime > 0 ? runtime : null,
+    ...normalizeMedia(raw, mediaType), id: finite(raw.id), runtime: runtime && runtime > 0 ? runtime : null,
     numberOfSeasons: mediaType === "tv" && finite(raw.number_of_seasons) > 0 ? finite(raw.number_of_seasons) : null,
     status: text(raw.status), countries: list(raw.production_countries).map(object).map((country) => text(country.name) || text(country.iso_3166_1)).filter(Boolean),
     directors: [...new Set(directors.filter(Boolean))],

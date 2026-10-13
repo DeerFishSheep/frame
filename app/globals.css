@@ -43,6 +43,21 @@ legend span{color:var(--dim);font-weight:400}
 .spinning{animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* IMDB provider navigation; shared cards retain their rating source on small screens. */
+.catalog-entry .featured-film{margin-top:0}
+@media(min-width:901px){.catalog-entry .featured-slide{height:clamp(480px,38vw,760px);padding-top:42px}}
+.catalog-sources{max-width:1440px;margin:0 auto;display:flex;align-items:center;gap:9px;padding:18px var(--page-gutter,48px)}
+.catalog-sources>span{font-size:12px;color:var(--dim);margin-right:5px}
+.catalog-sources>a{min-height:40px;display:inline-flex;align-items:center;padding:8px 20px;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:13px}
+.catalog-sources>a.selected{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.imdb-controls{max-width:1440px;margin:0 auto;padding:0 var(--page-gutter,48px) 20px}
+.imdb-controls .chart-tabs{margin:0 0 14px}
+.imdb-sort-row{display:flex;align-items:center;gap:15px;font-size:12px;color:var(--dim)}
+.imdb-sort-row .quick-options{display:flex;flex-wrap:wrap;gap:8px}
+.imdb-sort-row .filter-chip{min-height:38px}
+.imdb-notice{font-size:12px;line-height:1.7;color:var(--muted);padding:0 0 18px}
+@media(max-width:760px){.catalog-sources{padding-top:12px;padding-bottom:12px}.catalog-sources>a{min-height:40px;padding:7px 18px}.imdb-sort-row{align-items:flex-start;gap:10px}.imdb-sort-row>span{padding-top:10px}.imdb-controls .catalog-more{display:inline-flex;font-size:11px;white-space:nowrap}.imdb-controls .chart-tabs{gap:18px}.imdb-controls .chart-tabs>button{font-size:12px}.imdb-sort-row .filter-chip{font-size:11px;padding:6px 9px}.imdb-controls{padding-bottom:16px}}
+
 /* Main navigation and a single, always-visible search. */
 .site-header{border-bottom:1px solid var(--soft-border)}
 .site-header-inner{max-width:1440px;margin:auto;min-height:82px;padding:0 48px;display:flex;align-items:center;gap:30px}
@@ -510,3 +525,6 @@ legend span{color:var(--dim);font-weight:400}
   .detail-rating{gap:5px}
   .detail-media-strip--cast{grid-auto-columns:88px}
 }
+
+/* Keep the score provider visible in the three-column mobile grid and saved items. */
+.media-card .score-badge small{display:inline;font-size:7px}

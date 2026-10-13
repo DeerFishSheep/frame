@@ -18,11 +18,15 @@ interface ClientOptions {
   sleep?: (ms: number) => Promise<void>;
 }
 
-const allowedPath = /^\/(?:trending\/(?:movie|tv|all)\/(?:day|week)|(?:movie|tv)\/(?:popular|top_rated|now_playing|upcoming|on_the_air|airing_today|[1-9]\d*(?:\/recommendations)?)|(?:discover|search)\/(?:movie|tv|multi)|search\/keyword)$/;
+const allowedPath = /^\/(?:trending\/(?:movie|tv|all)\/(?:day|week)|(?:movie|tv)\/(?:popular|top_rated|now_playing|upcoming|on_the_air|airing_today|[1-9]\d*(?:\/recommendations)?)|(?:discover|search)\/(?:movie|tv|multi)|search\/keyword|find\/tt\d{5,12})$/;
 
 function validateData(data: unknown, path: string) {
   if (!data || typeof data !== "object" || Array.isArray(data)) throw new TmdbError("TMDB 返回的数据格式无效。", "TMDB_INVALID_RESPONSE", 502);
   const raw = data as Record<string, unknown>;
+  if (path.startsWith("/find/")) {
+    if (!Array.isArray(raw.movie_results) || !Array.isArray(raw.tv_results)) throw new TmdbError("TMDB 返回的编号匹配数据无效。", "TMDB_INVALID_RESPONSE", 502);
+    return;
+  }
   const detailId = /^\/(?:movie|tv)\/([1-9]\d*)$/.exec(path)?.[1];
   if (detailId ? raw.id !== Number(detailId) : !Array.isArray(raw.results)) {
     throw new TmdbError("TMDB 返回的数据格式无效。", "TMDB_INVALID_RESPONSE", 502);

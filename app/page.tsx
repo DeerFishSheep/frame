@@ -1,2 +1,2 @@
-import { Workspace } from "@/components/workspace";
-export default function MoviePage() { return <Workspace initialChart="trending"/>; }
+import { CatalogEntry } from "@/components/catalog-entry";
+export default function MoviePage() { return <CatalogEntry/>; }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowUpRight, Bookmark, Film, Star } from "lucide-react";
-import { imageUrl, type Media } from "@/lib/types";
+import { imageUrl, mediaHref, type Media } from "@/lib/types";
 import { formatCount } from "@/lib/ui";
 import { cardNumber, formatMediaDate } from "@/lib/media-presentation";
 import { useFrame } from "./providers";
@@ -22,9 +22,11 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
   const number = cardNumber(item, showRank, resultIndex);
   const date = formatMediaDate(item.releaseDate);
   const genres = [...new Set(item.genres)];
+  const href = mediaHref(item), external = typeof item.id === "string";
+  const ratingLabel = item.source === "imdb" ? "IMDB" : "TMDB";
   return <article className="media-card">
     <div className="poster-wrap">
-      <Link href={`/${item.mediaType}/${item.id}`} className="poster-link" aria-label={`查看${item.title}详情`}>
+      <Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="poster-link" aria-label={external ? `在 IMDB 查看${item.title}` : `查看${item.title}详情`}>
         <MediaImage item={item}/><span className="poster-shade"/>
         {number && <span className={`rank-badge ${number.value <= 3 ? "rank-top" : ""}`} title={number.label} aria-label={number.label}>{number.text}</span>}
         <span className="poster-kind">{item.mediaType === "movie" ? "电影" : "剧集"}</span>
@@ -33,16 +35,16 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
           <div className="poster-genres" aria-label="全部类型">{genres.length ? genres.map(genre => <span key={genre}>{genre}</span>) : <span>类型待补充</span>}</div>
           <div className="poster-footer">
             <time className="poster-date" dateTime={date === "日期待定" ? undefined : item.releaseDate} title={`${item.mediaType === "movie" ? "上映" : "首播"}日期：${date}`}>{date}</time>
-            {item.source === "tmdb" && item.voteAverage > 0 && <span className="score-badge" aria-label={`TMDB 评分 ${item.voteAverage.toFixed(1)}`}><small>TMDB</small><Star size={11} fill="currentColor"/>{item.voteAverage.toFixed(1)}</span>}
+            {item.source !== "demo" && item.voteAverage > 0 && <span className="score-badge" aria-label={`${ratingLabel} 评分 ${item.voteAverage.toFixed(1)}`}><small>{ratingLabel}</small><Star size={11} fill="currentColor"/>{item.voteAverage.toFixed(1)}</span>}
           </div>
         </div>
       </Link>
     </div>
     <div className="media-card-copy">
-      <div className="card-title-line"><Link href={`/${item.mediaType}/${item.id}`} className="card-title" title={item.title}>{item.title}</Link><button className={`card-save ${saved ? "saved" : ""}`} onClick={() => toggle(item)} aria-label={`${saved ? "取消收藏" : "收藏"}${item.title}`} aria-pressed={saved}><Bookmark size={16} fill={saved ? "currentColor" : "none"}/></button></div>
+      <div className="card-title-line"><Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="card-title" title={item.title}>{item.title}</Link><button className={`card-save ${saved ? "saved" : ""}`} onClick={() => toggle(item)} aria-label={`${saved ? "取消收藏" : "收藏"}${item.title}`} aria-pressed={saved}><Bookmark size={16} fill={saved ? "currentColor" : "none"}/></button></div>
       <p className="card-original" title={item.originalTitle}>{item.originalTitle || "原名未提供"}</p>
-      {item.source === "tmdb" && item.voteCount > 0 && <p className="card-votes">{formatCount(item.voteCount)} 人评分</p>}
-      <div className="list-extra"><p>{item.overview || "暂无剧情简介。"}</p>{item.source === "tmdb" && <span>TMDB · {item.voteAverage > 0 ? `${item.voteAverage.toFixed(1)} 分 · ${formatCount(item.voteCount)} 人评分` : "暂无评分"}</span>}</div>
+      {item.source !== "demo" && item.voteCount > 0 && <p className="card-votes">{formatCount(item.voteCount)} 人评分</p>}
+      <div className="list-extra"><p>{item.overview || "暂无剧情简介。"}</p>{item.source !== "demo" && <span>{ratingLabel} · {item.voteAverage > 0 ? `${item.voteAverage.toFixed(1)} 分 · ${formatCount(item.voteCount)} 人评分` : "暂无评分"}</span>}</div>
     </div>
   </article>;
 }

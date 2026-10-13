@@ -24,6 +24,10 @@ export function FrameShell({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState(params.get("query") || "");
   const searchInput = useRef<HTMLInputElement>(null);
   const currentQuery = params.get("query") || "";
+  const imdbMode = pathname === "/" && params.get("source") === "imdb";
+  const mediaNavigation = (item: typeof navigation[number]) => imdbMode && (item.id === "movie" || item.id === "tv")
+    ? `/?${new URLSearchParams({ source: "imdb", media: item.id, chart: params.get("chart") === "popular" ? "popular" : "top", sort: ["rank", "user_rating", "popularity", "num_votes"].includes(params.get("sort") || "") ? params.get("sort")! : "rank" })}`
+    : item.href;
   const active = pathname === "/favorites" ? "favorites"
     : pathname === "/discover" ? "discover"
     : pathname.startsWith("/movie/") ? "movie"
@@ -63,7 +67,7 @@ export function FrameShell({ children }: { children: ReactNode }) {
       <div className="site-header-inner">
         <Link className="site-brand" href="/" aria-label="帧榜电影"><Film size={25} strokeWidth={1.7}/><strong>帧榜<span>FRAME</span></strong></Link>
         <nav className="site-nav" aria-label="主导航">
-          {navigation.map(item => <Link key={item.id} href={item.href} className={active === item.id ? "active" : ""} aria-current={active === item.id ? "page" : undefined}>
+          {navigation.map(item => <Link key={item.id} href={mediaNavigation(item)} className={active === item.id ? "active" : ""} aria-current={active === item.id ? "page" : undefined}>
             {item.label}{item.id === "favorites" && favorites.length > 0 && <span className="nav-count">{favorites.length}</span>}
           </Link>)}
         </nav>
@@ -80,17 +84,17 @@ export function FrameShell({ children }: { children: ReactNode }) {
     <footer className="site-footer">
       <Link href="/" className="footer-brand">帧榜<span>FRAME</span></Link>
       <span>电影 · 电视剧 · 好片收藏</span>
-      <div className="footer-links"><button onClick={() => setSourceOpen(true)}>{preview ? "预览模式" : "TMDB 数据"}</button><Link href="/about">关于与数据来源</Link></div>
+      <div className="footer-links"><button onClick={() => setSourceOpen(true)}>{imdbMode ? "IMDB 数据" : preview ? "预览模式" : "TMDB 数据"}</button><Link href="/about">关于与数据来源</Link></div>
     </footer>
     <Dialog.Root open={sourceOpen} onOpenChange={setSourceOpen}>
       <Dialog.Portal><Dialog.Overlay className="dialog-overlay"/>
         <Dialog.Content className="info-dialog">
           <Dialog.Close className="dialog-close icon-button" aria-label="关闭数据说明"><X size={19}/></Dialog.Close>
           <Dialog.Title>数据来源</Dialog.Title>
-          <Dialog.Description>{preview ? "当前展示固定的预览影片，不代表今日榜单。" : "影视资料和榜单来自 TMDB，按接口返回顺序展示。"}</Dialog.Description>
-          <p className="source-instruction">{configured ? "已配置 TMDB，可以切换真实数据与预览影片。" : "真实榜单尚未启用。预览可以体验选片、详情和收藏。"}</p>
-          {!configured && <details className="connection-help"><summary>本地数据接入说明</summary><p>在本地 .env.local 中配置 <code>TMDB_API_KEY</code> 或 <code>TMDB_API_READ_ACCESS_TOKEN</code>，重启应用后即可联调。</p></details>}
-          <button className="primary-button full-width" onClick={() => { setPreview(!preview); setSourceOpen(false); }}>{preview ? "切换真实数据" : "查看预览影片"}</button>
+          <Dialog.Description>{imdbMode ? "当前榜单、评分和评分数量来自 IMDB，中文资料与本站详情由 TMDB 补充。" : preview ? "当前展示固定的预览影片，不代表今日榜单。" : "影视资料和榜单来自 TMDB，按接口返回顺序展示。"}</Dialog.Description>
+          <p className="source-instruction">{imdbMode ? "选择原榜顺序时保留官方名次；切换其他排序后显示结果序号。暂未匹配的作品仍可在 IMDB 查看。" : configured ? "已配置 TMDB，可以切换真实数据与预览影片。" : "TMDB 真实榜单尚未启用。预览可以体验选片、详情和收藏。"}</p>
+          {!imdbMode && !configured && <details className="connection-help"><summary>本地数据接入说明</summary><p>在本地 .env.local 中配置 <code>TMDB_API_KEY</code> 或 <code>TMDB_API_READ_ACCESS_TOKEN</code>，重启应用后即可联调。</p></details>}
+          {!imdbMode && <button className="primary-button full-width" onClick={() => { setPreview(!preview); setSourceOpen(false); }}>{preview ? "切换真实数据" : "查看预览影片"}</button>}
           <Link className="text-link" href="/about" onClick={() => setSourceOpen(false)}>完整来源说明<ArrowUpRight size={14}/></Link>
         </Dialog.Content>
       </Dialog.Portal>

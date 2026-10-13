@@ -23,7 +23,7 @@ export function formatMediaDate(value: string): string {
 }
 
 export function cardNumber(item: Media, showRank: boolean, resultIndex?: number) {
-  if (showRank && item.source === "tmdb" && Number.isInteger(item.rank) && item.rank! > 0) {
+  if (showRank && item.source !== "demo" && Number.isInteger(item.rank) && item.rank! > 0) {
     return { kind: "rank" as const, value: item.rank!, text: `#${item.rank}`, label: `官方榜单第 ${item.rank} 名` };
   }
   if (Number.isInteger(resultIndex) && resultIndex! > 0) {

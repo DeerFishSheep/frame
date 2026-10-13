@@ -69,5 +69,14 @@ export function createTmdbService(client: Client) {
       .map((item) => ({ id: item.id as number, name: item.name as string })), retrievedAt: response.retrievedAt, stale: response.stale };
   }
 
-  return { catalog, detail, recommendations, keywords };
+  async function findByImdbId(imdbId: string, mediaType: MediaType) {
+    if (!/^tt\d{5,12}$/.test(imdbId) || (mediaType !== "movie" && mediaType !== "tv")) throw new TmdbError("IMDB 编号或作品类型无效。", "INVALID_IMDB_ID", 400);
+    const response = await client.request<unknown>(`/find/${imdbId}`, new URLSearchParams({ external_source: "imdb_id", language: "zh-CN" }));
+    const raw = object(response.data), candidates = raw[mediaType === "movie" ? "movie_results" : "tv_results"];
+    if (!Array.isArray(candidates)) throw new TmdbError("TMDB 返回的编号匹配数据无效。", "TMDB_INVALID_RESPONSE", 502);
+    const match = candidates.map(object).find(item => Number.isSafeInteger(item.id) && Number(item.id) > 0);
+    return match ? normalizeMedia(match, mediaType) : null;
+  }
+
+  return { catalog, detail, recommendations, keywords, findByImdbId };
 }

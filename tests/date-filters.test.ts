@@ -150,7 +150,7 @@ test("preview filtering compares full movie dates and includes both selected bou
   const sameDay = getDemoCatalog(filters("chart=discover&dateFrom=2014-11-04&dateTo=2014-11-04"));
   assert.deepEqual(sameDay.results.map(item => item.id), [157336]);
   const twoDates = getDemoCatalog(filters("chart=discover&dateFrom=2014-10-10&dateTo=2014-11-04"));
-  assert.deepEqual(twoDates.results.map(item => item.id).sort((a, b) => a - b), [157336, 244786]);
+  assert.deepEqual(twoDates.results.map(item => item.id).sort((a, b) => Number(a) - Number(b)), [157336, 244786]);
   const after = getDemoCatalog(filters("chart=discover&dateFrom=2014-11-05&dateTo=2014-11-30"));
   assert.equal(after.totalResults, 0);
 });
