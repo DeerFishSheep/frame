@@ -11,7 +11,7 @@ import { usePagedResource } from "@/lib/use-paged-resource";
 import { useStableUpdate } from "@/lib/use-stable-update";
 import type { CatalogView } from "@/lib/catalog-view";
 import { ResourceRegion, resourceLoadingProps } from "./resource-feedback";
-import { selectFeaturedMedia } from "@/lib/media-presentation";
+import { formatFeaturedLabel, selectFeaturedMedia } from "@/lib/media-presentation";
 import { parseFilters } from "@/lib/query";
 import { chartMeta, formatCount, formatTime, GENRES, serializeFilters } from "@/lib/ui";
 import { useFrame } from "./providers";
@@ -68,7 +68,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   const requestKey = `catalog:tmdb:${preview}:${serializeFilters(filters)}:${filters.dateTo === "today" || strictUpcoming ? today : ""}`;
   const [favoriteCount, setFavoriteCount] = useViewState(`favorite-count:${requestKey}`, 20);
   const requestedTitle = searchMode ? `“${filters.query}” 的搜索结果` : meta.title;
-  const requestedFeatureLabel = filters.chart === "trending" ? filters.period === "day" ? "今日焦点" : "本周焦点" : `${meta.title}精选`;
+  const requestedFeatureLabel = formatFeaturedLabel(preview ? "demo" : "tmdb", meta.title);
   const resource = usePagedResource<CatalogView>({
     key: requestKey, group: initialChart === "trending" ? "catalog" : initialChart, page: filters.page,
     enabled: !parsed.error && !favoriteMode,

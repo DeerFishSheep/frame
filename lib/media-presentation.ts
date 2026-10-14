@@ -1,4 +1,8 @@
-import { mediaKey, type Media } from "./types";
+import { mediaKey, type DataSource, type Media } from "./types";
+
+export function formatFeaturedLabel(source: DataSource, title: string) {
+  return `${source === "demo" ? "预览" : source.toUpperCase()}·${title}`;
+}
 
 export const FEATURED_LIMIT = 5;
 export const FEATURED_INTERVAL_MS = 6000;

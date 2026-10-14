@@ -28,8 +28,10 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
   const [focused, setFocused] = useState(false);
   const [visible, setVisible] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(true);
+  const suppressSwipeClick = useRef(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const item = items[index];
+  const detailLink = { href: mediaHref(item), target: typeof item.id === "string" ? "_blank" : undefined, rel: typeof item.id === "string" ? "noopener noreferrer" : undefined };
   const saved = isFavorite(item);
   const { label: region, countryCodes } = useMediaRegions(item);
   const running = !pending && !reducedMotion && visible && !hovered && !focused && items.length > 1;
@@ -87,7 +89,8 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
   }
 
   function onPointerDown(event: PointerEvent<HTMLElement>) {
-    if (event.pointerType === "touch" && !(event.target as Element).closest("a,button")) touchStart.current = { x: event.clientX, y: event.clientY };
+    suppressSwipeClick.current = false;
+    if (event.pointerType === "touch" && !(event.target as Element).closest("a:not(.featured-image),button")) touchStart.current = { x: event.clientX, y: event.clientY };
   }
 
   function onPointerUp(event: PointerEvent<HTMLElement>) {
@@ -95,24 +98,31 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
     touchStart.current = null;
     if (!start) return;
     const horizontal = event.clientX - start.x;
-    if (Math.abs(horizontal) > 45 && Math.abs(event.clientY - start.y) < 60) select(index + (horizontal < 0 ? 1 : -1));
+    if (Math.abs(horizontal) > 45 && Math.abs(event.clientY - start.y) < 60) {
+      suppressSwipeClick.current = true;
+      select(index + (horizontal < 0 ? 1 : -1));
+    }
   }
 
   return <section className="featured-film" aria-label={label} {...resourceLoadingProps(pending)} aria-roledescription="轮播" data-active-key={mediaKey(item)} data-slide-index={index} data-autoplay={running} data-artwork={item.backdropPath ? "backdrop" : "poster"}
     onPointerEnter={event => { if (event.pointerType !== "touch") setHovered(true); }} onPointerLeave={() => setHovered(false)}
     onFocusCapture={() => setFocused(true)}
     onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false); }}
+    onClickCapture={event => {
+      if (suppressSwipeClick.current && event.detail > 0) { event.preventDefault(); event.stopPropagation(); }
+      suppressSwipeClick.current = false;
+    }}
     onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => { touchStart.current = null; }}>
     <div key={mediaKey(item)} className="featured-slide" role="group" aria-roledescription="幻灯片" aria-label={`第 ${index + 1} 部，共 ${items.length} 部`} aria-live={running ? "off" : "polite"}>
-      <div className="featured-image" data-skeleton="block"><MediaImage item={item} backdrop={Boolean(item.backdropPath)}/></div>
+      <Link {...detailLink} className="featured-image" data-skeleton="block" aria-label={`查看${item.title}详情`}><MediaImage item={item} backdrop={Boolean(item.backdropPath)}/></Link>
       <div className="featured-shade" aria-hidden="true"/>
       <div className="featured-copy">
-        <span className="featured-label" data-skeleton="line">{item.source === "demo" ? "精选预览" : label}</span>
-        <h1 data-skeleton="line" id="featured-title" title={item.title}>{item.title}</h1>
+        <span className="featured-label" data-skeleton="line">{label}</span>
+        <h1 data-skeleton="line" id="featured-title" title={item.title}><Link {...detailLink} className="featured-title-link">{item.title}</Link></h1>
         <div className="featured-meta" data-skeleton="line"><span>{item.mediaType === "tv" ? "电视剧" : "电影"}</span><time dateTime={item.releaseDate || undefined}>{formatMediaDate(item.releaseDate)}</time><span className="featured-genres">{[region, item.genres.join(" / ") || "类型待补充"].filter(Boolean).join(" · ")}</span></div>
         <p data-skeleton="text">{item.overview || "点击查看作品资料。"}</p>
         <div className="featured-actions" data-skeleton="block">
-          <Link className="primary-button" href={mediaHref(item)} target={typeof item.id === "string" ? "_blank" : undefined} rel={typeof item.id === "string" ? "noopener noreferrer" : undefined}>{typeof item.id === "string" ? "在 IMDB 查看" : "查看详情"}<ArrowRight size={16}/></Link>
+          <Link className="primary-button" {...detailLink}>{typeof item.id === "string" ? "在 IMDB 查看" : "查看详情"}<ArrowRight size={16}/></Link>
           <button className="featured-save" onClick={() => toggle({ ...item, countryCodes })} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "收藏"}</button>
         </div>
       </div>

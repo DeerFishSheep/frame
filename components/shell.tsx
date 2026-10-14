@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowUpRight, Film, Moon, Search, Sun, X } from "lucide-react";
 import { buildSearchHref } from "@/lib/navigation";
+import { BackToTop } from "./back-to-top";
 import { useFrame } from "./providers";
 import { readViewState } from "@/lib/view-state";
 import { usePageContinuity } from "@/lib/use-page-continuity";
@@ -94,6 +95,7 @@ export function FrameShell({ children }: { children: ReactNode }) {
       <span>电影 · 电视剧 · 好片收藏</span>
       <div className="footer-links"><button onClick={() => setSourceOpen(true)}>{imdbMode ? "IMDB 数据" : preview ? "预览模式" : "TMDB 数据"}</button><Link href="/about">关于与数据来源</Link></div>
     </footer>
+    <BackToTop/>
     <Dialog.Root open={sourceOpen} onOpenChange={setSourceOpen}>
       <Dialog.Portal><Dialog.Overlay className="dialog-overlay"/>
         <Dialog.Content className="info-dialog">
