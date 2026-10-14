@@ -55,21 +55,24 @@ test("recommendation pages append in order and deduplicate across and within pag
 });
 
 
-test("five indicators track every position across ten films including both ends", () => {
+test("indicators keep fixed groups of five and change pages only across the 5/6 boundary", () => {
   for (let active = 0; active < 10; active++) {
     const visible = featuredIndicatorPositions(10, active);
     assert.equal(visible.length, 5);
     assert.ok(visible.includes(active));
+    assert.deepEqual(visible, active < 5 ? [0, 1, 2, 3, 4] : [5, 6, 7, 8, 9]);
     assert.ok(visible.every((position, i) => position >= 0 && position < 10 && (!i || position === visible[i - 1] + 1)));
   }
   assert.deepEqual(featuredIndicatorPositions(10, 0), [0, 1, 2, 3, 4]);
-  assert.deepEqual(featuredIndicatorPositions(10, 5), [3, 4, 5, 6, 7]);
+  assert.deepEqual(featuredIndicatorPositions(10, 4), [0, 1, 2, 3, 4]);
+  assert.deepEqual(featuredIndicatorPositions(10, 5), [5, 6, 7, 8, 9]);
   assert.deepEqual(featuredIndicatorPositions(10, 9), [5, 6, 7, 8, 9]);
 });
 
-test("indicator windows never invent slides for short or empty catalogs", () => {
+test("indicator pages never invent slides for short, partial or empty catalogs", () => {
   assert.deepEqual(featuredIndicatorPositions(0, 0), []);
   assert.deepEqual(featuredIndicatorPositions(1, 0), [0]);
   assert.deepEqual(featuredIndicatorPositions(3, 2), [0, 1, 2]);
   assert.deepEqual(featuredIndicatorPositions(5, 4), [0, 1, 2, 3, 4]);
+  assert.deepEqual(featuredIndicatorPositions(8, 6), [5, 6, 7]);
 });

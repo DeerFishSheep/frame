@@ -8,10 +8,11 @@ export const FEATURED_LIMIT = 10;
 export const FEATURED_INDICATOR_LIMIT = 5;
 export const FEATURED_INTERVAL_MS = 6000;
 
-/** Keep a five-position window around the active film, clamped at either end. */
+/** Fixed pages: films 1–5, then 6–10. Never shift the group within a page. */
 export function featuredIndicatorPositions(count: number, index: number): number[] {
-  const size = Math.min(FEATURED_INDICATOR_LIMIT, count);
-  const start = Math.max(0, Math.min(index - Math.floor(size / 2), count - size));
+  const current = Math.max(0, Math.min(index, count - 1));
+  const start = Math.floor(current / FEATURED_INDICATOR_LIMIT) * FEATURED_INDICATOR_LIMIT;
+  const size = Math.min(FEATURED_INDICATOR_LIMIT, count - start);
   return Array.from({ length: size }, (_, offset) => start + offset);
 }
 

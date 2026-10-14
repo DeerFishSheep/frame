@@ -276,7 +276,15 @@ npm run start
 
 ## UI-20 十部轮播与五个指示横条
 
-- `lib/media-presentation.ts`：FEATURED_LIMIT=10，featuredIndicatorPositions最多返回5个连续真实位置；当前影片在中部时窗口随之移动，首尾保持完整5条。短列表按实际数量显示，不补造作品。
-- `FeaturedCarousel` 共用指示窗口，数字显示实际总数。IMDB移除额外slice(0,5)，主榜单与找片沿用同一个selectFeaturedMedia。
-- 手机counter仅translateY(4px)，不移动箭头或横条；桌面不变。
+- `lib/media-presentation.ts`：FEATURED_LIMIT=10，featuredIndicatorPositions按每5部固定分页，1–5属于第一页，6–10属于第二页（UI-21覆盖原移动窗口）。短列表按实际数量显示，不补造作品。
+- `FeaturedCarousel` 共用分页指示轨道，数字显示实际总数。IMDB移除额外slice(0,5)，主榜单与找片沿用同一个selectFeaturedMedia。
+- 手机counter累计translateY(14px)：UI-21在原4px基础上再下移10px；不移动箭头或横条，桌面不变。
 - 检查：110项测试与类型检查通过；新增指示窗口首尾／所有10个位置／短列表测试，选片测试核验10部去重保序。浏览器实测05→10→01→02始终5条且高亮正确；390px数字下移4px、横条宽127px且无横向溢出。
+
+
+## UI-21 固定分页指示条
+
+- `.carousel-dots` 是5条宽的裁切窗口，`.carousel-dot-track` 包含两页，跨5／6边界时translateX在0与-100%之间过渡，时长280ms；同页切片不移动整组横条。反向跨页与10→1循环回到第一页。
+- 每页独立容器，非当前页aria-hidden和inert，不能误点或Tab进入；键盘跨页后在下一动画帧将焦点移到新的当前指示按钮，防止inert更新清掉焦点。沿用减少动画的CSS规则。
+- 手机序号再下移10px，总偏移14px，并设置pointer-events:none，避免遮住横条点击区域。
+- 实测：05/10为第一页第五条，06/10为第二页第一条；左移终点-127px，反向过渡捕获中间位置；前后键盘焦点均跟随当前影片。类型检查及110项测试通过，固定页映射及不足5项的尾页已有回归。

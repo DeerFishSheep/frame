@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { ArrowRight, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { imageUrl, mediaHref, mediaKey, type Media } from "@/lib/types";
-import { FEATURED_INTERVAL_MS, featuredIndex, featuredIndicatorPositions, formatMediaDate, selectFeaturedMedia } from "@/lib/media-presentation";
+import { FEATURED_INTERVAL_MS, FEATURED_INDICATOR_LIMIT, featuredIndex, featuredIndicatorPositions, formatMediaDate, selectFeaturedMedia } from "@/lib/media-presentation";
 import { useStableUpdate } from "@/lib/use-stable-update";
 import { useViewState } from "@/lib/view-state";
 import { MediaImage } from "./media-card";
@@ -22,6 +22,10 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
   const { isFavorite, toggle } = useFrame();
   const [selection, setSelection] = useViewState(stateKey, { key: mediaKey(items[0]), index: 0 });
   const index = featuredIndex(selection, items);
+  const indicatorPage = Math.floor(index / FEATURED_INDICATOR_LIMIT);
+  const indicatorPages = Array.from({ length: Math.ceil(items.length / FEATURED_INDICATOR_LIMIT) }, (_, page) => featuredIndicatorPositions(items.length, page * FEATURED_INDICATOR_LIMIT));
+  const indicators = useRef<HTMLDivElement>(null);
+  const restoreIndicatorFocus = useRef(false);
   const prepareUpdate = useStableUpdate();
   const [interaction, setInteraction] = useState(0);
   const [hovered, setHovered] = useState(false);
@@ -38,6 +42,14 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
   const nextItem = items[(index + 1) % items.length];
   const activeKey = mediaKey(item), nextKey = mediaKey(nextItem);
   const nextImage = imageUrl(nextItem.backdropPath || nextItem.posterPath, nextItem.backdropPath ? "w1280" : "w500");
+
+  useLayoutEffect(() => {
+    if (!restoreIndicatorFocus.current) return;
+    restoreIndicatorFocus.current = false;
+    // Wait for the browser to finish applying inert to the outgoing page.
+    const frame = requestAnimationFrame(() => indicators.current?.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [index]);
 
   useEffect(() => {
     if (selection.key !== activeKey || selection.index !== index) setSelection({ key: activeKey, index });
@@ -73,6 +85,7 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
   }, [running, index, items.length, activeKey, nextKey, interaction, prepareUpdate, setSelection]);
 
   function select(next: number) {
+    restoreIndicatorFocus.current = Boolean(indicators.current?.contains(document.activeElement));
     prepareUpdate();
     const position = (next + items.length) % items.length;
     setSelection({ key: mediaKey(items[position]), index: position });
@@ -130,7 +143,13 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
     {items.length > 1 && <div className="featured-controls" data-skeleton="line" onKeyDown={onKeyDown}>
       <span className="featured-counter" aria-hidden="true">{String(index + 1).padStart(2, "0")}<span> / {String(items.length).padStart(2, "0")}</span></span>
       <button className="carousel-arrow" onClick={() => select(index - 1)} aria-label="上一部"><ChevronLeft size={18}/></button>
-      <div className="carousel-dots" role="group" aria-label="选择轮播影片">{featuredIndicatorPositions(items.length, index).map(position => <button key={mediaKey(items[position])} className={position === index ? "active" : ""} onClick={() => select(position)} aria-label={`切换到第 ${position + 1} 部：${items[position].title}`} aria-pressed={position === index}><span/></button>)}</div>
+      <div ref={indicators} className="carousel-dots" role="group" aria-label="选择轮播影片" data-page={indicatorPage + 1} style={{ "--dots-per-page": Math.min(items.length, FEATURED_INDICATOR_LIMIT) } as CSSProperties}>
+        <div className="carousel-dot-track" style={{ transform: `translateX(-${indicatorPage * 100}%)` }}>
+          {indicatorPages.map((positions, page) => <div key={page} className="carousel-dot-page" role="group" aria-label={`第 ${page + 1} 页`} aria-hidden={page !== indicatorPage} inert={page !== indicatorPage || undefined}>
+            {positions.map(position => <button key={mediaKey(items[position])} className={position === index ? "active" : ""} onClick={() => select(position)} aria-label={`切换到第 ${position + 1} 部：${items[position].title}`} aria-pressed={position === index}><span/></button>)}
+          </div>)}
+        </div>
+      </div>
       <button className="carousel-arrow" onClick={() => select(index + 1)} aria-label="下一部"><ChevronRight size={18}/></button>
     </div>}
   </section>;
