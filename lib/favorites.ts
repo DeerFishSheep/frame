@@ -25,6 +25,8 @@ function restoreMedia(value: unknown): Media | null {
   if (value.doubanId !== undefined && !doubanId || value.source === "douban" && !doubanId) return null;
   if (value.mediaType !== "movie" && value.mediaType !== "tv") return null;
   if (value.source !== "tmdb" && value.source !== "imdb" && value.source !== "douban" && value.source !== "demo") return null;
+  if (value.detailSource !== undefined && (typeof value.detailSource !== "string" || !["tmdb", "imdb", "douban"].includes(value.detailSource))) return null;
+  if (value.detailDoubanId !== undefined && (value.detailSource !== "douban" || typeof value.detailDoubanId !== "string" || !/^[1-9]\d{0,11}$/.test(value.detailDoubanId))) return null;
   if (typeof value.title !== "string" || !value.title.trim()) return null;
   if (typeof value.originalTitle !== "string" || typeof value.overview !== "string") return null;
   if (typeof value.releaseDate !== "string" || typeof value.year !== "string") return null;
@@ -58,6 +60,8 @@ function restoreMedia(value: unknown): Media | null {
     voteCount: value.voteCount,
     popularity: value.popularity,
     source: value.source,
+    ...(value.detailSource !== undefined ? { detailSource: value.detailSource as Media["detailSource"] } : {}),
+    ...(value.detailDoubanId !== undefined ? { detailDoubanId: value.detailDoubanId as string } : {}),
     ...(value.rank !== undefined ? { rank: value.rank as number } : {}),
   };
 }

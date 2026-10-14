@@ -41,10 +41,10 @@ function CollectionCard({ reference }: { reference: CollectionRef }) {
     <div {...resourceLoadingProps(resource.pending)}>
       <Link className="collection-card-link" href={collectionHref(reference)} aria-label={`查看片单：${item.title}`}>
         <CollectionCover item={item}/>
-        <h2 data-skeleton="line" title={item.title}>{item.title}</h2>
       </Link>
-      <CollectionOrigin item={item}/>
-      <div className="collection-card-foot" data-skeleton="line"><span>{item.count === null ? "数量待更新" : `${item.count.toLocaleString("zh-CN")} ${item.unit}`}</span>
+      <div className="collection-card-copy">
+        <Link className="collection-title-link" href={collectionHref(reference)}><h2 data-skeleton="line" title={item.title}>{item.title}</h2></Link>
+        <span className="collection-count" data-skeleton="line">{item.count === null ? "数量待更新" : `${item.count.toLocaleString("zh-CN")} ${item.unit}`}</span>
         <button className={`icon-button collection-save ${saved ? "is-saved" : ""}`} aria-pressed={!!saved} disabled={!resource.data && !saved} onClick={() => toggleCollection(item)} aria-label={`${saved ? "取消收藏片单" : "收藏片单"}：${item.title}`}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/></button>
       </div>
     </div>

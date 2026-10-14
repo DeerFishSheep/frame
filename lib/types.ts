@@ -24,6 +24,10 @@ export interface Media {
   voteCount: number;
   popularity: number;
   source: DataSource;
+  /** Entry provider survives a temporary rating fallback; source still labels the displayed score. */
+  detailSource?: Exclude<DataSource, "demo">;
+  /** Navigation context only; never an identity alias until verified. */
+  detailDoubanId?: string;
   rank?: number;
 }
 
@@ -87,9 +91,14 @@ export const DEFAULT_FILTERS: CatalogFilters = {
 };
 
 export const mediaKey = (item: Pick<Media, "mediaType" | "id" | "doubanId">) => item.doubanId ? `douban:${item.doubanId}` : typeof item.id === "string" ? `imdb:${item.id}` : `${item.mediaType}:${item.id}`;
-export const mediaHref = (item: Pick<Media, "mediaType" | "id">) => typeof item.id === "string"
-  ? /^tt\d{5,12}$/.test(item.id) ? `https://www.imdb.com/title/${item.id}/` : /^douban:[1-9]\d{0,11}$/.test(item.id) ? `https://movie.douban.com/subject/${item.id.slice(7)}/` : "/"
-  : `/${item.mediaType}/${item.id}`;
+export function mediaHref(item: Pick<Media, "mediaType" | "id"> & Partial<Pick<Media, "source" | "detailSource" | "detailDoubanId" | "doubanId">>) {
+  if (typeof item.id === "string") return /^tt\d{5,12}$/.test(item.id) ? `https://www.imdb.com/title/${item.id}/` : /^douban:[1-9]\d{0,11}$/.test(item.id) ? `https://movie.douban.com/subject/${item.id.slice(7)}/` : "/";
+  const path = `/${item.mediaType}/${item.id}`, source = item.detailSource ?? item.source;
+  const doubanId = item.detailDoubanId ?? item.doubanId;
+  if (source === "imdb") return `${path}?source=imdb`;
+  if (source === "douban") return `${path}?source=douban${doubanId && /^[1-9]\d{0,11}$/.test(doubanId) ? `&doubanId=${doubanId}` : ""}`;
+  return path;
+}
 export function imageUrl(path: string | null, size = "w500") {
   if (path) {
     try {

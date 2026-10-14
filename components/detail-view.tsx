@@ -16,6 +16,9 @@ import { RecommendationsRail } from "./recommendations-rail";
 import { formatRegions } from "@/lib/media-regions";
 import { formatMediaDate } from "@/lib/media-presentation";
 import { mergeCastMembers } from "@/lib/media-cast";
+import { useDetailRating } from "@/lib/use-detail-rating";
+import { detailFavorite } from "@/lib/detail-rating";
+import { sourceLabel } from "@/lib/catalog-sources";
 
 const statusNames:Record<string,string>={Released:"已上映", "Post Production":"后期制作", "In Production":"制作中", Planned:"筹备中", Rumored:"待确认",Canceled:"已取消", "Returning Series":"持续更新", Ended:"已完结", Pilot:"试播"};
 
@@ -51,6 +54,7 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
     },
   });
   const item = resource.data?.item, error = resource.error, loading = resource.pending;
+  const { context: ratingContext, rating, pending: ratingPending, retry: retryRating } = useDetailRating(item, requestedMediaType, requestedId);
   const retrievedAt = resource.data?.retrievedAt ?? null, stale = resource.data?.stale ?? false;
   const mediaType = item?.mediaType ?? requestedMediaType, id = item?.id ?? requestedId;
   const back=()=>{if(window.history.length>1)router.back();else router.push("/");};
@@ -72,7 +76,7 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
       <aside className="detail-aside">
         <div className="detail-poster" data-skeleton="block"><MediaImage item={item}/></div>
         <div className="detail-actions" data-skeleton="block">
-          <button className={`primary-button full-width ${saved ? "is-saved" : ""}`} onClick={() => toggle(item)} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "加入收藏"}</button>
+          <button className={`primary-button full-width ${saved ? "is-saved" : ""}`} disabled={ratingPending} onClick={() => toggle(detailFavorite(item, rating, ratingContext))} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "加入收藏"}</button>
           <a className="secondary-button full-width" aria-label="在 TMDB 查看" href={`https://www.themoviedb.org/${mediaType}/${id}`} target="_blank" rel="noopener noreferrer"><span><span className="detail-action-verb">在 </span>TMDB<span className="detail-action-verb"> 查看</span></span><ArrowUpRight size={15}/></a>
           {item.imdbId && <a className="secondary-button full-width" aria-label="在 IMDB 查看" href={`https://www.imdb.com/title/${item.imdbId}/`} target="_blank" rel="noopener noreferrer"><span><span className="detail-action-verb">在 </span>IMDB<span className="detail-action-verb"> 查看</span></span><ArrowUpRight size={15}/></a>}
         </div>
@@ -90,10 +94,11 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
             </div>
           </header>
           <div className="detail-rating-row" data-skeleton="line">
-            <div><span className="eyebrow">{item.source === "demo" ? "预览资料" : "TMDB 评分"}</span>
-              {item.source === "tmdb" && item.voteAverage > 0
-                ? <div className="detail-rating"><Star size={19} fill="currentColor"/><strong>{item.voteAverage.toFixed(1)}</strong><span>/ 10</span><small>{formatCount(item.voteCount)} 人评分</small></div>
+            <div className="detail-rating-block" {...resourceLoadingProps(ratingPending)} aria-busy={ratingPending}><span className="eyebrow" data-skeleton="line">{item.source === "demo" ? "预览资料" : `${sourceLabel(rating.source)} 评分`}</span>
+              {item.source !== "demo" && rating.voteAverage > 0
+                ? <div className="detail-rating" data-skeleton="line"><Star size={19} fill="currentColor"/><strong>{rating.voteAverage.toFixed(1)}</strong><span>/ 10</span><small>{formatCount(rating.voteCount)} 人评分</small></div>
                 : <p className="detail-no-rating">{item.source === "demo" ? "预览样本 · 评分待接入真实数据" : "暂无评分"}</p>}
+              {rating.fallback && !ratingPending && <p className="detail-rating-note">{sourceLabel(ratingContext.source)}{rating.fallback === "missing" ? "暂无对应评分" : "评分暂不可用"}，显示 TMDB{rating.fallback === "unavailable" && <button className="text-button" onClick={retryRating}>重试</button>}</p>}
             </div>
             <span className="detail-source">{item.source === "demo" ? "预览资料" : <><Clock3 size={13}/>{stale ? "缓存资料 · " : ""}{formatTime(retrievedAt)}</>}</span>
           </div>

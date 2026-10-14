@@ -20,7 +20,7 @@ export function imdbMedia(title: ImdbTitle, mediaType: MediaType, match: Media |
   };
 }
 
-export function createImdbService(client: ReturnType<typeof createImdbClient>, find: (id: string, media: MediaType) => Promise<Media | null>) {
+export function createImdbService(client: Pick<ReturnType<typeof createImdbClient>, "chart">, find: (id: string, media: MediaType) => Promise<Media | null>) {
   async function catalog(filters: ImdbFilters): Promise<CatalogResponse> {
     const raw = await client.chart(filters), start = (filters.page - 1) * IMDB_PAGE_SIZE;
     const selected = raw.titles.slice(start, start + IMDB_PAGE_SIZE);

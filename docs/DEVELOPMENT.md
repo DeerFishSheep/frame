@@ -361,3 +361,23 @@ npm run start
 - **返回验收**：漫威片单20→40（上游一次失败后原位重试成功），进入movie/99861再返回仍40条；scrollY2261→2257，卡片top343.71→347.71。最新目录无缺图占位，控制台无新增错误。
 
 - **交付检查**：当前工作树及独立暂存版本163 / 163与类型检查通过；独立快照webpack生产编译成功。未测试独立standalone运行，未部署。
+
+
+## UI-26 紧凑片单卡片
+
+- `components/collection-library.tsx` 的CollectionCard：封面与标题分别链接详情，移除卡片内CollectionOrigin；名称／数量和右侧收藏组成紧凑网格。
+- `.collection-card-copy` 集中控制间距；删除原名称两行最低高度、来源行40px与独立底部操作行。三图封面、桌面3列／手机2列及收藏功能保持。来源／创建者仍保留在CollectionDetail。
+
+## UI-27 来源详情评分
+
+- `lib/types.ts.mediaHref` 统一携带 `source=imdb` 或 `source=douban&doubanId=...`；卡片、轮播和收藏无需各自补跳转逻辑。URL不带分数或人数，无来源仍为TMDB。
+- `useDetailRating` 使用独立64项ResourceCache，共用useAsyncResource／原位骨架，仅更新评分区域；key按媒介、TMDB ID、来源和豆瓣ID隔离，不能把上一来源分数渲染到下一来源。
+- `/api/ratings/[mediaType]/[id]` → `createDetailRatingService`：从TMDB详情取得IMDB外部ID，或用createDoubanMatcher核实豆瓣条目；分数与人数成对取自同源。无评分回退missing，临时失败回退unavailable并提供重试，标签始终显示真实评分来源。
+- `imdbClient.rating` 复用新鲜榜单评分，支持单独GraphQL title请求以服务直接打开／刷新；30分钟250项缓存、请求合并与24小时旧数据回退。豆瓣复用已有subject缓存。
+- `detailFavorite` 保留实际评分来源、评分／人数；detailSource／detailDoubanId独立保存进入上下文，只有已验证豆瓣结果才写doubanId身份别名；不修改基础MediaDetail的数据来源，避免把推荐与资料误标为豆瓣／IMDB。
+- 验证：`tests/detail-rating.test.ts` 覆盖三源、缺失／失败回退、伪造豆瓣ID、URL边界、收藏持久化、IMDB单标题缓存与异常格式；原IMDB／豆瓣链接断言同步更新。当前工作树及独立提交快照174项与类型检查通过；独立webpack生产编译通过。
+- 真实API：豆瓣《奥德赛》8.6／561948人，TMDB同片8.01／4121人；IMDB《肖申克的救赎》9.3／3252386人，均200，取样于2026-10-14 23:56北京时间。人数会随上游更新。
+
+- **独立复检**：只读Agent检查评分及收藏边界，发现并修复原始异常值被normalizer钳制／取整、回退收藏丢失来源、未验证URL编号污染收藏别名三项边界；新增回归。最终针对性35项通过，无待修问题。
+- **浏览器验证**：用户手动恢复预览后，320／390px两列、1440px三列无溢出；390px文字区约152→79px、卡高238.4→165px。片单收藏可切换并撤销测试数据；《奥德赛》豆瓣8.6刷新保留，从详情收藏后收藏卡仍标豆瓣8.6、重开仍为豆瓣，测试收藏已撤销；IMDB《肖申克》9.3，默认TMDB《奥德赛》8.0。
+- **截图**：`artifacts/previews/frame-compact-lists-mobile.png`、`frame-compact-lists-desktop.png`、`frame-detail-douban-rating.png`、`frame-detail-imdb-rating.png`。图片仅用于本地复检，不提交或发布。

@@ -3,4 +3,6 @@ import { createImdbClient } from "./client";
 import { createImdbService } from "./service";
 import { tmdb } from "../tmdb/server";
 
-export const imdb = createImdbService(createImdbClient(), (id, media) => tmdb.findByImdbId(id, media));
+// Rankings and detail ratings share the same authoritative source cache.
+export const imdbClient = createImdbClient();
+export const imdb = createImdbService(imdbClient, (id, media) => tmdb.findByImdbId(id, media));

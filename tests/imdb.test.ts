@@ -72,7 +72,7 @@ test("IMDB metadata enrichment never replaces original scores, votes or ranks wi
   assert.equal(item.title, "中文片名");
   assert.equal(item.source, "imdb");
   assert.deepEqual([item.voteAverage, item.voteCount, item.rank, item.imdbId], [9.3, 3000000, 1, "tt0111161"]);
-  assert.equal(mediaHref(item), "/movie/278");
+  assert.equal(mediaHref(item), "/movie/278?source=imdb");
   assert.equal(mediaKey(item), mediaKey(match));
   assert.equal(cardNumber(item, true, 4)?.kind, "rank");
   assert.equal(cardNumber(item, false, 4)?.text, "#4");

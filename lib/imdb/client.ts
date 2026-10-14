@@ -8,6 +8,7 @@ export interface ImdbTitle {
   date: string; year: string; genres: string[]; rating: number; votes: number; rank: number;
 }
 export interface ImdbChartResult { titles: ImdbTitle[]; retrievedAt: string; stale: boolean }
+export interface ImdbRatingResult { rating: number; votes: number; retrievedAt: string; stale: boolean }
 type Raw = Record<string, unknown>;
 const object = (x: unknown): Raw => x && typeof x === "object" && !Array.isArray(x) ? x as Raw : {};
 const text = (x: unknown) => typeof x === "string" ? x.trim() : "";
@@ -57,8 +58,7 @@ export function createImdbClient(options: { fetchImpl?: typeof fetch; now?: () =
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms)));
   const cache = new Map<string, { titles: ImdbTitle[]; retrievedAt: string; at: number }>();
   const inflight = new Map<string, Promise<ImdbChartResult>>();
-  async function load(filters: ImdbFilters): Promise<ImdbChartResult> {
-    const url = buildImdbRequest(filters), limit = imdbChart(filters).limit;
+  async function request(url: string): Promise<unknown> {
     for (let attempt = 0; attempt < 2; attempt++) {
       const controller = new AbortController(), timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 12000);
       try {
@@ -70,7 +70,7 @@ export function createImdbClient(options: { fetchImpl?: typeof fetch; now?: () =
         if (!response.ok) throw new ImdbError(response.status === 429 ? "IMDB 请求频繁，请稍后重试。" : "暂时无法获取 IMDB 榜单，请稍后重试。", "IMDB_UPSTREAM_FAILED", response.status === 429 ? 429 : 502);
         let payload: unknown;
         try { payload = await response.json(); } catch { throw invalid(); }
-        return { titles: parseImdbChart(payload, limit), retrievedAt: new Date(now()).toISOString(), stale: false };
+        return payload;
       } catch (error) {
         if (error instanceof ImdbError) throw error;
         if (attempt === 0) { await sleep(250); continue; }
@@ -78,6 +78,9 @@ export function createImdbClient(options: { fetchImpl?: typeof fetch; now?: () =
       } finally { clearTimeout(timer); }
     }
     throw invalid();
+  }
+  async function load(filters: ImdbFilters): Promise<ImdbChartResult> {
+    return { titles: parseImdbChart(await request(buildImdbRequest(filters)), imdbChart(filters).limit), retrievedAt: new Date(now()).toISOString(), stale: false };
   }
   function chart(filters: ImdbFilters): Promise<ImdbChartResult> {
     const key = `${filters.media}:${filters.chart}:${filters.sort}`, previous = cache.get(key);
@@ -92,5 +95,33 @@ export function createImdbClient(options: { fetchImpl?: typeof fetch; now?: () =
     }).finally(() => inflight.delete(key));
     inflight.set(key, promise); return promise;
   }
-  return { chart };
+  const ratingCache = new Map<string, ImdbRatingResult & { at: number }>(), ratingPending = new Map<string, Promise<ImdbRatingResult>>();
+  function rating(id: string): Promise<ImdbRatingResult> {
+    if (!/^tt\d{5,12}$/.test(id)) return Promise.reject(new ImdbError("IMDB 编号无效。", "INVALID_IMDB_ID", 400));
+    const previous = ratingCache.get(id);
+    if (previous && now() - previous.at < 30 * 60_000) return Promise.resolve(previous);
+    // A just-opened chart already carries this title's authoritative rating.
+    for (const entry of [...cache.values()].sort((a, b) => b.at - a.at)) {
+      const title = entry.titles.find(title => title.id === id);
+      if (title && now() - entry.at < 30 * 60_000) return Promise.resolve({ rating: title.rating, votes: title.votes, retrievedAt: entry.retrievedAt, stale: false });
+    }
+    const pending = ratingPending.get(id); if (pending) return pending;
+    const query = "query FrameRating($id:ID!){title(id:$id){id ratingsSummary{aggregateRating voteCount}}}";
+    const url = `https://api.graphql.imdb.com/?query=${encodeURIComponent(query)}&variables=${encodeURIComponent(JSON.stringify({ id }))}`;
+    const promise = request(url).then(payload => {
+      const raw = object(payload), title = object(object(raw.data).title), summary = object(title.ratingsSummary);
+      if (Array.isArray(raw.errors) && raw.errors.length || title.id !== id) throw invalid();
+      const score = summary.aggregateRating ?? 0, votes = summary.voteCount ?? 0;
+      if (typeof score !== "number" || !Number.isFinite(score) || score < 0 || score > 10 || !Number.isSafeInteger(votes) || Number(votes) < 0) throw invalid();
+      const result = { rating: score, votes: Number(votes), retrievedAt: new Date(now()).toISOString(), stale: false, at: now() };
+      ratingCache.delete(id); ratingCache.set(id, result);
+      while (ratingCache.size > 250) ratingCache.delete(ratingCache.keys().next().value!);
+      return result;
+    }).catch(error => {
+      if (previous && now() - previous.at < 24 * 60 * 60_000) return { ...previous, stale: true };
+      throw error;
+    }).finally(() => ratingPending.delete(id));
+    ratingPending.set(id, promise); return promise;
+  }
+  return { chart, rating };
 }
