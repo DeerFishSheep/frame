@@ -17,6 +17,8 @@ const charts: { value: DoubanChart; title: string; movieOnly?: boolean }[] = [
   { value: "recommend", title: "热门推荐" }, { value: "lists", title: "片单" },
 ];
 export const doubanCharts = (media: MediaType) => charts.filter(chart => media === "movie" || !chart.movieOnly);
+// Retain realtime API compatibility while temporarily removing it from site navigation.
+export const visibleDoubanCharts = (media: MediaType) => doubanCharts(media).filter(chart => chart.value !== "realtime" && chart.value !== "lists");
 export const weeklyOptions = (media: MediaType) => options.weekly.list_type.filter(option => media === "movie" ? option.value === "movie_weekly_best" : option.value !== "movie_weekly_best");
 export const realtimeOptions = (media: MediaType) => options.realtime.hot_type.filter(option => option.value === `${media}_real_time_hotest` || option.value === "subject_real_time_hotest");
 
@@ -46,7 +48,7 @@ export function parseDoubanFilters(params: URLSearchParams): DoubanFilters {
     return selected;
   };
   const media = choice("media", [{ value: "movie" }, { value: "tv" }]) as MediaType;
-  const chart = choice("chart", doubanCharts(media), media === "movie" ? "popular" : "realtime") as DoubanChart;
+  const chart = choice("chart", doubanCharts(media), media === "movie" ? "popular" : "weekly") as DoubanChart;
   if (value("source", "douban") !== "douban") throw new QueryError("榜单来源无效。");
   const page = value("page", "1");
   if (!/^[1-9]\d*$/.test(page) || Number(page) > (chart === "top" ? 13 : 500)) throw new QueryError("豆瓣页码超出可浏览范围。");

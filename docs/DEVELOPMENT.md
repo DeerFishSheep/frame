@@ -125,7 +125,7 @@ npm run start
 
 ## UI-03 复检路径
 
-1. `/` 默认电影，主导航为电影／电视剧／找片／片单／收藏；兼容已有 `?media=movie` 链接。
+1. `/` 默认电影，主导航为电影／电视剧／片单／找片／收藏；兼容已有 `?media=movie` 链接。
 2. `/discover` 的 `#N`、前三项颜色、海报标签和交互与榜单卡片一致；搜索、收藏、推荐也复用 `MediaCard`。
 3. `/movie/969681` 顶部没有横幅；左海报右名称与资料；演员区域位于 `detail-content` 之后。
 4. “猜你喜欢”首屏保留完整推荐页；滚动到末尾触发 `/api/recommendations/movie/969681?page=2`。分页按复合 ID 去重，最后一页禁用继续向右按钮，空结果和失败分别显示状态。
@@ -323,7 +323,7 @@ npm run start
 ## DOUBAN-01 豆瓣榜单与片单
 
 - **入口与共用层**：`CatalogEntry` 注册DoubanWorkspace，标题右侧SourcePicker自动显示豆瓣。IMDB与豆瓣统一使用 `ProviderCatalog`，包括原位骨架、自动分页、失败重试、视图切换、轮播、计数和原站入口；底层仍是usePagedResource／ResourceRegion／CatalogSection，不引入单独刷新流程。
-- **控制与选项**：`lib/douban/options.json` 保存参考模块12.5.0的8片单与298类型榜ID，及推荐筛选选项。`query.ts` 统一枚举、媒介隔离、页码、URL与上游请求构造。类型榜为分类→具体榜单；片单由LISTS-01迁至独立目录与详情，支持预设与输入链接；更多推荐条件默认折叠。
+- **控制与选项**：`lib/douban/options.json` 保存参考模块12.5.0的8片单与298类型榜ID，及推荐筛选选项。`query.ts` 统一枚举、媒介隔离、页码、URL与上游请求构造。类型榜为分类→具体榜单；片单由LISTS-01迁至独立目录与详情，支持预设与输入链接；UI-28将可用推荐条件直接展开为标签，不再折叠或使用下拉框。
 - **数据获取**：`/api/douban` → server → service → client。只请求固定的m.douban.com/rexxar/api/v2路径，超时12秒、不跟随重定向；10分钟缓存、同请求合并、最多120页缓存、24小时内失败回退并标注旧时间。分页20条，最高500页；超限会显示范围，未知总数只显示已加载，不编造总数。
 - **身份与原始数据**：豆列条目id不是作品id，优先target_id／subject URL／uri。normalize保留豆瓣评分、票数、排名、中文名和类型；非影视与重复主体跳过，仍按上游start推进。未匹配使用douban:<id>，匹配后用TMDB详情ID；mediaKey始终优先doubanId，避免分季对应同一TMDB剧集导致卡片丢失。收藏允许两类身份并保存doubanId。
 - **资料匹配**：四个并发进行可靠匹配；UI-25使用createDoubanMatcher，唯一片名／原名＋年份先匹配，同名同年再由导演或至少两名演员唯一核实，证据仍不足时不猜测。原始评分不会被TMDB值覆盖；匹配失败仍保留豆瓣海报与原站链接。日期只使用真实完整日期或明确年份＋月日，不能按年份补1月1日。
@@ -381,3 +381,16 @@ npm run start
 - **独立复检**：只读Agent检查评分及收藏边界，发现并修复原始异常值被normalizer钳制／取整、回退收藏丢失来源、未验证URL编号污染收藏别名三项边界；新增回归。最终针对性35项通过，无待修问题。
 - **浏览器验证**：用户手动恢复预览后，320／390px两列、1440px三列无溢出；390px文字区约152→79px、卡高238.4→165px。片单收藏可切换并撤销测试数据；《奥德赛》豆瓣8.6刷新保留，从详情收藏后收藏卡仍标豆瓣8.6、重开仍为豆瓣，测试收藏已撤销；IMDB《肖申克》9.3，默认TMDB《奥德赛》8.0。
 - **截图**：`artifacts/previews/frame-compact-lists-mobile.png`、`frame-compact-lists-desktop.png`、`frame-detail-douban-rating.png`、`frame-detail-imdb-rating.png`。图片仅用于本地复检，不提交或发布。
+
+
+## UI-28 豆瓣标签筛选与入口精简
+
+- `lib/douban/filter-options.ts` 的 `doubanFilterRows` 按当前榜单／媒介／分类给出可用行，单选项不显示；`selectDoubanFilter` 严格验证当前行及选项，换group重置collection、分类切换清除不支持字段，保留其他有效条件并回到page1。
+- `DoubanWorkspace` 删除select/details和独立排序槽，复用找片的discover-filter-row／quick-options／filter-chip，排序在区域末尾。保留prepare+router.replace(scroll:false)、ProviderCatalog共享骨架与分页；重复选当前值不请求，非默认时可重置。
+- `visibleDoubanCharts` 只控制站点显示，排除realtime和已独立的lists；原API枚举和请求映射保留。TV默认weekly；`isHiddenDoubanHref`阻止导航恢复隐藏榜，`app/page.tsx`将旧realtime链接转到电影popular／剧集weekly，避免停在无入口的分类。
+- `FrameShell.navigation` 中片单前移至找片之前。样式集中在 `.catalog-filters.douban-controls`，与现有标签样式共用，不添加平台专属下拉。
+- 实际验证：电影weekly无筛选区域；TV四口碑标签保留；喜剧22个细分榜切换科幻11个，URL同步；推荐“全部”7行切换“韩剧”只剩分类行，真实返回20部，重回全部恢复默认字段。
+- 组合验证：TV美国＋8分起刷新后仍选中；重置恢复全部／4分起且重置按钮消失。320／390／1440px无横向溢出，无select/details，导航顺序正确。截图在artifacts/previews/frame-douban-tags-mobile.png、frame-douban-tags-desktop.png。
+- 回归：tests/douban-filters.test.ts新增9项，覆盖298榜可达、依赖切换、非法条件、URL恢复及隐藏榜导航；UI与测试分工实现、独立检查。工作树183项与类型检查通过；298榜仅静态映射覆盖，不表示逐一远端验收。
+
+- **交付检查**：独立快照183 / 183与webpack生产编译通过；旧TV realtime链接已在浏览器跳转到weekly，热门电影韩国＋评分实测17部。结束时恢复原喜剧类型榜，清除临时视口尺寸。

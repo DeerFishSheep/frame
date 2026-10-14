@@ -10,14 +10,14 @@ import { BackToTop } from "./back-to-top";
 import { useFrame } from "./providers";
 import { readViewState } from "@/lib/view-state";
 import { usePageContinuity } from "@/lib/use-page-continuity";
-import { catalogSource, isLegacyCollectionHref, sourceLabel } from "@/lib/catalog-sources";
-import { defaultDoubanFilters, doubanCharts, doubanParams } from "@/lib/douban/query";
+import { catalogSource, isHiddenDoubanHref, sourceLabel } from "@/lib/catalog-sources";
+import { defaultDoubanFilters, visibleDoubanCharts, doubanParams } from "@/lib/douban/query";
 
 const navigation = [
   { id: "movie", label: "电影", href: "/" },
   { id: "tv", label: "电视剧", href: "/?media=tv" },
-  { id: "discover", label: "找片", href: "/discover" },
   { id: "lists", label: "片单", href: "/lists" },
+  { id: "discover", label: "找片", href: "/discover" },
   { id: "favorites", label: "我的收藏", href: "/favorites" },
 ];
 
@@ -37,11 +37,10 @@ export function FrameShell({ children }: { children: ReactNode }) {
   const mediaNavigation = (item: typeof navigation[number]) => {
     if (pathname !== "/" || currentQuery || (item.id !== "movie" && item.id !== "tv")) return item.href;
     const remembered = readViewState<string | null>(`catalog-location:${item.id}:${source}`, null);
-    if (remembered && !(source === "douban" && isLegacyCollectionHref(remembered))) return remembered;
+    if (remembered && !(source === "douban" && isHiddenDoubanHref(remembered))) return remembered;
     if (source === "douban") {
-      const chart = doubanCharts(item.id).find(chart => chart.value === params.get("chart"))?.value;
+      const chart = visibleDoubanCharts(item.id).find(chart => chart.value === params.get("chart"))?.value;
       const next = defaultDoubanFilters(item.id, chart);
-      if (chart === "lists" && params.get("list")) next.list = params.get("list")!;
       return `/?${doubanParams(next)}`;
     }
     const next = new URLSearchParams(params); next.set("media", item.id); next.delete("page");
