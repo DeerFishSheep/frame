@@ -147,7 +147,7 @@ test("a matched Douban card and its TMDB detail share favorites without merging 
 
 test("source navigation preserves remembered Douban conditions and adds its shared title prefix exactly once", () => {
   const params = new URLSearchParams("source=imdb&media=tv&chart=top");
-  assert.equal(catalogSourceHref("douban", params, () => undefined), "/?source=douban&media=tv&chart=weekly");
+  assert.deepEqual(parse(new URL(catalogSourceHref("douban", params, () => undefined), "https://frame.local").search), defaultDoubanFilters("tv"));
   assert.equal(catalogSourceHref("douban", params, () => "/?source=douban&media=tv&chart=weekly"), "/?source=douban&media=tv&chart=weekly");
   assert.equal(formatCatalogTitle("douban", "豆瓣·Top 250 电影"), "豆瓣 · Top 250 电影");
 });

@@ -61,5 +61,6 @@ test("platform charts are distinguished from user lists and private metadata sto
 
 test("switching ranking platforms ignores an old saved list tab instead of unexpectedly leaving the rankings", () => {
   const href = catalogSourceHref("douban", new URLSearchParams("source=imdb&media=movie&chart=top"), () => "/?source=douban&media=movie&chart=lists&list=doulist%3A1654175");
-  assert.equal(href, "/?source=douban&media=movie&chart=popular");
+  const params = new URL(href, "https://frame.local").searchParams;
+  assert.equal(params.get("chart"), "recommend"); assert.equal(params.get("category"), "热门");
 });

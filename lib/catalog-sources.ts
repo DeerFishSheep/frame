@@ -1,4 +1,5 @@
 import type { DataSource, MediaType } from "./types";
+import { defaultDoubanFilters, doubanParams, migrateDoubanPopularHref } from "./douban/query";
 
 /** One registry for names, artwork and the source chooser. Only connected sources belong here. */
 export const CATALOG_SOURCES = [
@@ -13,15 +14,16 @@ export function catalogSource(params: URLSearchParams): CatalogSourceId {
 }
 export function isHiddenDoubanHref(href: string) {
   const url = new URL(href, "https://frame.local");
-  return url.pathname === "/" && url.searchParams.get("source") === "douban" && ["lists", "realtime"].includes(url.searchParams.get("chart") || "");
+  return url.pathname === "/" && url.searchParams.get("source") === "douban" && ["popular", "lists", "realtime"].includes(url.searchParams.get("chart") || "");
 }
 
 export function catalogSourceHref(target: CatalogSourceId, params: URLSearchParams, remember: (key: string) => string | undefined) {
-  if (target === catalogSource(params)) return `/?${params}`;
+  if (target === catalogSource(params)) return target === "douban" ? migrateDoubanPopularHref(`/?${params}`) : `/?${params}`;
   const media: MediaType = params.get("media") === "tv" ? "tv" : "movie";
   const previous = remember(`catalog-location:${media}:${target}`);
-  if (previous && !(target === "douban" && isHiddenDoubanHref(previous))) return previous;
-  if (target === "douban") return `/?source=douban&media=${media}&chart=${media === "movie" ? "popular" : "weekly"}`;
+  const restored = previous && target === "douban" ? migrateDoubanPopularHref(previous) : previous;
+  if (restored && !(target === "douban" && isHiddenDoubanHref(restored))) return restored;
+  if (target === "douban") return `/?${doubanParams(defaultDoubanFilters(media))}`;
   const chart = params.get("chart") === "popular" ? "popular" : "top";
   return target === "imdb" ? `/?source=imdb&media=${media}&chart=${chart}&sort=rank` : `/?media=${media}&chart=${chart}`;
 }

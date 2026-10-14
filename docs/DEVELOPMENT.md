@@ -394,3 +394,28 @@ npm run start
 - 回归：tests/douban-filters.test.ts新增9项，覆盖298榜可达、依赖切换、非法条件、URL恢复及隐藏榜导航；UI与测试分工实现、独立检查。工作树183项与类型检查通过；298榜仅静态映射覆盖，不表示逐一远端验收。
 
 - **交付检查**：独立快照183 / 183与webpack生产编译通过；旧TV realtime链接已在浏览器跳转到weekly，热门电影韩国＋评分实测17部。结束时恢复原喜剧类型榜，清除临时视口尺寸。
+
+
+## UI-29 热门入口合并与排序能力核实
+
+- `query.ts.visibleDoubanCharts` 隐藏popular独立分类；电影默认recommend／热门。底层显式popular仍用于旧API兼容，电影recommend／热门复用同一个hot_gaia请求，area／sort／page保留；类别“全部”仍使用movie/recommend的U/T/R/S。
+- `filter-options.ts` 热门分类显示地区与三种排序；切category把sort重置到所属参数域（热门recommend，其他U），再通过序列化清除不支持字段。最新／豆瓣高分／冷门佳片不显示或接受无效sort。
+- `migrateDoubanPopularHref` 规范化旧站内热门地址，保留合法地区、排序、页码；其他来源／外站不改写，非法旧参数回退电影默认。CatalogSourceHref、FrameShell历史导航和根路由共用迁移，不丢失已保存排序。
+- `tests/douban-merge.test.ts` 新增8项，原有分类与导航测试更新；相关42项、工作树191项及类型检查通过。测试Agent与实现独立复检。
+
+### UI-29 真实接口对照（2026-10-15，北京时间）
+
+请求固定m.douban.com接口、地区全部、start=0或20、count=20，比较完整ID顺序、评分／人数及total；并发2、每次12秒超时、无重试。共42次返回200，不把200本身当作排序有效。
+
+| 对照 | 实测结果 |
+| --- | --- |
+| hot_gaia的recommend／time／rank | 前两页三种顺序均不同；rank前40条评分降序9.3→7.5 |
+| recent_hot的热门／最新／豆瓣高分／冷门佳片，加上述sort | 各分类首20条ID顺序与评分／人数均和不加sort相同；第二页rank仍相同，即本轮参数被忽略 |
+| hot_gaia加category=最新／豆瓣高分／冷门佳片 | 与同sort不加category完全相同，分类参数被忽略；仍是312条热门集合 |
+| recent_hot热门默认 vs hot_gaia recommend | 前40条ID、顺序、评分／人数完全一致，total均312 |
+| 其余三分类 | 原接口报告total500，与热门集合不同，不能用热门接口代替它们排序 |
+
+time确实改变顺序，但响应无完整上映日期，本轮未确认其内部时间字段，界面沿用模块“最新”名称。以上只确认指定参数和样本结果，不断言豆瓣所有其他接口绝对不支持排序。原始响应为一次性探针，结论归档后清理。
+
+- **最终页面验收**：合并入口评分排序前5项为9.3／9.1／8.9／8.6／8.6，刷新仍选评分；切换最新／高分／冷门无排序标签。旧popular链接的欧美／time／page2迁移后完整保留，首卡#21；320／390／1440px无溢出、独立验证页控制台无错误。截图在artifacts/previews/frame-douban-merged-hot-mobile.png和frame-douban-merged-hot-desktop.png。临时测试页已关闭、视口覆盖已恢复。
+- **最终检查**：工作树和独立暂存版本191 / 191、类型检查与webpack生产编译通过。符号链接依赖产生standalone追踪边界提示，未声称生产包独立运行或服务器验收。实验原始响应与临时快照在结论归档后清理，用户已有修改保持。

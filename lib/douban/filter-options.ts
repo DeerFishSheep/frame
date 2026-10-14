@@ -35,6 +35,7 @@ export function doubanFilterRows(filters: DoubanFilters): DoubanFilterRow[] {
       add("sort", "排序", choices.sort);
     } else if (media === "movie") {
       add("area", "地区", DOUBAN_OPTIONS.recommend.movie.type);
+      if (filters.category === "热门") add("sort", "排序", DOUBAN_OPTIONS.popular.sort);
     }
   }
   return rows;
@@ -46,6 +47,7 @@ export function selectDoubanFilter(filters: DoubanFilters, key: keyof DoubanFilt
   if (!row?.options.some(option => option.value === value)) throw new QueryError("当前豆瓣榜单不支持此筛选条件，请重新选择。");
   if (filters[key] === value) return filters;
   const next = { ...filters, [key]: value, page: 1 };
+  if (key === "category") next.sort = next.media === "movie" && value === "热门" ? "recommend" : "U";
   if (key === "group") {
     next.collection = DOUBAN_OPTIONS.genres[next.media].find(group => group.value === value)?.boards[0].value ?? "";
   }

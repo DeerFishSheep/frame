@@ -70,7 +70,7 @@ test("changing genre group replaces its dependent board and all 298 boards remai
 
 test("recommendation tags expose all endpoint choices without adding unsupported combinations", () => {
   for (const media of ["movie", "tv"] as const) {
-    const filters = defaultDoubanFilters(media, "recommend");
+    const filters = parse(`media=${media}&chart=recommend&category=全部`);
     assert.deepEqual(keys(filters), ["category", "genre", ...(media === "tv" ? ["platform"] : []), "region", "score", "sort", "year"]);
     const options = DOUBAN_OPTIONS.recommend[media];
     for (const row of doubanFilterRows(filters)) {
@@ -80,9 +80,9 @@ test("recommendation tags expose all endpoint choices without adding unsupported
     }
     for (const category of options.category.filter(option => option.value !== "全部")) {
       const selected = selectDoubanFilter(filters, "category", category.value);
-      assert.deepEqual(keys(selected), media === "movie" ? ["area", "category"] : ["category"]);
+      assert.deepEqual(keys(selected), media === "movie" ? (category.value === "热门" ? ["area", "category", "sort"] : ["area", "category"]) : ["category"]);
       const request = new URL(buildDoubanRequest(selected).url);
-      assert.equal(request.pathname, `/rexxar/api/v2/subject/recent_hot/${media}`);
+      assert.equal(request.pathname, media === "movie" && category.value === "热门" ? "/rexxar/api/v2/movie/hot_gaia" : `/rexxar/api/v2/subject/recent_hot/${media}`);
       assert.equal(request.searchParams.get("tags"), null);
       roundTrip(selected);
     }
@@ -91,19 +91,19 @@ test("recommendation tags expose all endpoint choices without adding unsupported
 
 test("category transitions discard stale fields and returning to all starts from valid defaults", () => {
   for (const media of ["movie", "tv"] as const) {
-    const initial = parse(`media=${media}&chart=recommend&genre=悬疑&region=美国&year=2025&sort=S&score=8&page=4${media === "tv" ? "&platform=HBO" : ""}`);
+    const initial = parse(`media=${media}&chart=recommend&category=全部&genre=悬疑&region=美国&year=2025&sort=S&score=8&page=4${media === "tv" ? "&platform=HBO" : ""}`);
     const selected = selectDoubanFilter(initial, "category", media === "movie" ? "最新" : "tv_korean");
     assert.deepEqual([selected.genre, selected.region, selected.year, selected.platform, selected.sort, selected.score, selected.page], ["", "", "", "", "U", "4", 1]);
     assert.equal(selected.area, "全部");
     const withArea = media === "movie" ? selectDoubanFilter(selected, "area", "韩国") : selected;
     const restored = selectDoubanFilter(withArea, "category", "全部");
-    assert.deepEqual(restored, defaultDoubanFilters(media, "recommend"));
+    assert.deepEqual(restored, parse(`media=${media}&chart=recommend&category=全部`));
     roundTrip(restored);
   }
 });
 
 test("changing one recommendation tag preserves others and produces the exact server query after refresh", () => {
-  const filters = parse("media=tv&chart=recommend&genre=悬疑&region=美国&year=2025&platform=HBO&sort=S&score=8&page=4");
+  const filters = parse("media=tv&chart=recommend&category=全部&genre=悬疑&region=美国&year=2025&platform=HBO&sort=S&score=8&page=4");
   const selected = selectDoubanFilter(filters, "year", "2024");
   assert.deepEqual(selected, { ...filters, year: "2024", page: 1 });
   const refreshed = parseDoubanFilters(doubanParams(selected));
@@ -131,7 +131,7 @@ test("tag changes reject hidden fields, cross-group boards and invalid values be
 });
 
 test("visible chart navigation hides realtime and lists without deleting API compatibility", () => {
-  assert.deepEqual(visibleDoubanCharts("movie").map(chart => chart.value), ["popular", "weekly", "top", "now", "genres", "recommend"]);
+  assert.deepEqual(visibleDoubanCharts("movie").map(chart => chart.value).sort(), ["genres", "now", "recommend", "top", "weekly"]);
   assert.deepEqual(visibleDoubanCharts("tv").map(chart => chart.value), ["weekly", "genres", "recommend"]);
   assert.equal(defaultDoubanFilters("tv").chart, "weekly");
   for (const media of ["movie", "tv"] as const) {
@@ -148,7 +148,7 @@ test("switching source skips hidden Douban history but preserves visible chart c
     for (const chart of ["realtime", "lists"]) {
       const remembered = `/?source=douban&media=${media}&chart=${chart}`;
       assert.equal(isHiddenDoubanHref(remembered), true);
-      assert.equal(catalogSourceHref("douban", current, () => remembered), `/?source=douban&media=${media}&chart=${media === "movie" ? "popular" : "weekly"}`);
+      assert.deepEqual(parse(new URL(catalogSourceHref("douban", current, () => remembered), "https://frame.local").search), defaultDoubanFilters(media));
     }
     const weekly = `/?source=douban&media=${media}&chart=weekly&page=2`;
     assert.equal(isHiddenDoubanHref(weekly), false);

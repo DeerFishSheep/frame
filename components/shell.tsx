@@ -11,7 +11,7 @@ import { useFrame } from "./providers";
 import { readViewState } from "@/lib/view-state";
 import { usePageContinuity } from "@/lib/use-page-continuity";
 import { catalogSource, isHiddenDoubanHref, sourceLabel } from "@/lib/catalog-sources";
-import { defaultDoubanFilters, visibleDoubanCharts, doubanParams } from "@/lib/douban/query";
+import { defaultDoubanFilters, visibleDoubanCharts, doubanParams, migrateDoubanPopularHref } from "@/lib/douban/query";
 
 const navigation = [
   { id: "movie", label: "电影", href: "/" },
@@ -37,7 +37,8 @@ export function FrameShell({ children }: { children: ReactNode }) {
   const mediaNavigation = (item: typeof navigation[number]) => {
     if (pathname !== "/" || currentQuery || (item.id !== "movie" && item.id !== "tv")) return item.href;
     const remembered = readViewState<string | null>(`catalog-location:${item.id}:${source}`, null);
-    if (remembered && !(source === "douban" && isHiddenDoubanHref(remembered))) return remembered;
+    const restored = remembered && source === "douban" ? migrateDoubanPopularHref(remembered) : remembered;
+    if (restored && !(source === "douban" && isHiddenDoubanHref(restored))) return restored;
     if (source === "douban") {
       const chart = visibleDoubanCharts(item.id).find(chart => chart.value === params.get("chart"))?.value;
       const next = defaultDoubanFilters(item.id, chart);

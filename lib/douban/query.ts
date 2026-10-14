@@ -17,8 +17,8 @@ const charts: { value: DoubanChart; title: string; movieOnly?: boolean }[] = [
   { value: "recommend", title: "热门推荐" }, { value: "lists", title: "片单" },
 ];
 export const doubanCharts = (media: MediaType) => charts.filter(chart => media === "movie" || !chart.movieOnly);
-// Retain realtime API compatibility while temporarily removing it from site navigation.
-export const visibleDoubanCharts = (media: MediaType) => doubanCharts(media).filter(chart => chart.value !== "realtime" && chart.value !== "lists");
+// Legacy popular/realtime APIs remain available; popular now lives under recommendation categories.
+export const visibleDoubanCharts = (media: MediaType) => doubanCharts(media).filter(chart => !["popular", "realtime", "lists"].includes(chart.value));
 export const weeklyOptions = (media: MediaType) => options.weekly.list_type.filter(option => media === "movie" ? option.value === "movie_weekly_best" : option.value !== "movie_weekly_best");
 export const realtimeOptions = (media: MediaType) => options.realtime.hot_type.filter(option => option.value === `${media}_real_time_hotest` || option.value === "subject_real_time_hotest");
 
@@ -48,7 +48,7 @@ export function parseDoubanFilters(params: URLSearchParams): DoubanFilters {
     return selected;
   };
   const media = choice("media", [{ value: "movie" }, { value: "tv" }]) as MediaType;
-  const chart = choice("chart", doubanCharts(media), media === "movie" ? "popular" : "weekly") as DoubanChart;
+  const chart = choice("chart", doubanCharts(media), media === "movie" ? "recommend" : "weekly") as DoubanChart;
   if (value("source", "douban") !== "douban") throw new QueryError("榜单来源无效。");
   const page = value("page", "1");
   if (!/^[1-9]\d*$/.test(page) || Number(page) > (chart === "top" ? 13 : 500)) throw new QueryError("豆瓣页码超出可浏览范围。");
@@ -65,11 +65,14 @@ export function parseDoubanFilters(params: URLSearchParams): DoubanFilters {
     result.list = value("list", options.lists[0].value); doubanListUrl(result.list);
   } else if (chart === "recommend") {
     const choices = options.recommend[media];
-    result.category = choice("category", choices.category);
+    result.category = choice("category", choices.category, media === "movie" ? "热门" : "全部");
     if (result.category === "全部") {
       for (const key of ["genre", "region", "year", "sort", "score"] as const) result[key] = choice(key, choices[key], key === "sort" ? "U" : key === "score" ? "4" : "");
       if (media === "tv") result.platform = choice("platform", options.recommend.tv.platform, "");
-    } else if (media === "movie") result.area = choice("area", options.recommend.movie.type);
+    } else if (media === "movie") {
+      result.area = choice("area", options.recommend.movie.type);
+      if (result.category === "热门") result.sort = choice("sort", options.popular.sort);
+    }
   }
   for (const key of params.keys()) if (!used.has(key)) throw new QueryError("当前豆瓣榜单不支持此筛选条件，请重新选择。");
   return result;
@@ -84,10 +87,20 @@ export function doubanParams(filters: DoubanFilters) {
   if (filters.chart === "lists") keys = ["list"];
   if (filters.chart === "recommend") keys = filters.category === "全部"
     ? ["category", "genre", "region", "year", "sort", "score", ...(filters.media === "tv" ? ["platform" as const] : [])]
-    : ["category", ...(filters.media === "movie" ? ["area" as const] : [])];
+    : ["category", ...(filters.media === "movie" ? ["area" as const, ...(filters.category === "热门" ? ["sort" as const] : [])] : [])];
   keys.forEach(key => p.set(key, String(filters[key]))); return p;
 }
 export const defaultDoubanFilters = (media: MediaType, chart?: DoubanChart) => parseDoubanFilters(new URLSearchParams({ media, ...(chart ? { chart } : {}) }));
+
+/** Keep bookmarks/history for the merged entry, including their region, sort and starting page. */
+export function migrateDoubanPopularHref(href: string) {
+  const url = new URL(href, "https://frame.local");
+  if (url.origin !== "https://frame.local" || url.pathname !== "/" || url.searchParams.get("source") !== "douban" || url.searchParams.get("chart") !== "popular") return href;
+  let filters: DoubanFilters;
+  try { filters = { ...parseDoubanFilters(url.searchParams), chart: "recommend", category: "热门" }; }
+  catch { filters = defaultDoubanFilters("movie"); }
+  return `/?${doubanParams(filters)}`;
+}
 
 export function doubanChart(filters: DoubanFilters) {
   const { chart, media } = filters;
@@ -107,7 +120,7 @@ export function buildDoubanRequest(filters: DoubanFilters) {
   const meta = doubanChart(filters), start = (filters.page - 1) * DOUBAN_PAGE_SIZE;
   const params = new URLSearchParams({ start: String(start), count: String(DOUBAN_PAGE_SIZE), items_only: "1", for_mobile: "1" });
   let path: string;
-  if (filters.chart === "popular") {
+  if (filters.chart === "popular" || filters.chart === "recommend" && filters.media === "movie" && filters.category === "热门") {
     path = "movie/hot_gaia"; params.set("area", filters.area); params.set("sort", filters.sort); params.set("playable", "0"); params.set("loc_id", "0");
   } else if (filters.chart === "recommend") {
     if (filters.category === "全部") {
