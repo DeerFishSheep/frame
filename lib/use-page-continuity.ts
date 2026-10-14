@@ -39,6 +39,7 @@ export function usePageContinuity(pathname: string, query: string) {
     document.addEventListener("click", remember, true);
     window.addEventListener("popstate", pop);
     window.addEventListener("frame:scroll-to-top", interrupt);
+    window.addEventListener("frame:catalog-source-change", interrupt);
     window.addEventListener("wheel", interrupt, { passive: true });
     window.addEventListener("touchmove", interrupt, { passive: true });
     window.addEventListener("keydown", keyInterrupt);
@@ -46,6 +47,7 @@ export function usePageContinuity(pathname: string, query: string) {
       window.removeEventListener("scroll", remember); document.removeEventListener("click", remember, true);
       window.removeEventListener("popstate", pop); window.removeEventListener("wheel", interrupt);
       window.removeEventListener("frame:scroll-to-top", interrupt);
+      window.removeEventListener("frame:catalog-source-change", interrupt);
       window.removeEventListener("touchmove", interrupt); window.removeEventListener("keydown", keyInterrupt);
       finishRestore.current?.();
     };

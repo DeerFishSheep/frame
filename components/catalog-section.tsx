@@ -36,7 +36,7 @@ export function CatalogSection({ id, title, dataSource, badge, actions, charts, 
   const chartRow = useRef<HTMLDivElement>(null);
   const rememberCharts = useScrollMemory(`chart-tabs:${chartLabel}`, chartRow);
   return <section className="catalog" aria-labelledby={id}>
-    {hasSourcePicker && <div ref={sentinel} className="catalog-sticky-sentinel" aria-hidden="true"/>}
+    {hasSourcePicker && <div ref={sentinel} className="catalog-sticky-sentinel" data-catalog-start aria-hidden="true"/>}
     <div className={`catalog-heading ${hasSourcePicker ? "catalog-heading--sticky" : ""} ${stuck ? "is-stuck" : ""}`} data-scroll-anchor="catalog-heading" data-sticky-heading={hasSourcePicker ? "" : undefined}>
       <div className="catalog-title"><h2 id={id}>{dataSource ? formatCatalogTitle(dataSource, title) : title}</h2>{badge}</div>
       <div className="catalog-actions">{hasSourcePicker && <SourcePicker/>}{actions}</div>

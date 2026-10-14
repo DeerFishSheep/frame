@@ -58,7 +58,7 @@ export function ImdbWorkspace() {
     {loading && !current && <div className="skeleton featured-loading" aria-label="正在加载 IMDB 焦点影片"/>}
     <CatalogSection id="imdb-heading" title={current?.context.title || chart.label} dataSource={current?.source || "imdb"}
       actions={<button className="icon-button view-toggle" onClick={toggleLayout} aria-label={layout === "grid" ? "切换列表视图" : "切换海报视图"}>{layout === "grid" ? <List size={18}/> : <Grid2X2 size={18}/>}</button>}
-      charts={(["top", "popular"] as const).map(value => ({ id: value, label: imdbChart({ ...filters, chart: value }).label, selected: filters.chart === value, onSelect: () => change({ chart: value }) }))}
+      charts={(["popular", "top"] as const).map(value => ({ id: value, label: imdbChart({ ...filters, chart: value }).label, selected: filters.chart === value, onSelect: () => change({ chart: value }) }))}
       chartLabel="IMDB 榜单分类"
       chartAction={<a className="catalog-more" href={chart.url} target="_blank" rel="noopener noreferrer">查看原榜<ArrowUpRight size={14}/></a>}
       sortLabel="IMDB 排序方式"

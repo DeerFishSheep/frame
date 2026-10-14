@@ -340,3 +340,13 @@
 - **交付**：同步规则与进度，保留原有未提交改动；清理本次临时快照。复检先看UI-22、SourcePicker与catalog-sources.ts。
 
 - **截图**：`artifacts/previews/frame-source-heading-mobile.png`、`frame-source-picker-mobile.png`、`frame-source-picker-desktop.png`，均保存在本机供复检。
+
+## 2026-10-14 — 切换平台后从榜单开头浏览
+
+- **关联任务**：UI-23。用户要求平台切换作为滚动恢复的单独例外，标题行贴住屏幕顶部，同时将IMDB热门分类放在Top 250之前。
+- **实现**：CatalogEntry只为主动选择另一平台创建一次定位意图；CatalogSection提供非吸顶的data-catalog-start锚点。alignCatalogStart在新数据和海报布局变化期间校准，稳定后释放；用户滚动、再次操作或离开立即取消。平台条件仍恢复，普通筛选／更新与历史返回保持原逻辑。
+- **分类**：IMDB电影和剧集共用popular、top顺序；未改默认榜单及排序。
+- **验证**：9项新增模拟测试覆盖深处定位、慢加载、释放和用户中断，工作树及独立提交快照的124 / 124及类型检查通过。本机真实页面390／690／1440px切换后标题顶端误差小于1px，分类及首排可见；继续下滑、重复选择当前平台不被拉回。移动宽度为浏览器模拟，非实体iPhone。
+- **记录与交付**：同步PLAN、AGENTS、README及进度／开发说明；截图保留在artifacts/previews/frame-source-switch-alignment.png。本次不重启开发服务、不重跑生产构建；保留原有用户改动并独立提交。
+
+- **本轮详情返回复检**：1440px从IMDB热门电影的“大学炸弹客”进入详情，再用站内“返回榜单”；前后scrollY均1081.5、片名top均497.594，没有回到榜单开头。电影／剧集分类分别实测为“热门电影、Top 250 电影”和“热门剧集、Top 250 剧集”。
