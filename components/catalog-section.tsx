@@ -6,7 +6,7 @@ import { formatCatalogTitle } from "@/lib/catalog-sources";
 import type { DataSource } from "@/lib/types";
 import { SourcePicker, useCatalogSource } from "./source-picker";
 
-interface CatalogTab { id: string; label: string; selected: boolean; onSelect: () => void }
+export interface CatalogTab { id: string; label: string; selected: boolean; onSelect: () => void }
 interface CatalogSectionProps {
   id: string;
   title: string;

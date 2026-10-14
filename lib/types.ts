@@ -1,11 +1,12 @@
 export type MediaType = "movie" | "tv";
 export type Chart = "trending" | "popular" | "top" | "now" | "upcoming" | "discover" | "favorites";
-export type DataSource = "tmdb" | "imdb" | "demo";
+export type DataSource = "tmdb" | "imdb" | "douban" | "demo";
 
 export interface Media {
-  /** TMDB numeric ID when matched; otherwise the original IMDB tt ID. */
+  /** TMDB numeric ID when matched; otherwise an IMDB tt ID or douban:<subject ID>. */
   id: number | string;
   imdbId?: string | null;
+  doubanId?: string;
   mediaType: MediaType;
   title: string;
   originalTitle: string;
@@ -51,6 +52,8 @@ export interface CatalogResponse extends MediaPage {
   source: DataSource;
   stale: boolean;
   notice?: string;
+  /** Some provider feeds paginate without publishing a total. */
+  totalResultsExact?: boolean;
 }
 
 export interface CatalogFilters {
@@ -82,15 +85,16 @@ export const DEFAULT_FILTERS: CatalogFilters = {
   sort: "popularity.desc", page: 1,
 };
 
-export const mediaKey = (item: Pick<Media, "mediaType" | "id">) => typeof item.id === "string" ? `imdb:${item.id}` : `${item.mediaType}:${item.id}`;
+export const mediaKey = (item: Pick<Media, "mediaType" | "id" | "doubanId">) => item.doubanId ? `douban:${item.doubanId}` : typeof item.id === "string" ? `imdb:${item.id}` : `${item.mediaType}:${item.id}`;
 export const mediaHref = (item: Pick<Media, "mediaType" | "id">) => typeof item.id === "string"
-  ? /^tt\d{5,12}$/.test(item.id) ? `https://www.imdb.com/title/${item.id}/` : "/"
+  ? /^tt\d{5,12}$/.test(item.id) ? `https://www.imdb.com/title/${item.id}/` : /^douban:[1-9]\d{0,11}$/.test(item.id) ? `https://movie.douban.com/subject/${item.id.slice(7)}/` : "/"
   : `/${item.mediaType}/${item.id}`;
 export function imageUrl(path: string | null, size = "w500") {
   if (path) {
     try {
       const url = new URL(path);
       if (url.protocol === "https:" && url.hostname === "m.media-amazon.com" && !url.username && !url.password && !url.port && url.pathname.startsWith("/images/M/")) return url.href;
+      if (url.protocol === "https:" && /^(?:img\d+|qnmob\d+-sign)\.doubanio\.com$/.test(url.hostname) && !url.username && !url.password && !url.port && url.pathname.startsWith("/view/photo/")) return url.href;
     } catch { /* Relative TMDB image paths use the fixed image origin below. */ }
   }
   return path && /^\/[a-zA-Z0-9_.-]+$/.test(path) ? `https://image.tmdb.org/t/p/${size}${path}` : null;

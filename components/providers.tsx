@@ -2,8 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, Info, X } from "lucide-react";
-import { readFavorites, writeFavorites, toggleFavorite, FAVORITES_KEY } from "@/lib/favorites";
-import { mediaKey, type Media } from "@/lib/types";
+import { readFavorites, writeFavorites, toggleFavorite, sameFavorite, FAVORITES_KEY } from "@/lib/favorites";
+import type { Media } from "@/lib/types";
 import { useStableUpdate } from "@/lib/use-stable-update";
 
 interface FrameContextValue {
@@ -56,7 +56,7 @@ export function FrameProvider({ children, configured }: { children: ReactNode; c
     setFavorites(next);
     try {
       writeFavorites(window.localStorage, next);
-      setToast({message:next.some(entry=>mediaKey(entry)===mediaKey(item))?"已收进你的片单":"已从片单移除",warning:false});
+      setToast({message:next.some(entry=>sameFavorite(entry,item))?"已收进你的片单":"已从片单移除",warning:false});
     } catch { setToast({message:"浏览器未允许保存，收藏暂存于当前页面",warning:true}); }
   }, [prepareUpdate]);
   const toggleTheme = () => {
@@ -65,7 +65,7 @@ export function FrameProvider({ children, configured }: { children: ReactNode; c
     setTheme(next);
     try { localStorage.setItem("frame_theme_v2", next); } catch { /* Theme still works for this visit. */ }
   };
-  return <FrameContext.Provider value={{favorites,favoritesReady,isFavorite:item=>favorites.some(entry=>mediaKey(entry)===mediaKey(item)),toggle,theme,toggleTheme,preview,setPreview,configured,notify}}>
+  return <FrameContext.Provider value={{favorites,favoritesReady,isFavorite:item=>favorites.some(entry=>sameFavorite(entry,item)),toggle,theme,toggleTheme,preview,setPreview,configured,notify}}>
     {children}
     <div className={`toast ${toast ? "toast-visible" : ""}`} role="status" aria-live="polite" aria-hidden={!toast}>
       {toast?.warning?<Info size={17}/>:<Check size={17}/>}<span>{toast?.message}</span><button aria-label="关闭通知" onClick={()=>setToast(null)}><X size={15}/></button>

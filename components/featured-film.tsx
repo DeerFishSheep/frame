@@ -11,6 +11,7 @@ import { MediaImage } from "./media-card";
 import { useMediaRegions } from "@/lib/use-media-regions";
 import { useFrame } from "./providers";
 import { resourceLoadingProps } from "./resource-feedback";
+import { sourceLabel } from "@/lib/catalog-sources";
 
 export function FeaturedFilm({ items, label, pending = false, stateKey = "featured:catalog" }: { items: Media[]; label: string; pending?: boolean; stateKey?: string }) {
   const slides = selectFeaturedMedia(items);
@@ -71,6 +72,7 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
   useEffect(() => {
     if (!visible || !nextImage || items.length < 2) return;
     const preload = new window.Image();
+    preload.referrerPolicy = "no-referrer";
     preload.src = nextImage;
   }, [nextImage, visible, items.length]);
 
@@ -135,7 +137,7 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
         <div className="featured-meta" data-skeleton="line"><span>{item.mediaType === "tv" ? "电视剧" : "电影"}</span><time dateTime={item.releaseDate || undefined}>{formatMediaDate(item.releaseDate)}</time><span className="featured-genres">{[region, item.genres.join(" / ") || "类型待补充"].filter(Boolean).join(" · ")}</span></div>
         <p data-skeleton="text">{item.overview || "点击查看作品资料。"}</p>
         <div className="featured-actions" data-skeleton="block">
-          <Link className="primary-button" {...detailLink}>{typeof item.id === "string" ? "在 IMDB 查看" : "查看详情"}<ArrowRight size={16}/></Link>
+          <Link className="primary-button" {...detailLink}>{typeof item.id === "string" ? `在 ${sourceLabel(item.source)} 查看` : "查看详情"}<ArrowRight size={16}/></Link>
           <button className="featured-save" onClick={() => toggle({ ...item, countryCodes })} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "收藏"}</button>
         </div>
       </div>

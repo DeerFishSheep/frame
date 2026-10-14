@@ -50,6 +50,6 @@ test("every selectable platform has a bundled image so icons require no external
     assert.ok(source.icon.startsWith("/platforms/"));
     const bytes = readFileSync(`public${source.icon}`);
     assert.ok(bytes.length > 100);
-    assert.ok(bytes.subarray(0, 4).equals(Buffer.from([0, 0, 1, 0])) || bytes.subarray(0, 4).equals(Buffer.from([137, 80, 78, 71])));
+    assert.ok(source.icon.endsWith(".svg") && /<svg[^>]+viewBox=/.test(bytes.toString()) || bytes.subarray(0, 4).equals(Buffer.from([0, 0, 1, 0])) || bytes.subarray(0, 4).equals(Buffer.from([137, 80, 78, 71])));
   }
 });

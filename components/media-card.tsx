@@ -8,12 +8,13 @@ import { formatCount } from "@/lib/ui";
 import { cardNumber, formatMediaDate } from "@/lib/media-presentation";
 import { useMediaRegions } from "@/lib/use-media-regions";
 import { useFrame } from "./providers";
+import { sourceLabel } from "@/lib/catalog-sources";
 
 export function MediaImage({ item, backdrop = false, className = "" }: { item: Media; backdrop?: boolean; className?: string }) {
   const [failedPath, setFailedPath] = useState<string | null>(null);
   const src = imageUrl(backdrop ? item.backdropPath : item.posterPath, backdrop ? "w1280" : "w500");
   return src && src !== failedPath
-    ? <img className={className} src={src} alt={backdrop ? "" : `${item.title}海报`} loading={backdrop ? "eager" : "lazy"} decoding="async" onError={() => setFailedPath(src)}/>
+    ? <img className={className} src={src} alt={backdrop ? "" : `${item.title}海报`} loading={backdrop ? "eager" : "lazy"} decoding="async" referrerPolicy="no-referrer" onError={() => setFailedPath(src)}/>
     : <div className={`image-placeholder ${className}`}><Film size={32} strokeWidth={.9}/><span>{item.title}</span><small>暂无{backdrop ? "剧照" : "海报"}</small></div>;
 }
 
@@ -25,10 +26,10 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
   const date = formatMediaDate(item.releaseDate);
   const genres = [...new Set(item.genres)];
   const href = mediaHref(item), external = typeof item.id === "string";
-  const ratingLabel = item.source === "imdb" ? "IMDB" : "TMDB";
+  const ratingLabel = sourceLabel(item.source);
   return <article className="media-card" data-scroll-anchor={`media:${mediaKey(item)}`}>
     <div className="poster-wrap" data-skeleton="block">
-      <Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="poster-link" aria-label={external ? `在 IMDB 查看${item.title}` : `查看${item.title}详情`}>
+      <Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="poster-link" aria-label={external ? `在 ${ratingLabel} 查看${item.title}` : `查看${item.title}详情`}>
         <MediaImage item={item}/><span className="poster-shade"/>
         {number && <span className={`rank-badge ${number.value <= 3 ? "rank-top" : ""}`} title={number.label} aria-label={number.label}>{number.text}</span>}
         <span className="poster-kind" title={[region, item.mediaType === "movie" ? "电影" : "剧集"].filter(Boolean).join(" · ")}>{region && <><span className="poster-region">{region}</span><span aria-hidden="true">·</span></>}<span className="poster-media-kind">{item.mediaType === "movie" ? "电影" : "剧集"}</span></span>

@@ -18,11 +18,13 @@ const isStringArray = (value: unknown): value is string[] =>
 function restoreMedia(value: unknown): Media | null {
   if (!isRecord(value)) return null;
   const imdbId = typeof value.imdbId === "string" && /^tt\d{5,12}$/.test(value.imdbId) ? value.imdbId : null;
-  if (!isId(value.id) && !(value.source === "imdb" && imdbId && value.id === imdbId)) return null;
+  const doubanId = typeof value.doubanId === "string" && /^[1-9]\d{0,11}$/.test(value.doubanId) ? value.doubanId : null;
+  if (!isId(value.id) && !(value.source === "imdb" && imdbId && value.id === imdbId) && !(value.source === "douban" && doubanId && value.id === `douban:${doubanId}`)) return null;
   if (value.imdbId !== undefined && value.imdbId !== null && !imdbId) return null;
   if (value.source === "imdb" && !imdbId) return null;
+  if (value.doubanId !== undefined && !doubanId || value.source === "douban" && !doubanId) return null;
   if (value.mediaType !== "movie" && value.mediaType !== "tv") return null;
-  if (value.source !== "tmdb" && value.source !== "imdb" && value.source !== "demo") return null;
+  if (value.source !== "tmdb" && value.source !== "imdb" && value.source !== "douban" && value.source !== "demo") return null;
   if (typeof value.title !== "string" || !value.title.trim()) return null;
   if (typeof value.originalTitle !== "string" || typeof value.overview !== "string") return null;
   if (typeof value.releaseDate !== "string" || typeof value.year !== "string") return null;
@@ -38,6 +40,7 @@ function restoreMedia(value: unknown): Media | null {
   return {
     id: value.id as number | string,
     ...(imdbId ? { imdbId } : {}),
+    ...(doubanId ? { doubanId } : {}),
     mediaType: value.mediaType,
     title: value.title,
     originalTitle: value.originalTitle,
@@ -62,8 +65,10 @@ function restoreCollection(value: unknown): Media[] {
   const keys = new Set<string>();
   return value.flatMap((entry) => {
     const item = restoreMedia(entry);
-    if (!item || keys.has(mediaKey(item))) return [];
-    keys.add(mediaKey(item));
+    if (!item) return [];
+    const aliases = favoriteAliases(item), duplicate = aliases.some(key => keys.has(key));
+    aliases.forEach(key => keys.add(key));
+    if (duplicate) return [];
     return [item];
   });
 }
@@ -91,8 +96,17 @@ export function writeFavorites(storage: Pick<Storage, "setItem">, items: Media[]
 }
 
 export function toggleFavorite(items: Media[], item: Media): Media[] {
-  const key = mediaKey(item);
-  return items.some((saved) => mediaKey(saved) === key)
-    ? items.filter((saved) => mediaKey(saved) !== key)
+  return items.some((saved) => sameFavorite(saved, item))
+    ? items.filter((saved) => !sameFavorite(saved, item))
     : [...items, item];
+}
+
+function favoriteAliases(item: Media) {
+  return typeof item.id === "number" ? [mediaKey(item), `${item.mediaType}:${item.id}`] : [mediaKey(item)];
+}
+
+/** Provider rows keep their own keys; a reliably matched work shares its saved state across sources. */
+export function sameFavorite(first: Media, second: Media) {
+  const keys = favoriteAliases(first);
+  return favoriteAliases(second).some(key => keys.includes(key));
 }

@@ -1,0 +1,2350 @@
+{
+  "lists": [
+    {
+      "title": "IMDB科幻电影Top200",
+      "value": "doulist:240612"
+    },
+    {
+      "title": "2000年来最获好评的150部电影",
+      "value": "doulist:3486551"
+    },
+    {
+      "title": "漫威宇宙观影顺序",
+      "value": "doulist:1654175"
+    },
+    {
+      "title": "剧情扣人、故事性强、不闷的好电影",
+      "value": "doulist:2443408"
+    },
+    {
+      "title": "BBC评选21世纪100部佳片",
+      "value": "doulist:45025038"
+    },
+    {
+      "title": "历届奥斯卡最佳影片提名及获奖名单",
+      "value": "doulist:37430937"
+    },
+    {
+      "title": "全球电影票房排行榜🌟至26年1月15日",
+      "value": "doulist:1274560"
+    },
+    {
+      "title": "影视千部最佳恐怖电影榜单",
+      "value": "doulist:163529853"
+    }
+  ],
+  "genres": {
+    "movie": [
+      {
+        "title": "剧情",
+        "value": "剧情",
+        "boards": [
+          {
+            "title": "高分经典剧情片榜",
+            "value": "film_genre_27"
+          }
+        ]
+      },
+      {
+        "title": "喜剧",
+        "value": "喜剧",
+        "boards": [
+          {
+            "title": "近期热门喜剧片榜",
+            "value": "ECAYN54KI"
+          },
+          {
+            "title": "高分经典喜剧片榜",
+            "value": "movie_comedy"
+          },
+          {
+            "title": "华语喜剧片榜",
+            "value": "ECVUOUD7A"
+          },
+          {
+            "title": "欧洲喜剧片榜",
+            "value": "ECPQO4BPA"
+          },
+          {
+            "title": "中国大陆喜剧片榜",
+            "value": "ECKIO6SXI"
+          },
+          {
+            "title": "美国喜剧片榜",
+            "value": "ECGUO62ZA"
+          },
+          {
+            "title": "中国香港喜剧片榜",
+            "value": "ECOYO2QPA"
+          },
+          {
+            "title": "中国台湾喜剧片榜",
+            "value": "ECEAOX2BI"
+          },
+          {
+            "title": "日本喜剧片榜",
+            "value": "ECFIOT7JA"
+          },
+          {
+            "title": "韩国喜剧片榜",
+            "value": "ECOIOVQPY"
+          },
+          {
+            "title": "英国喜剧片榜",
+            "value": "EC6IOYROI"
+          },
+          {
+            "title": "法国喜剧片榜",
+            "value": "ECIEOY5UI"
+          },
+          {
+            "title": "德国喜剧片榜",
+            "value": "ECFQO5B4A"
+          },
+          {
+            "title": "意大利喜剧片榜",
+            "value": "ECREOTSEI"
+          },
+          {
+            "title": "西班牙喜剧片榜",
+            "value": "EC6UO37NQ"
+          },
+          {
+            "title": "瑞典喜剧片榜",
+            "value": "ECPMPBHBI"
+          },
+          {
+            "title": "印度喜剧片榜",
+            "value": "ECTIOYBOY"
+          },
+          {
+            "title": "泰国喜剧片榜",
+            "value": "ECAIO3EWI"
+          },
+          {
+            "title": "加拿大喜剧片榜",
+            "value": "ECYUPAHZY"
+          },
+          {
+            "title": "澳大利亚喜剧片榜",
+            "value": "ECKMOXL6Q"
+          },
+          {
+            "title": "爱尔兰喜剧片榜",
+            "value": "ECOAOZY7Y"
+          },
+          {
+            "title": "冷门佳作喜剧片榜",
+            "value": "ECLYOFOKA"
+          }
+        ]
+      },
+      {
+        "title": "爱情",
+        "value": "爱情",
+        "boards": [
+          {
+            "title": "近期热门爱情片榜",
+            "value": "ECSAOJFTA"
+          },
+          {
+            "title": "高分经典爱情片榜",
+            "value": "movie_love"
+          },
+          {
+            "title": "华语爱情片榜",
+            "value": "ECOIOTUGY"
+          },
+          {
+            "title": "欧洲爱情片榜",
+            "value": "ECUAOYUCA"
+          },
+          {
+            "title": "中国大陆爱情片榜",
+            "value": "EC64OQVEQ"
+          },
+          {
+            "title": "美国爱情片榜",
+            "value": "EC4EOSAQA"
+          },
+          {
+            "title": "中国台湾爱情片榜",
+            "value": "ECWQOQO4A"
+          },
+          {
+            "title": "日本爱情片榜",
+            "value": "ECKMOVF3Y"
+          },
+          {
+            "title": "韩国爱情片榜",
+            "value": "ECHIOXXIQ"
+          },
+          {
+            "title": "英国爱情片榜",
+            "value": "ECHAO4AAQ"
+          },
+          {
+            "title": "法国爱情片榜",
+            "value": "ECTAOT7GQ"
+          },
+          {
+            "title": "德国爱情片榜",
+            "value": "ECNIOS7EQ"
+          },
+          {
+            "title": "意大利爱情片榜",
+            "value": "EC3UOSWUY"
+          },
+          {
+            "title": "西班牙爱情片榜",
+            "value": "ECU4OWMMI"
+          },
+          {
+            "title": "瑞典爱情片榜",
+            "value": "ECCEOUVAA"
+          },
+          {
+            "title": "印度爱情片榜",
+            "value": "ECLUOQWVY"
+          },
+          {
+            "title": "泰国爱情片榜",
+            "value": "ECYQO7YPQ"
+          },
+          {
+            "title": "加拿大爱情片榜",
+            "value": "ECEAOXFIQ"
+          },
+          {
+            "title": "澳大利亚爱情片榜",
+            "value": "ECOUOXYUA"
+          },
+          {
+            "title": "爱尔兰爱情片榜",
+            "value": "ECJMO2O5Y"
+          },
+          {
+            "title": "冷门佳作爱情片榜",
+            "value": "EC2UOKRRQ"
+          }
+        ]
+      },
+      {
+        "title": "动作",
+        "value": "动作",
+        "boards": [
+          {
+            "title": "近期热门动作片榜",
+            "value": "ECBUOLQGY"
+          },
+          {
+            "title": "高分经典动作片榜",
+            "value": "movie_action"
+          },
+          {
+            "title": "华语动作片榜",
+            "value": "EC2YO2M2A"
+          },
+          {
+            "title": "欧洲动作片榜",
+            "value": "ECHUOXOUA"
+          },
+          {
+            "title": "美国动作片榜",
+            "value": "ECPMPC7JA"
+          },
+          {
+            "title": "中国台湾动作片榜",
+            "value": "ECTMO64KY"
+          },
+          {
+            "title": "日本动作片榜",
+            "value": "ECBAPBW2Y"
+          },
+          {
+            "title": "韩国动作片榜",
+            "value": "ECWQOU2HI"
+          },
+          {
+            "title": "英国动作片榜",
+            "value": "ECCUPDBHQ"
+          },
+          {
+            "title": "法国动作片榜",
+            "value": "EC5UOWEFY"
+          },
+          {
+            "title": "德国动作片榜",
+            "value": "EC7AOW57Q"
+          },
+          {
+            "title": "印度动作片榜",
+            "value": "ECMQO4F2I"
+          },
+          {
+            "title": "加拿大动作片榜",
+            "value": "ECUQPDN7Y"
+          },
+          {
+            "title": "澳大利亚动作片榜",
+            "value": "EC4QPALEI"
+          },
+          {
+            "title": "冷门佳作动作片榜",
+            "value": "ECVIOHY6A"
+          }
+        ]
+      },
+      {
+        "title": "科幻",
+        "value": "科幻",
+        "boards": [
+          {
+            "title": "近期热门科幻片榜",
+            "value": "ECZYOJPLI"
+          },
+          {
+            "title": "高分经典科幻片榜",
+            "value": "movie_scifi"
+          },
+          {
+            "title": "欧洲科幻片榜",
+            "value": "ECX4O7JAA"
+          },
+          {
+            "title": "美国科幻片榜",
+            "value": "ECDAO6XZI"
+          },
+          {
+            "title": "日本科幻片榜",
+            "value": "ECSYOV6GY"
+          },
+          {
+            "title": "英国科幻片榜",
+            "value": "EC4UOZQ4Y"
+          },
+          {
+            "title": "法国科幻片榜",
+            "value": "EC3MO34NI"
+          },
+          {
+            "title": "德国科幻片榜",
+            "value": "ECOUO2ETY"
+          },
+          {
+            "title": "加拿大科幻片榜",
+            "value": "ECX4PAGTA"
+          },
+          {
+            "title": "澳大利亚科幻片榜",
+            "value": "ECTAOXLWQ"
+          },
+          {
+            "title": "冷门佳作科幻片榜",
+            "value": "EC2IOENJA"
+          }
+        ]
+      },
+      {
+        "title": "动画",
+        "value": "动画",
+        "boards": [
+          {
+            "title": "近期热门动画片榜",
+            "value": "EC3UOBDQY"
+          },
+          {
+            "title": "高分经典动画片榜",
+            "value": "film_genre_31"
+          },
+          {
+            "title": "华语动画片榜",
+            "value": "ECFMOYMKA"
+          },
+          {
+            "title": "欧洲动画片榜",
+            "value": "ECLYO57HA"
+          },
+          {
+            "title": "美国动画片榜",
+            "value": "EC4IPDWYI"
+          },
+          {
+            "title": "日本动画片榜",
+            "value": "ECLYO6JQQ"
+          },
+          {
+            "title": "英国动画片榜",
+            "value": "ECWUO3RJA"
+          },
+          {
+            "title": "法国动画片榜",
+            "value": "ECIQPF7NY"
+          },
+          {
+            "title": "加拿大动画片榜",
+            "value": "EC3YPB7WQ"
+          },
+          {
+            "title": "冷门佳作动画片榜",
+            "value": "ECTUO3I3A"
+          }
+        ]
+      },
+      {
+        "title": "悬疑",
+        "value": "悬疑",
+        "boards": [
+          {
+            "title": "近期热门悬疑片榜",
+            "value": "ECPQOJP5Q"
+          },
+          {
+            "title": "高分经典悬疑片榜",
+            "value": "film_genre_32"
+          },
+          {
+            "title": "华语悬疑片榜",
+            "value": "ECRMOX2JI"
+          },
+          {
+            "title": "欧洲悬疑片榜",
+            "value": "ECUMPB7SA"
+          },
+          {
+            "title": "美国悬疑片榜",
+            "value": "ECJUO3L7I"
+          },
+          {
+            "title": "中国香港悬疑片榜",
+            "value": "ECV4OU2WA"
+          },
+          {
+            "title": "日本悬疑片榜",
+            "value": "ECVYOVDIA"
+          },
+          {
+            "title": "韩国悬疑片榜",
+            "value": "ECSYOYZWI"
+          },
+          {
+            "title": "英国悬疑片榜",
+            "value": "EC5YPE3OI"
+          },
+          {
+            "title": "法国悬疑片榜",
+            "value": "ECQUO7FVQ"
+          },
+          {
+            "title": "德国悬疑片榜",
+            "value": "ECZQO7KSQ"
+          },
+          {
+            "title": "意大利悬疑片榜",
+            "value": "ECVEO7MPI"
+          },
+          {
+            "title": "西班牙悬疑片榜",
+            "value": "ECAYOVXFA"
+          },
+          {
+            "title": "加拿大悬疑片榜",
+            "value": "ECYMPDCTI"
+          },
+          {
+            "title": "澳大利亚悬疑片榜",
+            "value": "ECIMOWR2I"
+          },
+          {
+            "title": "冷门佳作悬疑片榜",
+            "value": "ECK4OEBJY"
+          }
+        ]
+      },
+      {
+        "title": "犯罪",
+        "value": "犯罪",
+        "boards": [
+          {
+            "title": "近期热门犯罪片榜",
+            "value": "ECLAN6LHQ"
+          },
+          {
+            "title": "高分经典犯罪片榜",
+            "value": "film_genre_46"
+          },
+          {
+            "title": "华语犯罪片榜",
+            "value": "ECVUO4O4Q"
+          },
+          {
+            "title": "欧洲犯罪片榜",
+            "value": "EC5QO2HUI"
+          },
+          {
+            "title": "中国大陆犯罪片榜",
+            "value": "ECWAPHUIA"
+          },
+          {
+            "title": "美国犯罪片榜",
+            "value": "ECEAPADKY"
+          },
+          {
+            "title": "中国香港犯罪片榜",
+            "value": "EC3AOZZUY"
+          },
+          {
+            "title": "日本犯罪片榜",
+            "value": "ECVUO43DY"
+          },
+          {
+            "title": "韩国犯罪片榜",
+            "value": "ECGYO2SPA"
+          },
+          {
+            "title": "英国犯罪片榜",
+            "value": "ECVYOZNAI"
+          },
+          {
+            "title": "法国犯罪片榜",
+            "value": "ECFEPCR2A"
+          },
+          {
+            "title": "德国犯罪片榜",
+            "value": "ECVAPBWRI"
+          },
+          {
+            "title": "意大利犯罪片榜",
+            "value": "ECRMO4X7I"
+          },
+          {
+            "title": "西班牙犯罪片榜",
+            "value": "ECPAPDKZA"
+          },
+          {
+            "title": "加拿大犯罪片榜",
+            "value": "EC2MPBOOI"
+          },
+          {
+            "title": "澳大利亚犯罪片榜",
+            "value": "ECEMOZ6DI"
+          },
+          {
+            "title": "冷门佳作犯罪片榜",
+            "value": "EC7EOG3RI"
+          }
+        ]
+      },
+      {
+        "title": "惊悚",
+        "value": "惊悚",
+        "boards": [
+          {
+            "title": "近期热门惊悚片榜",
+            "value": "ECBUOL2DA"
+          },
+          {
+            "title": "高分经典惊悚片榜",
+            "value": "film_genre_33"
+          },
+          {
+            "title": "华语惊悚片榜",
+            "value": "EC5MPCA7Y"
+          },
+          {
+            "title": "欧洲惊悚片榜",
+            "value": "ECTMPCZTY"
+          },
+          {
+            "title": "美国惊悚片榜",
+            "value": "ECSYO3JKQ"
+          },
+          {
+            "title": "日本惊悚片榜",
+            "value": "ECFUO25PI"
+          },
+          {
+            "title": "韩国惊悚片榜",
+            "value": "ECTMPDECI"
+          },
+          {
+            "title": "英国惊悚片榜",
+            "value": "ECU4O6QYQ"
+          },
+          {
+            "title": "法国惊悚片榜",
+            "value": "ECPMPHOMI"
+          },
+          {
+            "title": "德国惊悚片榜",
+            "value": "ECJIPH4JA"
+          },
+          {
+            "title": "意大利惊悚片榜",
+            "value": "EC2QPBTHY"
+          },
+          {
+            "title": "西班牙惊悚片榜",
+            "value": "ECLMPAEZY"
+          },
+          {
+            "title": "瑞典惊悚片榜",
+            "value": "ECMIPBWCY"
+          },
+          {
+            "title": "印度惊悚片榜",
+            "value": "ECRQPBSYI"
+          },
+          {
+            "title": "加拿大惊悚片榜",
+            "value": "ECZMPDHQI"
+          },
+          {
+            "title": "澳大利亚惊悚片榜",
+            "value": "EC7QPFMYA"
+          },
+          {
+            "title": "冷门佳作惊悚片榜",
+            "value": "ECY4ODRSY"
+          }
+        ]
+      },
+      {
+        "title": "冒险",
+        "value": "冒险",
+        "boards": [
+          {
+            "title": "近期热门冒险片榜",
+            "value": "ECDYOE7WY"
+          },
+          {
+            "title": "高分经典冒险片榜",
+            "value": "film_genre_49"
+          },
+          {
+            "title": "华语冒险片榜",
+            "value": "ECAUOWGNQ"
+          },
+          {
+            "title": "欧洲冒险片榜",
+            "value": "ECW4O3GHY"
+          },
+          {
+            "title": "美国冒险片榜",
+            "value": "ECOMON43Q"
+          },
+          {
+            "title": "日本冒险片榜",
+            "value": "ECOUOVT2Q"
+          },
+          {
+            "title": "英国冒险片榜",
+            "value": "ECFUORHLY"
+          },
+          {
+            "title": "法国冒险片榜",
+            "value": "EC5YO53DI"
+          },
+          {
+            "title": "德国冒险片榜",
+            "value": "ECMYOXC2Y"
+          },
+          {
+            "title": "加拿大冒险片榜",
+            "value": "ECRYO5ULY"
+          },
+          {
+            "title": "澳大利亚冒险片榜",
+            "value": "ECFIOR3MY"
+          },
+          {
+            "title": "冷门佳作冒险片榜",
+            "value": "ECEMN5MLA"
+          }
+        ]
+      },
+      {
+        "title": "家庭",
+        "value": "家庭",
+        "boards": [
+          {
+            "title": "高分经典家庭片榜",
+            "value": "film_genre_41"
+          }
+        ]
+      },
+      {
+        "title": "儿童",
+        "value": "儿童",
+        "boards": [
+          {
+            "title": "高分经典儿童片榜",
+            "value": "film_genre_42"
+          }
+        ]
+      },
+      {
+        "title": "音乐",
+        "value": "音乐",
+        "boards": [
+          {
+            "title": "高分经典音乐片榜",
+            "value": "film_genre_39"
+          },
+          {
+            "title": "欧洲音乐片榜",
+            "value": "ECAQO25QI"
+          },
+          {
+            "title": "美国音乐片榜",
+            "value": "ECUAOV5NA"
+          },
+          {
+            "title": "日本音乐片榜",
+            "value": "ECFYORPYQ"
+          },
+          {
+            "title": "英国音乐片榜",
+            "value": "ECAQO3LYY"
+          },
+          {
+            "title": "法国音乐片榜",
+            "value": "ECYAORESI"
+          },
+          {
+            "title": "冷门佳作音乐片榜",
+            "value": "EC2UOKJFQ"
+          }
+        ]
+      },
+      {
+        "title": "历史",
+        "value": "历史",
+        "boards": [
+          {
+            "title": "高分经典历史片榜",
+            "value": "film_genre_44"
+          },
+          {
+            "title": "华语历史片榜",
+            "value": "ECV4N7YWY"
+          },
+          {
+            "title": "欧洲历史片榜",
+            "value": "ECIAOE4OY"
+          },
+          {
+            "title": "美国历史片榜",
+            "value": "ECK4OGBSA"
+          },
+          {
+            "title": "中国香港历史片榜",
+            "value": "ECPYOEZNY"
+          },
+          {
+            "title": "日本历史片榜",
+            "value": "EC54OCODY"
+          },
+          {
+            "title": "韩国历史片榜",
+            "value": "ECMAOINLA"
+          },
+          {
+            "title": "英国历史片榜",
+            "value": "ECSEOEISY"
+          },
+          {
+            "title": "法国历史片榜",
+            "value": "ECUMONVJQ"
+          },
+          {
+            "title": "德国历史片榜",
+            "value": "ECNQODGKI"
+          },
+          {
+            "title": "意大利历史片榜",
+            "value": "ECL4OLRCY"
+          },
+          {
+            "title": "冷门佳作历史片榜",
+            "value": "ECBAOKDHQ"
+          }
+        ]
+      },
+      {
+        "title": "奇幻",
+        "value": "奇幻",
+        "boards": [
+          {
+            "title": "高分经典奇幻片榜",
+            "value": "film_genre_48"
+          },
+          {
+            "title": "华语奇幻片榜",
+            "value": "EC5MOJAZY"
+          },
+          {
+            "title": "欧洲奇幻片榜",
+            "value": "ECUMOLXQY"
+          },
+          {
+            "title": "美国奇幻片榜",
+            "value": "ECVIOIPDI"
+          },
+          {
+            "title": "中国香港奇幻片榜",
+            "value": "ECUUOJIFA"
+          },
+          {
+            "title": "日本奇幻片榜",
+            "value": "ECEIOJZTQ"
+          },
+          {
+            "title": "韩国奇幻片榜",
+            "value": "ECDAOLOSI"
+          },
+          {
+            "title": "英国奇幻片榜",
+            "value": "ECRAOGHZY"
+          },
+          {
+            "title": "法国奇幻片榜",
+            "value": "EC6QOILRA"
+          },
+          {
+            "title": "德国奇幻片榜",
+            "value": "EC4YOCBLQ"
+          },
+          {
+            "title": "冷门佳作奇幻片榜",
+            "value": "ECCMOLZQA"
+          }
+        ]
+      },
+      {
+        "title": "恐怖",
+        "value": "恐怖",
+        "boards": [
+          {
+            "title": "近期热门恐怖片榜",
+            "value": "ECV4N4FBI"
+          },
+          {
+            "title": "高分经典恐怖片榜",
+            "value": "film_genre_34"
+          },
+          {
+            "title": "华语恐怖片榜",
+            "value": "EC54OE5HA"
+          },
+          {
+            "title": "欧洲恐怖片榜",
+            "value": "ECFAOK5WQ"
+          },
+          {
+            "title": "美国恐怖片榜",
+            "value": "ECGMORRUY"
+          },
+          {
+            "title": "日本恐怖片榜",
+            "value": "EC6QOMMWY"
+          },
+          {
+            "title": "韩国恐怖片榜",
+            "value": "ECFEOMHIQ"
+          },
+          {
+            "title": "英国恐怖片榜",
+            "value": "ECFUOGJDQ"
+          },
+          {
+            "title": "法国恐怖片榜",
+            "value": "ECHIOLPXA"
+          },
+          {
+            "title": "西班牙恐怖片榜",
+            "value": "ECWUOILKA"
+          },
+          {
+            "title": "泰国恐怖片榜",
+            "value": "EC2AOMMKY"
+          },
+          {
+            "title": "加拿大恐怖片榜",
+            "value": "ECVYODZIA"
+          },
+          {
+            "title": "澳大利亚恐怖片榜",
+            "value": "ECFYOIWBQ"
+          },
+          {
+            "title": "冷门佳作恐怖片榜",
+            "value": "ECTMOHSQY"
+          }
+        ]
+      },
+      {
+        "title": "战争",
+        "value": "战争",
+        "boards": [
+          {
+            "title": "近期热门战争片榜",
+            "value": "EC6MOCTVQ"
+          },
+          {
+            "title": "高分经典战争片榜",
+            "value": "film_genre_45"
+          },
+          {
+            "title": "华语战争片榜",
+            "value": "ECWUOKOLY"
+          },
+          {
+            "title": "欧洲战争片榜",
+            "value": "ECUIOKO6I"
+          },
+          {
+            "title": "美国战争片榜",
+            "value": "ECDYONLLI"
+          },
+          {
+            "title": "中国香港战争片榜",
+            "value": "ECO4OUYWI"
+          },
+          {
+            "title": "日本战争片榜",
+            "value": "ECFYOK3AQ"
+          },
+          {
+            "title": "韩国战争片榜",
+            "value": "EC2UOS6AQ"
+          },
+          {
+            "title": "英国战争片榜",
+            "value": "ECVIOP57A"
+          },
+          {
+            "title": "法国战争片榜",
+            "value": "EC6UOQ3TY"
+          },
+          {
+            "title": "德国战争片榜",
+            "value": "ECV4OGCIA"
+          },
+          {
+            "title": "意大利战争片榜",
+            "value": "ECYUOU5TA"
+          },
+          {
+            "title": "俄罗斯战争片榜",
+            "value": "ECF4OMYDQ"
+          },
+          {
+            "title": "冷门佳作战争片榜",
+            "value": "ECGEOIWRA"
+          }
+        ]
+      },
+      {
+        "title": "传记",
+        "value": "传记",
+        "boards": [
+          {
+            "title": "近期热门传记片榜",
+            "value": "EC3EOHEYY"
+          },
+          {
+            "title": "高分经典传记片榜",
+            "value": "film_genre_43"
+          },
+          {
+            "title": "华语传记片榜",
+            "value": "ECVYOEEUA"
+          },
+          {
+            "title": "欧洲传记片榜",
+            "value": "ECZIOQ6LY"
+          },
+          {
+            "title": "美国传记片榜",
+            "value": "ECE4OHQQY"
+          },
+          {
+            "title": "英国传记片榜",
+            "value": "ECNMONJTQ"
+          },
+          {
+            "title": "法国传记片榜",
+            "value": "ECYIOK3PY"
+          },
+          {
+            "title": "德国传记片榜",
+            "value": "ECAYOFADY"
+          },
+          {
+            "title": "意大利传记片榜",
+            "value": "ECLEOKFFQ"
+          },
+          {
+            "title": "加拿大传记片榜",
+            "value": "ECCUOUMXQ"
+          },
+          {
+            "title": "冷门佳作传记片榜",
+            "value": "ECRAODXXI"
+          }
+        ]
+      },
+      {
+        "title": "歌舞",
+        "value": "歌舞",
+        "boards": [
+          {
+            "title": "高分经典歌舞片榜",
+            "value": "film_genre_40"
+          },
+          {
+            "title": "欧洲歌舞片榜",
+            "value": "EC3QOS5MA"
+          },
+          {
+            "title": "美国歌舞片榜",
+            "value": "ECYQOXMSA"
+          },
+          {
+            "title": "冷门佳作歌舞片榜",
+            "value": "ECZMOHQ3Q"
+          }
+        ]
+      },
+      {
+        "title": "武侠",
+        "value": "武侠",
+        "boards": [
+          {
+            "title": "高分经典武侠片榜",
+            "value": "film_genre_50"
+          },
+          {
+            "title": "华语武侠片榜",
+            "value": "ECEAOOAHI"
+          },
+          {
+            "title": "中国大陆武侠片榜",
+            "value": "EC6YOLGQQ"
+          },
+          {
+            "title": "冷门佳作武侠片榜",
+            "value": "ECWAOLLZQ"
+          }
+        ]
+      },
+      {
+        "title": "情色",
+        "value": "情色",
+        "boards": [
+          {
+            "title": "高分经典情色片榜",
+            "value": "film_genre_37"
+          },
+          {
+            "title": "华语情色片榜",
+            "value": "ECKQOVFTY"
+          },
+          {
+            "title": "欧洲情色片榜",
+            "value": "ECVUONKTI"
+          },
+          {
+            "title": "美国情色片榜",
+            "value": "ECTQOQ6XQ"
+          },
+          {
+            "title": "日本情色片榜",
+            "value": "ECLUOK4TA"
+          },
+          {
+            "title": "韩国情色片榜",
+            "value": "ECDMOZMVI"
+          },
+          {
+            "title": "英国情色片榜",
+            "value": "ECA4OSUNA"
+          },
+          {
+            "title": "法国情色片榜",
+            "value": "ECDAOW2PY"
+          },
+          {
+            "title": "意大利情色片榜",
+            "value": "ECM4OVMRY"
+          },
+          {
+            "title": "冷门佳作情色片榜",
+            "value": "ECGYN6NHI"
+          }
+        ]
+      },
+      {
+        "title": "灾难",
+        "value": "灾难",
+        "boards": [
+          {
+            "title": "高分经典灾难片榜",
+            "value": "natural_disasters"
+          },
+          {
+            "title": "欧洲灾难片榜",
+            "value": "EC5IOQ75I"
+          },
+          {
+            "title": "美国灾难片榜",
+            "value": "EC4IOWGKA"
+          },
+          {
+            "title": "冷门佳作灾难片榜",
+            "value": "ECHMOGZLQ"
+          }
+        ]
+      },
+      {
+        "title": "西部",
+        "value": "西部",
+        "boards": [
+          {
+            "title": "高分经典西部片榜",
+            "value": "film_genre_47"
+          },
+          {
+            "title": "欧洲西部片榜",
+            "value": "ECM4OWDGI"
+          },
+          {
+            "title": "美国西部片榜",
+            "value": "ECU4ORYVI"
+          }
+        ]
+      },
+      {
+        "title": "古装",
+        "value": "古装",
+        "boards": [
+          {
+            "title": "高分经典古装片榜",
+            "value": "film_genre_51"
+          }
+        ]
+      },
+      {
+        "title": "运动",
+        "value": "运动",
+        "boards": [
+          {
+            "title": "高分经典运动片榜",
+            "value": "ECCEPGM4Y"
+          }
+        ]
+      },
+      {
+        "title": "短片",
+        "value": "短片",
+        "boards": [
+          {
+            "title": "高分经典短片榜",
+            "value": "film_genre_36"
+          }
+        ]
+      }
+    ],
+    "tv": [
+      {
+        "title": "大陆剧",
+        "value": "大陆剧",
+        "boards": [
+          {
+            "title": "近期热门大陆剧榜",
+            "value": "EC74443FY"
+          },
+          {
+            "title": "高分经典大陆剧榜",
+            "value": "ECT45KVZI"
+          },
+          {
+            "title": "喜剧大陆剧榜",
+            "value": "ECVQ47BUI"
+          },
+          {
+            "title": "爱情大陆剧榜",
+            "value": "ECZM5H55I"
+          },
+          {
+            "title": "悬疑大陆剧榜",
+            "value": "ECIU5AZDA"
+          },
+          {
+            "title": "家庭大陆剧榜",
+            "value": "ECJU5D3PY"
+          },
+          {
+            "title": "古装大陆剧榜",
+            "value": "ECTU453WI"
+          },
+          {
+            "title": "犯罪大陆剧榜",
+            "value": "EC4Q5JNKI"
+          },
+          {
+            "title": "历史大陆剧榜",
+            "value": "ECN45K75A"
+          },
+          {
+            "title": "冷门佳作大陆剧榜",
+            "value": "ECRI46YZQ"
+          }
+        ]
+      },
+      {
+        "title": "美剧",
+        "value": "美剧",
+        "boards": [
+          {
+            "title": "近期热门美剧榜",
+            "value": "ECFA5DI7Q"
+          },
+          {
+            "title": "高分经典美剧榜",
+            "value": "ECVACWVGI"
+          },
+          {
+            "title": "喜剧美剧榜",
+            "value": "ECX45ISGQ"
+          },
+          {
+            "title": "爱情美剧榜",
+            "value": "ECA45D3RQ"
+          },
+          {
+            "title": "悬疑美剧榜",
+            "value": "ECKI5JNJI"
+          },
+          {
+            "title": "动作美剧榜",
+            "value": "ECME44L4Y"
+          },
+          {
+            "title": "科幻美剧榜",
+            "value": "ECL45GQ4I"
+          },
+          {
+            "title": "犯罪美剧榜",
+            "value": "EC2Y5CTPA"
+          },
+          {
+            "title": "惊悚美剧榜",
+            "value": "ECMM5ALJQ"
+          },
+          {
+            "title": "奇幻美剧榜",
+            "value": "ECHU473PI"
+          },
+          {
+            "title": "恐怖美剧榜",
+            "value": "ECRE46B7Y"
+          },
+          {
+            "title": "冷门佳作美剧榜",
+            "value": "ECGI5HUQI"
+          }
+        ]
+      },
+      {
+        "title": "英剧",
+        "value": "英剧",
+        "boards": [
+          {
+            "title": "高分经典英剧榜",
+            "value": "ECVACXBWI"
+          },
+          {
+            "title": "喜剧英剧榜",
+            "value": "ECZE5BCZA"
+          },
+          {
+            "title": "悬疑英剧榜",
+            "value": "ECTM5HMAI"
+          },
+          {
+            "title": "犯罪英剧榜",
+            "value": "EC5I5EOCQ"
+          },
+          {
+            "title": "冷门佳作英剧榜",
+            "value": "ECEM4373Q"
+          }
+        ]
+      },
+      {
+        "title": "日剧",
+        "value": "日剧",
+        "boards": [
+          {
+            "title": "近期热门日剧榜",
+            "value": "ECNA46YBA"
+          },
+          {
+            "title": "高分经典日剧榜",
+            "value": "ECBQCUATA"
+          },
+          {
+            "title": "喜剧日剧榜",
+            "value": "ECWM5LNJI"
+          },
+          {
+            "title": "爱情日剧榜",
+            "value": "ECEA5D2RQ"
+          },
+          {
+            "title": "悬疑日剧榜",
+            "value": "ECHI5FDTQ"
+          },
+          {
+            "title": "冷门佳作日剧榜",
+            "value": "ECEA5DW5Q"
+          }
+        ]
+      },
+      {
+        "title": "韩剧",
+        "value": "韩剧",
+        "boards": [
+          {
+            "title": "近期热门韩剧榜",
+            "value": "ECBE5CBEI"
+          },
+          {
+            "title": "高分经典韩剧榜",
+            "value": "EC6EC5GBQ"
+          },
+          {
+            "title": "喜剧韩剧榜",
+            "value": "ECS45ISKI"
+          },
+          {
+            "title": "爱情韩剧榜",
+            "value": "ECOU5ECZQ"
+          },
+          {
+            "title": "冷门佳作韩剧榜",
+            "value": "ECZY5IDOY"
+          }
+        ]
+      },
+      {
+        "title": "港剧",
+        "value": "港剧",
+        "boards": [
+          {
+            "title": "高分经典港剧榜",
+            "value": "ECVM47WUA"
+          },
+          {
+            "title": "喜剧港剧榜",
+            "value": "ECXI5EIII"
+          },
+          {
+            "title": "爱情港剧榜",
+            "value": "EC3Y5ISIQ"
+          },
+          {
+            "title": "古装港剧榜",
+            "value": "ECIE5FVTI"
+          },
+          {
+            "title": "犯罪港剧榜",
+            "value": "EC3A46RGQ"
+          },
+          {
+            "title": "冷门佳作港剧榜",
+            "value": "EC3U5ASKQ"
+          }
+        ]
+      },
+      {
+        "title": "台剧",
+        "value": "台剧",
+        "boards": [
+          {
+            "title": "高分经典台剧榜",
+            "value": "ECBI5EL6A"
+          },
+          {
+            "title": "爱情台剧榜",
+            "value": "ECBU5LX3A"
+          },
+          {
+            "title": "冷门佳作台剧榜",
+            "value": "ECJQ5LAFY"
+          }
+        ]
+      },
+      {
+        "title": "泰剧",
+        "value": "泰剧",
+        "boards": [
+          {
+            "title": "高分经典泰剧榜",
+            "value": "ECRM5BIFQ"
+          },
+          {
+            "title": "冷门佳作泰剧榜",
+            "value": "EC2Y5FJTY"
+          }
+        ]
+      },
+      {
+        "title": "欧洲剧",
+        "value": "欧洲剧",
+        "boards": [
+          {
+            "title": "近期热门欧洲剧榜",
+            "value": "EC6I5FYHA"
+          },
+          {
+            "title": "高分经典欧洲剧榜",
+            "value": "ECZY5KBOQ"
+          },
+          {
+            "title": "喜剧欧洲剧榜",
+            "value": "ECJQ5LPXY"
+          },
+          {
+            "title": "爱情欧洲剧榜",
+            "value": "ECSA5KEKY"
+          },
+          {
+            "title": "悬疑欧洲剧榜",
+            "value": "ECEU47F2I"
+          },
+          {
+            "title": "犯罪欧洲剧榜",
+            "value": "ECGM5NIQA"
+          },
+          {
+            "title": "冷门佳作欧洲剧榜",
+            "value": "ECTM5JVYA"
+          }
+        ]
+      },
+      {
+        "title": "动画剧集",
+        "value": "动画剧集",
+        "boards": [
+          {
+            "title": "高分经典动画剧集榜",
+            "value": "ECR4CRXHA"
+          }
+        ]
+      }
+    ]
+  },
+  "recommend": {
+    "movie": {
+      "category": [
+        {
+          "title": "全部",
+          "value": "全部"
+        },
+        {
+          "title": "热门电影",
+          "value": "热门"
+        },
+        {
+          "title": "最新电影",
+          "value": "最新"
+        },
+        {
+          "title": "豆瓣高分",
+          "value": "豆瓣高分"
+        },
+        {
+          "title": "冷门佳片",
+          "value": "冷门佳片"
+        }
+      ],
+      "type": [
+        {
+          "title": "全部",
+          "value": "全部"
+        },
+        {
+          "title": "华语",
+          "value": "华语"
+        },
+        {
+          "title": "欧美",
+          "value": "欧美"
+        },
+        {
+          "title": "韩国",
+          "value": "韩国"
+        },
+        {
+          "title": "日本",
+          "value": "日本"
+        }
+      ],
+      "genre": [
+        {
+          "title": "全部",
+          "value": ""
+        },
+        {
+          "title": "喜剧",
+          "value": "喜剧"
+        },
+        {
+          "title": "爱情",
+          "value": "爱情"
+        },
+        {
+          "title": "动作",
+          "value": "动作"
+        },
+        {
+          "title": "科幻",
+          "value": "科幻"
+        },
+        {
+          "title": "动画",
+          "value": "动画"
+        },
+        {
+          "title": "悬疑",
+          "value": "悬疑"
+        },
+        {
+          "title": "犯罪",
+          "value": "犯罪"
+        },
+        {
+          "title": "惊悚",
+          "value": "惊悚"
+        },
+        {
+          "title": "冒险",
+          "value": "冒险"
+        },
+        {
+          "title": "音乐",
+          "value": "音乐"
+        },
+        {
+          "title": "历史",
+          "value": "历史"
+        },
+        {
+          "title": "奇幻",
+          "value": "奇幻"
+        },
+        {
+          "title": "恐怖",
+          "value": "恐怖"
+        },
+        {
+          "title": "战争",
+          "value": "战争"
+        },
+        {
+          "title": "传记",
+          "value": "传记"
+        },
+        {
+          "title": "歌舞",
+          "value": "歌舞"
+        },
+        {
+          "title": "武侠",
+          "value": "武侠"
+        },
+        {
+          "title": "情色",
+          "value": "情色"
+        },
+        {
+          "title": "灾难",
+          "value": "灾难"
+        },
+        {
+          "title": "西部",
+          "value": "西部"
+        },
+        {
+          "title": "纪录片",
+          "value": "纪录片"
+        },
+        {
+          "title": "短片",
+          "value": "短片"
+        }
+      ],
+      "region": [
+        {
+          "title": "全部",
+          "value": ""
+        },
+        {
+          "title": "华语",
+          "value": "华语"
+        },
+        {
+          "title": "欧美",
+          "value": "欧美"
+        },
+        {
+          "title": "韩国",
+          "value": "韩国"
+        },
+        {
+          "title": "日本",
+          "value": "日本"
+        },
+        {
+          "title": "中国大陆",
+          "value": "中国大陆"
+        },
+        {
+          "title": "美国",
+          "value": "美国"
+        },
+        {
+          "title": "中国香港",
+          "value": "中国香港"
+        },
+        {
+          "title": "中国台湾",
+          "value": "中国台湾"
+        },
+        {
+          "title": "英国",
+          "value": "英国"
+        },
+        {
+          "title": "法国",
+          "value": "法国"
+        },
+        {
+          "title": "德国",
+          "value": "德国"
+        },
+        {
+          "title": "意大利",
+          "value": "意大利"
+        },
+        {
+          "title": "西班牙",
+          "value": "西班牙"
+        },
+        {
+          "title": "印度",
+          "value": "印度"
+        },
+        {
+          "title": "泰国",
+          "value": "泰国"
+        },
+        {
+          "title": "俄罗斯",
+          "value": "俄罗斯"
+        },
+        {
+          "title": "加拿大",
+          "value": "加拿大"
+        },
+        {
+          "title": "澳大利亚",
+          "value": "澳大利亚"
+        },
+        {
+          "title": "爱尔兰",
+          "value": "爱尔兰"
+        },
+        {
+          "title": "瑞典",
+          "value": "瑞典"
+        },
+        {
+          "title": "巴西",
+          "value": "巴西"
+        },
+        {
+          "title": "丹麦",
+          "value": "丹麦"
+        }
+      ],
+      "year": [
+        {
+          "title": "全部",
+          "value": ""
+        },
+        {
+          "title": "2020年代",
+          "value": "2020年代"
+        },
+        {
+          "title": "2026",
+          "value": "2026"
+        },
+        {
+          "title": "2025",
+          "value": "2025"
+        },
+        {
+          "title": "2024",
+          "value": "2024"
+        },
+        {
+          "title": "2023",
+          "value": "2023"
+        },
+        {
+          "title": "2022",
+          "value": "2022"
+        },
+        {
+          "title": "2021",
+          "value": "2021"
+        },
+        {
+          "title": "2020",
+          "value": "2020"
+        },
+        {
+          "title": "2019",
+          "value": "2019"
+        },
+        {
+          "title": "2010年代",
+          "value": "2010年代"
+        },
+        {
+          "title": "2000年代",
+          "value": "2000年代"
+        },
+        {
+          "title": "90年代",
+          "value": "90年代"
+        },
+        {
+          "title": "80年代",
+          "value": "80年代"
+        },
+        {
+          "title": "70年代",
+          "value": "70年代"
+        },
+        {
+          "title": "60年代",
+          "value": "60年代"
+        },
+        {
+          "title": "更早",
+          "value": "更早"
+        }
+      ],
+      "sort": [
+        {
+          "title": "近期热度",
+          "value": "U"
+        },
+        {
+          "title": "综合排序",
+          "value": "T"
+        },
+        {
+          "title": "首映时间",
+          "value": "R"
+        },
+        {
+          "title": "高分优先",
+          "value": "S"
+        }
+      ],
+      "score": [
+        {
+          "title": "0",
+          "value": "0"
+        },
+        {
+          "title": "1",
+          "value": "1"
+        },
+        {
+          "title": "2",
+          "value": "2"
+        },
+        {
+          "title": "3",
+          "value": "3"
+        },
+        {
+          "title": "4",
+          "value": "4"
+        },
+        {
+          "title": "5",
+          "value": "5"
+        },
+        {
+          "title": "6",
+          "value": "6"
+        },
+        {
+          "title": "7",
+          "value": "7"
+        },
+        {
+          "title": "8",
+          "value": "8"
+        },
+        {
+          "title": "9",
+          "value": "9"
+        }
+      ]
+    },
+    "tv": {
+      "category": [
+        {
+          "title": "全部",
+          "value": "全部"
+        },
+        {
+          "title": "综合",
+          "value": "tv"
+        },
+        {
+          "title": "国产剧",
+          "value": "tv_domestic"
+        },
+        {
+          "title": "欧美剧",
+          "value": "tv_american"
+        },
+        {
+          "title": "日剧",
+          "value": "tv_japanese"
+        },
+        {
+          "title": "韩剧",
+          "value": "tv_korean"
+        },
+        {
+          "title": "动画",
+          "value": "tv_animation"
+        },
+        {
+          "title": "综艺",
+          "value": "show"
+        },
+        {
+          "title": "纪录片",
+          "value": "tv_documentary"
+        }
+      ],
+      "genre": [
+        {
+          "title": "全部",
+          "value": ""
+        },
+        {
+          "title": "电视剧",
+          "value": "电视剧"
+        },
+        {
+          "title": "综艺",
+          "value": "综艺"
+        },
+        {
+          "title": "喜剧",
+          "value": "喜剧"
+        },
+        {
+          "title": "爱情",
+          "value": "爱情"
+        },
+        {
+          "title": "悬疑",
+          "value": "悬疑"
+        },
+        {
+          "title": "动画",
+          "value": "动画"
+        },
+        {
+          "title": "武侠",
+          "value": "武侠"
+        },
+        {
+          "title": "古装",
+          "value": "古装"
+        },
+        {
+          "title": "家庭",
+          "value": "家庭"
+        },
+        {
+          "title": "犯罪",
+          "value": "犯罪"
+        },
+        {
+          "title": "科幻",
+          "value": "科幻"
+        },
+        {
+          "title": "恐怖",
+          "value": "恐怖"
+        },
+        {
+          "title": "历史",
+          "value": "历史"
+        },
+        {
+          "title": "战争",
+          "value": "战争"
+        },
+        {
+          "title": "动作",
+          "value": "动作"
+        },
+        {
+          "title": "冒险",
+          "value": "冒险"
+        },
+        {
+          "title": "传记",
+          "value": "传记"
+        },
+        {
+          "title": "剧情",
+          "value": "剧情"
+        },
+        {
+          "title": "奇幻",
+          "value": "奇幻"
+        },
+        {
+          "title": "惊悚",
+          "value": "惊悚"
+        },
+        {
+          "title": "灾难",
+          "value": "灾难"
+        },
+        {
+          "title": "歌舞",
+          "value": "歌舞"
+        },
+        {
+          "title": "音乐",
+          "value": "音乐"
+        },
+        {
+          "title": "真人秀",
+          "value": "真人秀"
+        },
+        {
+          "title": "脱口秀",
+          "value": "脱口秀"
+        },
+        {
+          "title": "动物",
+          "value": "动物"
+        },
+        {
+          "title": "西部",
+          "value": "西部"
+        },
+        {
+          "title": "史诗",
+          "value": "史诗"
+        },
+        {
+          "title": "选秀",
+          "value": "选秀"
+        },
+        {
+          "title": "运动",
+          "value": "运动"
+        },
+        {
+          "title": "军事",
+          "value": "军事"
+        },
+        {
+          "title": "都市",
+          "value": "都市"
+        },
+        {
+          "title": "侦探",
+          "value": "侦探"
+        }
+      ],
+      "region": [
+        {
+          "title": "全部",
+          "value": ""
+        },
+        {
+          "title": "华语",
+          "value": "华语"
+        },
+        {
+          "title": "欧美",
+          "value": "欧美"
+        },
+        {
+          "title": "国外",
+          "value": "国外"
+        },
+        {
+          "title": "韩国",
+          "value": "韩国"
+        },
+        {
+          "title": "日本",
+          "value": "日本"
+        },
+        {
+          "title": "中国大陆",
+          "value": "中国大陆"
+        },
+        {
+          "title": "中国香港",
+          "value": "中国香港"
+        },
+        {
+          "title": "美国",
+          "value": "美国"
+        },
+        {
+          "title": "英国",
+          "value": "英国"
+        },
+        {
+          "title": "泰国",
+          "value": "泰国"
+        },
+        {
+          "title": "中国台湾",
+          "value": "中国台湾"
+        },
+        {
+          "title": "意大利",
+          "value": "意大利"
+        },
+        {
+          "title": "法国",
+          "value": "法国"
+        },
+        {
+          "title": "德国",
+          "value": "德国"
+        },
+        {
+          "title": "西班牙",
+          "value": "西班牙"
+        },
+        {
+          "title": "俄罗斯",
+          "value": "俄罗斯"
+        },
+        {
+          "title": "瑞典",
+          "value": "瑞典"
+        },
+        {
+          "title": "巴西",
+          "value": "巴西"
+        },
+        {
+          "title": "丹麦",
+          "value": "丹麦"
+        },
+        {
+          "title": "印度",
+          "value": "印度"
+        },
+        {
+          "title": "加拿大",
+          "value": "加拿大"
+        },
+        {
+          "title": "爱尔兰",
+          "value": "爱尔兰"
+        },
+        {
+          "title": "澳大利亚",
+          "value": "澳大利亚"
+        }
+      ],
+      "year": [
+        {
+          "title": "全部",
+          "value": ""
+        },
+        {
+          "title": "2020年代",
+          "value": "2020年代"
+        },
+        {
+          "title": "2026",
+          "value": "2026"
+        },
+        {
+          "title": "2025",
+          "value": "2025"
+        },
+        {
+          "title": "2024",
+          "value": "2024"
+        },
+        {
+          "title": "2023",
+          "value": "2023"
+        },
+        {
+          "title": "2022",
+          "value": "2022"
+        },
+        {
+          "title": "2021",
+          "value": "2021"
+        },
+        {
+          "title": "2020",
+          "value": "2020"
+        },
+        {
+          "title": "2019",
+          "value": "2019"
+        },
+        {
+          "title": "2010年代",
+          "value": "2010年代"
+        },
+        {
+          "title": "2000年代",
+          "value": "2000年代"
+        },
+        {
+          "title": "90年代",
+          "value": "90年代"
+        },
+        {
+          "title": "80年代",
+          "value": "80年代"
+        },
+        {
+          "title": "70年代",
+          "value": "70年代"
+        },
+        {
+          "title": "60年代",
+          "value": "60年代"
+        },
+        {
+          "title": "更早",
+          "value": "更早"
+        }
+      ],
+      "platform": [
+        {
+          "title": "全部",
+          "value": ""
+        },
+        {
+          "title": "腾讯视频",
+          "value": "腾讯视频"
+        },
+        {
+          "title": "爱奇艺",
+          "value": "爱奇艺"
+        },
+        {
+          "title": "优酷",
+          "value": "优酷"
+        },
+        {
+          "title": "湖南卫视",
+          "value": "湖南卫视"
+        },
+        {
+          "title": "Netflix",
+          "value": "Netflix"
+        },
+        {
+          "title": "HBO",
+          "value": "HBO"
+        },
+        {
+          "title": "BBC",
+          "value": "BBC"
+        },
+        {
+          "title": "NHK",
+          "value": "NHK"
+        },
+        {
+          "title": "CBS",
+          "value": "CBS"
+        },
+        {
+          "title": "NBC",
+          "value": "NBC"
+        },
+        {
+          "title": "tvN",
+          "value": "tvN"
+        }
+      ],
+      "sort": [
+        {
+          "title": "近期热度",
+          "value": "U"
+        },
+        {
+          "title": "综合排序",
+          "value": "T"
+        },
+        {
+          "title": "首播时间",
+          "value": "R"
+        },
+        {
+          "title": "高分优先",
+          "value": "S"
+        }
+      ],
+      "score": [
+        {
+          "title": "0",
+          "value": "0"
+        },
+        {
+          "title": "1",
+          "value": "1"
+        },
+        {
+          "title": "2",
+          "value": "2"
+        },
+        {
+          "title": "3",
+          "value": "3"
+        },
+        {
+          "title": "4",
+          "value": "4"
+        },
+        {
+          "title": "5",
+          "value": "5"
+        },
+        {
+          "title": "6",
+          "value": "6"
+        },
+        {
+          "title": "7",
+          "value": "7"
+        },
+        {
+          "title": "8",
+          "value": "8"
+        },
+        {
+          "title": "9",
+          "value": "9"
+        }
+      ]
+    }
+  },
+  "popular": {
+    "area": [
+      {
+        "title": "全部",
+        "value": "全部"
+      },
+      {
+        "title": "华语",
+        "value": "华语"
+      },
+      {
+        "title": "欧美",
+        "value": "欧美"
+      },
+      {
+        "title": "韩国",
+        "value": "韩国"
+      },
+      {
+        "title": "日本",
+        "value": "日本"
+      }
+    ],
+    "sort": [
+      {
+        "title": "热度",
+        "value": "recommend"
+      },
+      {
+        "title": "最新",
+        "value": "time"
+      },
+      {
+        "title": "评分",
+        "value": "rank"
+      }
+    ]
+  },
+  "realtime": {
+    "hot_type": [
+      {
+        "title": "电影实时热榜",
+        "value": "movie_real_time_hotest"
+      },
+      {
+        "title": "电视剧实时热榜",
+        "value": "tv_real_time_hotest"
+      },
+      {
+        "title": "书影音实时热榜",
+        "value": "subject_real_time_hotest"
+      }
+    ]
+  },
+  "weekly": {
+    "list_type": [
+      {
+        "title": "一周电影口碑榜",
+        "value": "movie_weekly_best"
+      },
+      {
+        "title": "华语剧集口碑榜",
+        "value": "tv_chinese_best_weekly"
+      },
+      {
+        "title": "全球剧集口碑榜",
+        "value": "tv_global_best_weekly"
+      },
+      {
+        "title": "国内综艺口碑榜",
+        "value": "show_chinese_best_weekly"
+      },
+      {
+        "title": "国外综艺口碑榜",
+        "value": "show_global_best_weekly"
+      }
+    ]
+  }
+}

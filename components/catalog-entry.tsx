@@ -8,6 +8,7 @@ import { catalogSource, catalogSourceHref, type CatalogSourceId } from "@/lib/ca
 import { CatalogSourceContext } from "./source-picker";
 import { Workspace } from "./workspace";
 import { ImdbWorkspace } from "./imdb-workspace";
+import { DoubanWorkspace } from "./douban-workspace";
 
 /** Source navigation stays shared; each adapter only supplies its own chart vocabulary. */
 export function CatalogEntry() {
@@ -32,6 +33,6 @@ export function CatalogEntry() {
     router.push(catalogSourceHref(next, new URLSearchParams(params), key => readViewState<string | undefined>(key, undefined)), { scroll: false });
   }
   return <CatalogSourceContext.Provider value={params.get("query") ? null : { source, onSelect: select }}>
-    <div ref={root} className="catalog-entry">{source === "imdb" ? <ImdbWorkspace/> : <Workspace initialChart="trending"/>}</div>
+    <div ref={root} className="catalog-entry">{source === "imdb" ? <ImdbWorkspace/> : source === "douban" ? <DoubanWorkspace/> : <Workspace initialChart="trending"/>}</div>
   </CatalogSourceContext.Provider>;
 }

@@ -2,6 +2,7 @@ import { buildCatalogRequest } from "../query";
 import type { CatalogFilters, CatalogResponse, MediaDetail, MediaType } from "../types";
 import { TmdbError, type createTmdbClient } from "./client";
 import { mediaCountryCodes, normalizeDetail, normalizeMedia, normalizeRecommendations, object } from "./normalize";
+import { exactMediaMatch, searchTitle } from "../media-match";
 
 type Client = ReturnType<typeof createTmdbClient>;
 function integer(value: unknown, fallback: number) { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : fallback; }
@@ -95,5 +96,12 @@ export function createTmdbService(client: Client) {
     return match ? normalizeMedia(match, mediaType) : null;
   }
 
-  return { catalog, detail, recommendations, keywords, findByImdbId, regions };
+  async function findByTitle(title: string, year: string, mediaType: MediaType) {
+    if (!title.trim() || title.length > 200 || !/^\d{4}$/.test(year)) return null;
+    const response = await client.request<unknown>(`/search/${mediaType}`, new URLSearchParams({ query: searchTitle(title, mediaType), language: "zh-CN", include_adult: "false", [mediaType === "movie" ? "year" : "first_air_date_year"]: year }));
+    const results = object(response.data).results;
+    if (!Array.isArray(results)) return null;
+    return exactMediaMatch(results.map(raw => normalizeMedia(raw, mediaType)).filter(item => Number.isSafeInteger(item.id) && Number(item.id) > 0), title, year, mediaType);
+  }
+  return { catalog, detail, recommendations, keywords, findByImdbId, findByTitle, regions };
 }

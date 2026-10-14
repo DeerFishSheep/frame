@@ -600,3 +600,17 @@ legend span{color:var(--dim);font-weight:400}
   .source-picker-option{min-height:72px}
 }
 @keyframes source-sheet-enter{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* Provider controls share the catalog shell; large Douban directories stay in two-level pickers. */
+.platform-icon--douban{background:#007722}
+.provider-notice{font-size:12px;color:var(--muted);line-height:1.7;margin:0 0 16px}
+.douban-controls{display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px;margin:18px 0 22px;min-width:0}
+.douban-choice{display:grid;gap:7px;min-width:160px;max-width:100%;flex:1;color:var(--muted);font-size:12px}
+.douban-choice select,.douban-custom-list input{min-width:0;width:100%;min-height:42px;border:1px solid var(--border);border-radius:8px;background:var(--panel);color:var(--text);padding:9px 12px;font:inherit;font-size:13px}
+.douban-choice select:focus-visible,.douban-custom-list input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.douban-custom-list,.douban-advanced{width:100%;color:var(--muted);font-size:13px}
+.douban-custom-list summary,.douban-advanced summary{cursor:pointer;width:fit-content;min-height:30px;line-height:30px;color:var(--accent)}
+.douban-custom-list form{display:flex;gap:10px;margin-top:12px}.douban-custom-list form label{flex:1;min-width:0}.douban-custom-list .secondary-button{white-space:nowrap;padding:9px 15px}
+.douban-filter-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:12px;align-items:end}.douban-filter-fields .douban-choice{min-width:0}
+@media(max-width:600px){.douban-controls{gap:12px}.douban-choice{min-width:0;flex-basis:100%}.douban-filter-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.douban-custom-list form{flex-wrap:wrap}.douban-custom-list form label{flex-basis:100%}.douban-custom-list form button{width:100%}}
+.platform-icon--douban img{padding:4px;filter:invert(1)}
