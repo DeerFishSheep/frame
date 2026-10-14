@@ -22,6 +22,30 @@ interface Props {
   loadPage: (page: number, signal: AbortSignal) => Promise<CatalogResponse>; onReset: () => void;
 }
 
+interface ResultsProps {
+  source: CatalogSourceId; current?: CatalogView | null; loading: boolean; error?: string; queryError?: string;
+  layout: "grid" | "list"; page: number; countLabel: string;
+  retry: () => void; onReset: () => void;
+}
+
+/** Empty cached responses are not retained content when a later request fails. */
+export function ProviderCatalogResults({ source, current, loading, error, queryError, layout, page, countLabel, retry, onReset }: ResultsProps) {
+  const items = current?.results || [], hasItems = items.length > 0, label = sourceLabel(source);
+  const visible = hasItems || !loading && !error ? current : undefined;
+  return <>
+      <div className="catalog-status" {...resourceLoadingProps(loading)}>
+        <span data-skeleton="line">{loading ? "正在加载…" : error ? hasItems ? "更新失败，已保留上次内容" : "加载失败" : `${current?.stale ? "缓存数据 · " : ""}${sourceLabel(current?.source || source)} · ${formatTime(current?.retrievedAt || null)} 更新`}</span>
+        {visible && <span data-skeleton="line">{visible.totalResultsExact === false ? `已加载 ${formatCount(items.length)} 部` : visible.source === "douban" ? `${countLabel}共 ${formatCount(visible.totalResults)} 项` : `${formatCount(visible.totalResults)} 部 · ${visible.context.ranked ? "原榜顺序" : "当前排序结果"}`}</span>}
+      </div>
+      {visible?.notice && !loading && <p className="provider-notice" role="status">{visible.notice}</p>}
+      <ResourceRegion pending={loading} error={error} retained={hasItems} onRetry={retry}>
+        {loading && !hasItems ? <MediaSkeletons/> : error && !hasItems ? <div className="empty-state" data-skeleton="block" role="alert"><RefreshCw size={28}/><h3>暂时无法加载 {label}</h3><p>{error}</p><button className="primary-button" onClick={retry}>{queryError ? "重置条件" : "重试"}</button></div>
+          : items.length ? <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={current?.context.ranked} resultIndex={((current?.context.startPage ?? page) - 1) * 20 + index + 1}/>)}</div>
+          : <div className="empty-state" data-skeleton="block"><h3>当前条件没有影视作品</h3><button className="secondary-button" onClick={onReset}>重置条件</button></div>}
+      </ResourceRegion>
+  </>;
+}
+
 /** IMDB, Douban and future adapters supply data/controls; loading, pagination and layout stay shared. */
 export function ProviderCatalog({ source, queryKey, page, title, ranked, originalUrl, charts, sort, controls, error: queryError, loadPage, onReset, originalLabel = "查看原榜", countLabel = "原榜", featured = true, resourceGroup = "catalog" }: Props) {
   const label = sourceLabel(source), moreAnchor = useRef<HTMLDivElement>(null);
@@ -31,6 +55,8 @@ export function ProviderCatalog({ source, queryKey, page, title, ranked, origina
     loadPage: async (number, signal) => ({ ...await loadPage(number, signal), context: { title, featuredLabel: formatCatalogTitle(source, title), ranked, startPage: page, feature: featured } }),
   });
   const current = resource.data, items = current?.results || [], loading = resource.pending, error = queryError || resource.error;
+  const hasItems = items.length > 0;
+  const visible = hasItems || !loading && !error ? current : undefined;
   const { loadMore, hasMore, loadingMore, moreError, autoPaused } = resource;
   useEffect(() => {
     try { setLayout(localStorage.getItem("frame_layout_v2") === "list" ? "list" : "grid"); } catch { /* Default layout works without storage. */ }
@@ -51,22 +77,14 @@ export function ProviderCatalog({ source, queryKey, page, title, ranked, origina
   const retry = () => queryError ? onReset() : resource.refresh();
   return <div className={`workspace ${featured ? "workspace--featured" : "workspace--collection"}`}>
     {featured && items.length > 0 && <FeaturedFilm items={items} label={current?.context.featuredLabel || formatCatalogTitle(source, title)} pending={loading}/>}
-    {featured && loading && !current && <div className="skeleton featured-loading" aria-busy="true" aria-label={`正在加载 ${label} 焦点影片`}/>}
-    <CatalogSection id={`${source}-heading`} title={current?.context.title || title} dataSource={current?.source || source}
+    {featured && loading && !hasItems && <div className="skeleton featured-loading" aria-busy="true" aria-label={`正在加载 ${label} 焦点影片`}/>}
+    <CatalogSection id={`${source}-heading`} title={visible?.context.title || title} dataSource={visible?.source || source}
       actions={<button className="icon-button view-toggle" onClick={toggleLayout} aria-label={layout === "grid" ? "切换列表视图" : "切换海报视图"}>{layout === "grid" ? <List size={18}/> : <Grid2X2 size={18}/>}</button>}
       charts={charts} chartLabel={`${label} 榜单分类`} chartAction={<a className="catalog-more" href={originalUrl} target="_blank" rel="noopener noreferrer">{originalLabel}<ArrowUpRight size={14}/></a>}
       sort={sort} sortLabel={`${label} 排序方式`}>
       {controls}
-      <div className="catalog-status" {...resourceLoadingProps(loading)}>
-        <span data-skeleton="line">{loading ? "正在加载…" : error ? current ? "更新失败，已保留上次内容" : "加载失败" : `${current?.stale ? "缓存数据 · " : ""}${sourceLabel(current?.source || source)} · ${formatTime(current?.retrievedAt || null)} 更新`}</span>
-        {current && <span data-skeleton="line">{current.totalResultsExact === false ? `已加载 ${formatCount(items.length)} 部` : current.source === "douban" ? `${countLabel}共 ${formatCount(current.totalResults)} 项` : `${formatCount(current.totalResults)} 部 · ${current.context.ranked ? "原榜顺序" : "当前排序结果"}`}</span>}
-      </div>
-      {current?.notice && !loading && <p className="provider-notice" role="status">{current.notice}</p>}
-      <ResourceRegion pending={loading} error={error} retained={Boolean(current)} onRetry={retry}>
-        {loading && !current ? <MediaSkeletons/> : error && !current ? <div className="empty-state" data-skeleton="block" role="alert"><RefreshCw size={28}/><h3>暂时无法加载 {label}</h3><p>{error}</p><button className="primary-button" onClick={retry}>{queryError ? "重置条件" : "重试"}</button></div>
-          : items.length ? <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={current?.context.ranked} resultIndex={((current?.context.startPage ?? page) - 1) * 20 + index + 1}/>)}</div>
-          : <div className="empty-state" data-skeleton="block"><h3>当前条件没有影视作品</h3><button className="secondary-button" onClick={onReset}>重置条件</button></div>}
-      </ResourceRegion>
+      <ProviderCatalogResults source={source} current={current} loading={loading} error={error} queryError={queryError}
+        layout={layout} page={page} countLabel={countLabel} retry={retry} onReset={onReset}/>
       {moreError && <p className="load-error" role="alert">{moreError}</p>}
       {!loading && !error && hasMore && <div ref={moreAnchor} className="load-more-row"><button className="load-more" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? <LoaderCircle size={16} className="spinning"/> : moreError ? <RefreshCw size={16}/> : <ChevronDown size={16}/>} {loadingMore ? "正在加载" : moreError ? "重试加载" : "加载更多"}</button></div>}
     </CatalogSection>

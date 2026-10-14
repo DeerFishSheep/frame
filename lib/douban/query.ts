@@ -135,5 +135,8 @@ export function buildDoubanRequest(filters: DoubanFilters) {
   } else if (filters.chart === "lists") {
     const [kind, id] = filters.list.split(":"); path = `${kind === "doulist" ? "doulist" : "subject_collection"}/${id}/items`;
   } else path = `subject_collection/${meta.collection}/items`;
-  return { url: `https://m.douban.com/rexxar/api/v2/${path}?${params}`, referer: filters.chart === "recommend" ? "https://movie.douban.com/explore" : "https://m.douban.com/", start };
+  const referer = path.startsWith("subject_collection/") ? `https://m.douban.com/subject_collection/${path.split("/")[1]}`
+    : filters.chart === "lists" ? doubanListUrl(filters.list)
+    : filters.chart === "recommend" ? "https://movie.douban.com/explore" : "https://m.douban.com/";
+  return { url: `https://m.douban.com/rexxar/api/v2/${path}?${params}`, referer, start };
 }

@@ -419,3 +419,15 @@ time确实改变顺序，但响应无完整上映日期，本轮未确认其内�
 
 - **最终页面验收**：合并入口评分排序前5项为9.3／9.1／8.9／8.6／8.6，刷新仍选评分；切换最新／高分／冷门无排序标签。旧popular链接的欧美／time／page2迁移后完整保留，首卡#21；320／390／1440px无溢出、独立验证页控制台无错误。截图在artifacts/previews/frame-douban-merged-hot-mobile.png和frame-douban-merged-hot-desktop.png。临时测试页已关闭、视口覆盖已恢复。
 - **最终检查**：工作树和独立暂存版本191 / 191、类型检查与webpack生产编译通过。符号链接依赖产生standalone追踪边界提示，未声称生产包独立运行或服务器验收。实验原始响应与临时快照在结论归档后清理，用户已有修改保持。
+
+
+## BUG-01 豆瓣榜单空数据／404与错误空态
+
+- **真实对照**：相同URL、UA及分页，仅Referer不同。根路径 `https://m.douban.com/` 下weekly/top返回200但total0、空条目及空subject_collection，剧情榜404 traversal_error；改为对应 `https://m.douban.com/subject_collection/{id}` 后分别返回10／20／20条、total10／250／20。上游未说明为何以前根路径可用，不据此猜测频率限制或政策变化。
+- **请求**：`query.ts.buildDoubanRequest` 为所有subject_collection及导入collection使用精确源页面；doulist用自己的公开源页。`client.ts.page`缓存key加入Referer，避免复用旧根来源的错误空数据。
+- **数据验证**：`parseDoubanPage`拒绝HTTP200带error/code失败、首屏空集合元数据和Top250首屏空数据；失败不缓存，有真实旧成功数据时保留旧结果／时间。合法空筛选、空片单和末页仍支持。
+- **页面**：`ProviderCatalogResults` 按实际items决定保留状态。无影片的失败只显示加载失败与重试，不显示“没有作品”、旧空榜数量或说明；有旧真实卡片则继续原位保留，加载骨架机制保持。404按榜单／片单／作品区分，不能把所有404都说成私密片单。
+- **回归**：`tests/douban-boards.test.ts`新增8项覆盖608个分页请求的来源（5口碑＋Top250＋298类型榜）、坏响应不缓存／重试、24小时旧数据期限、缓存与inflight按Referer隔离、404文案；`tests/provider-failure.test.ts`新增4项实际SSR渲染及重试回调验证。工作树203项与类型检查通过。
+- **联调**：本地APIweekly10、Top250首20／总250／第13页10、剧情类型20、全球TV口碑10、漫威片单140／封面3均200。三个报告榜单页面已恢复；全部298榜仅请求构造回归，未声称逐一真实联调。
+
+- **最终页面与交付**：用户报告的剧情类型榜实测20卡、一周口碑10卡、Top250首20自动续页到40卡，错误空态消失且控制台无错误。截图：artifacts/previews/frame-douban-boards-restored.png。工作树与独立暂存快照203 / 203、类型检查、webpack生产编译通过；依赖符号链接仍有standalone追踪边界提示，未测试独立生产包启动／服务器。未重启开发服务，原有用户修改保留。
