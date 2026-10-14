@@ -5,6 +5,7 @@ import { AsyncResource, ResourceCache, browserResources } from "./resource-state
 import { useStableUpdate } from "./use-stable-update";
 
 interface Options<T> {
+  cache?: ResourceCache;
   key: string;
   group: string;
   load: (signal: AbortSignal, previous: T | null) => Promise<T>;
@@ -14,9 +15,9 @@ interface Options<T> {
 }
 
 /** Every asynchronously updated region uses the same retain/replace/error contract. */
-export function useAsyncResource<T>({ key, group, load, initial, enabled = true, keepPrevious = true }: Options<T>) {
+export function useAsyncResource<T>({ key, group, load, initial, enabled = true, keepPrevious = true, cache = browserResources }: Options<T>) {
   const loader = useRef(load); loader.current = load;
-  const [resource] = useState(() => new AsyncResource<T>(typeof window === "undefined" ? new ResourceCache() : browserResources, group, key, initial, keepPrevious));
+  const [resource] = useState(() => new AsyncResource<T>(typeof window === "undefined" ? new ResourceCache() : cache, group, key, initial, keepPrevious));
   const [state, setState] = useState(resource.snapshot);
   const prepare = useStableUpdate();
   useLayoutEffect(() => resource.subscribe(() => { prepare(); setState(resource.snapshot()); }), [resource, prepare]);

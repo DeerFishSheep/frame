@@ -13,6 +13,7 @@ import { useFrame } from "./providers";
 import { MediaImage } from "./media-card";
 import { DetailMediaStrip } from "./detail-media-strip";
 import { RecommendationsRail } from "./recommendations-rail";
+import { formatRegions } from "@/lib/media-regions";
 import { formatMediaDate } from "@/lib/media-presentation";
 
 const statusNames:Record<string,string>={Released:"已上映", "Post Production":"后期制作", "In Production":"制作中", Planned:"筹备中", Rumored:"待确认",Canceled:"已取消", "Returning Series":"持续更新", Ended:"已完结", Pilot:"试播"};
@@ -79,6 +80,7 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
             <h1 data-skeleton="line">{item.title}{item.originalTitle && item.originalTitle !== item.title && <> <span className="detail-original">（{item.originalTitle}）</span></>}</h1>
             <div className="detail-tags" data-skeleton="line">
               <time dateTime={item.releaseDate || undefined}>{formatMediaDate(item.releaseDate)}</time>
+              {formatRegions(item.countryCodes) && <span className="detail-region">{formatRegions(item.countryCodes)}</span>}
               {item.genres.map(genre => <span key={genre}>{genre}</span>)}
               {!!item.runtime && <span>{item.runtime} 分钟{mediaType === "tv" ? " / 集" : ""}</span>}
               {!!item.numberOfSeasons && <span>{item.numberOfSeasons} 季</span>}

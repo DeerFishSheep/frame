@@ -374,7 +374,7 @@ legend span{color:var(--dim);font-weight:400}
 
 /* Metadata kept inside the poster. */
 
-.poster-kind{position:absolute;right:9px;top:9px;padding:3px 6px;border-radius:4px;border:1px solid rgba(255,255,255,.16);background:rgba(10,16,22,.72);font-size:9px;color:#e3e9f0}
+.poster-kind{display:flex;align-items:center;gap:3px;max-width:calc(100% - 36px);position:absolute;right:9px;top:9px;padding:3px 6px;border-radius:4px;border:1px solid rgba(255,255,255,.16);background:rgba(10,16,22,.72);font-size:9px;color:#e3e9f0}
 
 .poster-info{position:absolute;left:0;right:0;bottom:0;padding:30px 10px 10px;background:linear-gradient(180deg,transparent,rgba(6,12,20,.68) 28px,rgba(6,12,20,.94))}
 .poster-genres{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start;margin-bottom:8px}
@@ -542,3 +542,7 @@ legend span{color:var(--dim);font-weight:400}
 [data-loading=true] [data-skeleton]::after{content:"";position:absolute;inset:0;visibility:visible;border-radius:7px;background:linear-gradient(100deg,var(--panel) 30%,var(--panel-hover) 45%,var(--panel) 60%);background-size:200% 100%;animation:shimmer 1.7s ease infinite;pointer-events:none}
 [data-loading=true] [data-skeleton=line]::after{top:50%;bottom:auto;width:80%;height:.7em;transform:translateY(-50%);border-radius:4px}
 [data-loading=true] [data-skeleton=text]::after{mask-image:repeating-linear-gradient(to bottom,transparent 0,transparent .25em,#000 .25em,#000 .95em,transparent .95em,transparent 1.7em);border-radius:0}
+
+/* Keep the region left of the media type without colliding with the rank. */
+.poster-region{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.poster-media-kind{flex-shrink:0;white-space:nowrap}

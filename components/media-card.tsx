@@ -6,6 +6,7 @@ import { ArrowUpRight, Bookmark, Film, Star } from "lucide-react";
 import { imageUrl, mediaHref, mediaKey, type Media } from "@/lib/types";
 import { formatCount } from "@/lib/ui";
 import { cardNumber, formatMediaDate } from "@/lib/media-presentation";
+import { useMediaRegions } from "@/lib/use-media-regions";
 import { useFrame } from "./providers";
 
 export function MediaImage({ item, backdrop = false, className = "" }: { item: Media; backdrop?: boolean; className?: string }) {
@@ -19,6 +20,7 @@ export function MediaImage({ item, backdrop = false, className = "" }: { item: M
 export function MediaCard({ item, showRank = true, resultIndex }: { item: Media; showRank?: boolean; resultIndex?: number }) {
   const { isFavorite, toggle } = useFrame();
   const saved = isFavorite(item);
+  const { label: region, countryCodes } = useMediaRegions(item);
   const number = cardNumber(item, showRank, resultIndex);
   const date = formatMediaDate(item.releaseDate);
   const genres = [...new Set(item.genres)];
@@ -29,7 +31,7 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
       <Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="poster-link" aria-label={external ? `在 IMDB 查看${item.title}` : `查看${item.title}详情`}>
         <MediaImage item={item}/><span className="poster-shade"/>
         {number && <span className={`rank-badge ${number.value <= 3 ? "rank-top" : ""}`} title={number.label} aria-label={number.label}>{number.text}</span>}
-        <span className="poster-kind">{item.mediaType === "movie" ? "电影" : "剧集"}</span>
+        <span className="poster-kind" title={[region, item.mediaType === "movie" ? "电影" : "剧集"].filter(Boolean).join(" · ")}>{region && <><span className="poster-region">{region}</span><span aria-hidden="true">·</span></>}<span className="poster-media-kind">{item.mediaType === "movie" ? "电影" : "剧集"}</span></span>
         <span className="poster-open"><ArrowUpRight size={20}/><span>查看详情</span></span>
         <div className="poster-info">
           <div className="poster-genres" aria-label="全部类型">{genres.length ? genres.map(genre => <span key={genre}>{genre}</span>) : <span>类型待补充</span>}</div>
@@ -41,7 +43,7 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
       </Link>
     </div>
     <div className="media-card-copy">
-      <div className="card-title-line" data-skeleton="line"><Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="card-title" title={item.title}>{item.title}</Link><button className={`card-save ${saved ? "saved" : ""}`} onClick={() => toggle(item)} aria-label={`${saved ? "取消收藏" : "收藏"}${item.title}`} aria-pressed={saved}><Bookmark size={16} fill={saved ? "currentColor" : "none"}/></button></div>
+      <div className="card-title-line" data-skeleton="line"><Link href={href} target={external ? "_blank" : undefined} rel={external ? "noopener noreferrer" : undefined} className="card-title" title={item.title}>{item.title}</Link><button className={`card-save ${saved ? "saved" : ""}`} onClick={() => toggle({ ...item, countryCodes })} aria-label={`${saved ? "取消收藏" : "收藏"}${item.title}`} aria-pressed={saved}><Bookmark size={16} fill={saved ? "currentColor" : "none"}/></button></div>
       <p className="card-original" data-skeleton="line" title={item.originalTitle}>{item.originalTitle || "原名未提供"}</p>
       {item.source !== "demo" && item.voteCount > 0 && <p className="card-votes" data-skeleton="line">{formatCount(item.voteCount)} 人评分</p>}
       <div className="list-extra" data-skeleton="text"><p>{item.overview || "暂无剧情简介。"}</p>{item.source !== "demo" && <span>{ratingLabel} · {item.voteAverage > 0 ? `${item.voteAverage.toFixed(1)} 分 · ${formatCount(item.voteCount)} 人评分` : "暂无评分"}</span>}</div>

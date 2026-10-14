@@ -13,6 +13,7 @@ export function imdbMedia(title: ImdbTitle, mediaType: MediaType, match: Media |
     posterPath: match?.posterPath || (imageUrl(title.poster) ? title.poster : null),
     backdropPath: match?.backdropPath || null,
     releaseDate: match?.releaseDate || title.date, year: match?.year || title.year,
+    ...(match?.countryCodes !== undefined ? { countryCodes: match.countryCodes } : {}),
     genreIds: match?.genreIds || [], genres: title.genres.length ? title.genres.map(g => genres[g] || g) : match?.genres || [],
     // Scores and ranks always belong to IMDB, even when metadata is from TMDB.
     voteAverage: title.rating, voteCount: title.votes, popularity: 0, rank: title.rank,

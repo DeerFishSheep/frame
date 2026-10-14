@@ -1,5 +1,7 @@
 import type { Media, MediaDetail, MediaPage, MediaType } from "../types";
 
+import { normalizeCountryCodes, countryNames } from "../media-regions";
+
 type Raw = Record<string, unknown>;
 const movieGenres: Record<number, string> = {
   28: "动作", 12: "冒险", 16: "动画", 35: "喜剧", 80: "犯罪", 99: "纪录", 18: "剧情", 10751: "家庭",
@@ -27,6 +29,12 @@ function date(value: unknown) {
   return /^\d{4}-\d{2}-\d{2}$/.test(val) ? val : "";
 }
 
+export function mediaCountryCodes(value: unknown): string[] {
+  const raw = object(value);
+  const origin = normalizeCountryCodes(raw.origin_country);
+  return origin.length ? origin : normalizeCountryCodes(list(raw.production_countries).map(country => object(country).iso_3166_1));
+}
+
 export function normalizeMedia(value: unknown, mediaType: MediaType, rank?: number): Media {
   const raw = object(value);
   const detailGenres = list(raw.genres).map(object);
@@ -41,7 +49,8 @@ export function normalizeMedia(value: unknown, mediaType: MediaType, rank?: numb
     title: text(mediaType === "movie" ? raw.title : raw.name) || originalTitle || "未命名作品",
     originalTitle, posterPath: path(raw.poster_path), backdropPath: path(raw.backdrop_path),
     overview: text(raw.overview), releaseDate, year: releaseDate.slice(0, 4), genreIds,
-    genres: genreIds.map((id) => names.get(id) || dictionary[id]).filter((name): name is string => Boolean(name)),
+    countryCodes: Array.isArray(raw.origin_country) || Array.isArray(raw.production_countries) ? mediaCountryCodes(raw) : undefined,
+    genres: genreIds.map((id) => dictionary[id] || names.get(id)).filter((name): name is string => Boolean(name)),
     voteAverage: Math.min(10, Math.max(0, finite(raw.vote_average))), voteCount: Math.max(0, finite(raw.vote_count)),
     popularity: Math.max(0, finite(raw.popularity)), source: "tmdb",
     ...(rank === undefined ? {} : { rank }),
@@ -50,6 +59,7 @@ export function normalizeMedia(value: unknown, mediaType: MediaType, rank?: numb
 
 export function normalizeDetail(value: unknown, mediaType: MediaType): MediaDetail {
   const raw = object(value);
+  const productionCodes = normalizeCountryCodes(list(raw.production_countries).map(country => object(country).iso_3166_1));
   const credits = object(raw.credits);
   const crew = list(credits.crew).map(object);
   const creators = list(raw.created_by).map(object);
@@ -62,7 +72,7 @@ export function normalizeDetail(value: unknown, mediaType: MediaType): MediaDeta
   return {
     ...normalizeMedia(raw, mediaType), id: finite(raw.id), runtime: runtime && runtime > 0 ? runtime : null,
     numberOfSeasons: mediaType === "tv" && finite(raw.number_of_seasons) > 0 ? finite(raw.number_of_seasons) : null,
-    status: text(raw.status), countries: list(raw.production_countries).map(object).map((country) => text(country.name) || text(country.iso_3166_1)).filter(Boolean),
+    status: text(raw.status), countryCodes: mediaCountryCodes(raw), countries: countryNames(productionCodes.length ? productionCodes : mediaCountryCodes(raw)),
     directors: [...new Set(directors.filter(Boolean))],
     cast: list(credits.cast).map(object).filter((person) => finite(person.id) > 0).slice(0, 18).map((person) => ({
       id: finite(person.id), name: text(person.name), character: text(person.character), profilePath: path(person.profile_path),

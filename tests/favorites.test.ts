@@ -30,7 +30,7 @@ test("every required field is validated before a favorite reaches the UI", () =>
   const invalidFields: Record<keyof Media, unknown> = {
     id: -1, imdbId: 12, mediaType: "person", title: "", originalTitle: 2,
     posterPath: {}, backdropPath: [], overview: null, releaseDate: 2024,
-    year: false, genreIds: ["18"], genres: [{ name: "剧情" }],
+    year: false, countryCodes: [12], genreIds: ["18"], genres: [{ name: "剧情" }],
     voteAverage: 11, voteCount: 1.5, popularity: -1, source: "imdb", rank: 0,
   };
   for (const [field, invalid] of Object.entries(invalidFields)) {

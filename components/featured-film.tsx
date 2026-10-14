@@ -8,6 +8,7 @@ import { FEATURED_INTERVAL_MS, featuredIndex, formatMediaDate, selectFeaturedMed
 import { useStableUpdate } from "@/lib/use-stable-update";
 import { useViewState } from "@/lib/view-state";
 import { MediaImage } from "./media-card";
+import { useMediaRegions } from "@/lib/use-media-regions";
 import { useFrame } from "./providers";
 import { resourceLoadingProps } from "./resource-feedback";
 
@@ -30,6 +31,7 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const item = items[index];
   const saved = isFavorite(item);
+  const { label: region, countryCodes } = useMediaRegions(item);
   const running = !pending && !reducedMotion && visible && !hovered && !focused && items.length > 1;
   const nextItem = items[(index + 1) % items.length];
   const activeKey = mediaKey(item), nextKey = mediaKey(nextItem);
@@ -107,11 +109,11 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
       <div className="featured-copy">
         <span className="featured-label" data-skeleton="line">{item.source === "demo" ? "精选预览" : label}</span>
         <h1 data-skeleton="line" id="featured-title" title={item.title}>{item.title}</h1>
-        <div className="featured-meta" data-skeleton="line"><span>{item.mediaType === "tv" ? "电视剧" : "电影"}</span><time dateTime={item.releaseDate || undefined}>{formatMediaDate(item.releaseDate)}</time><span className="featured-genres">{item.genres.join(" / ") || "类型待补充"}</span></div>
+        <div className="featured-meta" data-skeleton="line"><span>{item.mediaType === "tv" ? "电视剧" : "电影"}</span><time dateTime={item.releaseDate || undefined}>{formatMediaDate(item.releaseDate)}</time><span className="featured-genres">{[region, item.genres.join(" / ") || "类型待补充"].filter(Boolean).join(" · ")}</span></div>
         <p data-skeleton="text">{item.overview || "点击查看作品资料。"}</p>
         <div className="featured-actions" data-skeleton="block">
           <Link className="primary-button" href={mediaHref(item)} target={typeof item.id === "string" ? "_blank" : undefined} rel={typeof item.id === "string" ? "noopener noreferrer" : undefined}>{typeof item.id === "string" ? "在 IMDB 查看" : "查看详情"}<ArrowRight size={16}/></Link>
-          <button className="featured-save" onClick={() => toggle(item)} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "收藏"}</button>
+          <button className="featured-save" onClick={() => toggle({ ...item, countryCodes })} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "收藏"}</button>
         </div>
       </div>
     </div>

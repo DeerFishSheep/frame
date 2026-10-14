@@ -1,3 +1,4 @@
+import { normalizeCountryCodes } from "./media-regions";
 import { mediaKey, type Media } from "./types";
 
 export const FAVORITES_KEY = "frame_favorites_v2";
@@ -30,6 +31,7 @@ function restoreMedia(value: unknown): Media | null {
   if (!isNonNegative(value.voteAverage) || value.voteAverage > 10) return null;
   if (!isNonNegative(value.voteCount) || !Number.isSafeInteger(value.voteCount)) return null;
   if (!isNonNegative(value.popularity)) return null;
+  if (value.countryCodes !== undefined && (!isStringArray(value.countryCodes) || value.countryCodes.some(code => !/^[A-Z]{2}$/.test(code)))) return null;
   if (value.rank !== undefined && !isId(value.rank)) return null;
 
   // Copy an explicit field allowlist instead of persisting detail data or extra properties.
@@ -46,6 +48,7 @@ function restoreMedia(value: unknown): Media | null {
     year: value.year,
     genreIds: [...value.genreIds],
     genres: [...value.genres],
+    ...(value.countryCodes !== undefined ? { countryCodes: normalizeCountryCodes(value.countryCodes) } : {}),
     voteAverage: value.voteAverage,
     voteCount: value.voteCount,
     popularity: value.popularity,

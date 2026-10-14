@@ -16,6 +16,8 @@ export interface Media {
   year: string;
   genreIds: number[];
   genres: string[];
+  /** ISO region codes; undefined means not supplied, [] means known to be missing. */
+  countryCodes?: string[];
   voteAverage: number;
   voteCount: number;
   popularity: number;

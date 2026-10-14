@@ -1,7 +1,7 @@
 import { buildCatalogRequest } from "../query";
 import type { CatalogFilters, CatalogResponse, MediaDetail, MediaType } from "../types";
 import { TmdbError, type createTmdbClient } from "./client";
-import { normalizeDetail, normalizeMedia, normalizeRecommendations, object } from "./normalize";
+import { mediaCountryCodes, normalizeDetail, normalizeMedia, normalizeRecommendations, object } from "./normalize";
 
 type Client = ReturnType<typeof createTmdbClient>;
 function integer(value: unknown, fallback: number) { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : fallback; }
@@ -13,6 +13,23 @@ function validateMedia(mediaType: string, idText: string): asserts mediaType is 
 }
 
 export function createTmdbService(client: Client) {
+  // Region enrichment must never delay catalog results or open unbounded upstream requests.
+  let regionActive = 0;
+  const regionQueue: (() => void)[] = [];
+  async function regions(mediaType: string, idText: string) {
+    validateMedia(mediaType, idText);
+    if (regionActive >= 4) await new Promise<void>(resolve => regionQueue.push(resolve));
+    else regionActive++;
+    try {
+      const response = await client.request<unknown>(`/${mediaType}/${idText}`, new URLSearchParams({ language: "zh-CN" }));
+      if (object(response.data).id !== Number(idText)) throw new TmdbError("TMDB 返回的地区资料无效。", "TMDB_INVALID_RESPONSE", 502);
+      return { countryCodes: mediaCountryCodes(response.data), retrievedAt: response.retrievedAt, stale: response.stale };
+    } finally {
+      const next = regionQueue.shift();
+      if (next) next(); else regionActive--;
+    }
+  }
+
   async function catalog(filters: CatalogFilters): Promise<CatalogResponse> {
     const request = buildCatalogRequest(filters);
     const response = await client.request<unknown>(request.path, request.params);
@@ -78,5 +95,5 @@ export function createTmdbService(client: Client) {
     return match ? normalizeMedia(match, mediaType) : null;
   }
 
-  return { catalog, detail, recommendations, keywords, findByImdbId };
+  return { catalog, detail, recommendations, keywords, findByImdbId, regions };
 }
