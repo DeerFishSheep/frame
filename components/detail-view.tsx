@@ -15,6 +15,7 @@ import { DetailMediaStrip } from "./detail-media-strip";
 import { RecommendationsRail } from "./recommendations-rail";
 import { formatRegions } from "@/lib/media-regions";
 import { formatMediaDate } from "@/lib/media-presentation";
+import { mergeCastMembers } from "@/lib/media-cast";
 
 const statusNames:Record<string,string>={Released:"已上映", "Post Production":"后期制作", "In Production":"制作中", Planned:"筹备中", Rumored:"待确认",Canceled:"已取消", "Returning Series":"持续更新", Ended:"已完结", Pilot:"试播"};
 
@@ -59,6 +60,8 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
   </div>;
   if(!item)return <div className="detail-workspace"><button className="back-link" onClick={back}><ArrowLeft size={16}/>返回榜单</button><div className="empty-state"><Film size={30} strokeWidth={1}/><h2>暂时无法加载详情</h2><p>{error||"作品不存在"}</p><button className="primary-button" onClick={resource.refresh}>重新加载<RefreshCw size={14}/></button><Link href="/" className="text-link">返回榜单<ArrowRightIcon/></Link></div></div>;
   const saved=isFavorite(item);
+  // Old browser snapshots can predate server-side credit deduplication.
+  const cast = mergeCastMembers(item.cast);
   return <div className="detail-workspace resource-region" aria-busy={loading}>
     <ResourceFeedback pending={loading} error={error} retained onRetry={resource.refresh}/>
     <div className="detail-breadcrumb" data-scroll-anchor="detail-heading">
@@ -106,8 +109,8 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
         </div>
       </div>
     </div>
-    {item.cast.length > 0 && <DetailMediaStrip pending={loading} title="主要演员" kind="cast" stateKey={mediaKey(item)}>
-      {item.cast.map(actor => <div className="cast-card" key={actor.id}><CastPhoto path={actor.profilePath} name={actor.name}/><strong data-skeleton="line" title={actor.name}>{actor.name}</strong><span data-skeleton="line" title={actor.character}>{actor.character || "角色未提供"}</span></div>)}
+    {cast.length > 0 && <DetailMediaStrip pending={loading} title="主要演员" kind="cast" stateKey={mediaKey(item)}>
+      {cast.map(actor => <div className="cast-card" key={actor.id}><CastPhoto path={actor.profilePath} name={actor.name}/><strong data-skeleton="line" title={actor.name}>{actor.name}</strong><span data-skeleton="line" title={actor.character}>{actor.character || "角色未提供"}</span></div>)}
     </DetailMediaStrip>}
     {item.images.length > 0 && <DetailMediaStrip pending={loading} title="剧照" kind="stills" stateKey={mediaKey(item)}>
       {item.images.map((path, index) => <StillPhoto key={path} path={path} title={item.title} index={index}/>)}

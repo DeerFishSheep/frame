@@ -1,4 +1,5 @@
 import type { Media, MediaDetail, MediaPage, MediaType } from "../types";
+import { mergeCastMembers } from "../media-cast";
 
 import { normalizeCountryCodes, countryNames } from "../media-regions";
 
@@ -74,9 +75,9 @@ export function normalizeDetail(value: unknown, mediaType: MediaType): MediaDeta
     numberOfSeasons: mediaType === "tv" && finite(raw.number_of_seasons) > 0 ? finite(raw.number_of_seasons) : null,
     status: text(raw.status), countryCodes: mediaCountryCodes(raw), countries: countryNames(productionCodes.length ? productionCodes : mediaCountryCodes(raw)),
     directors: [...new Set(directors.filter(Boolean))],
-    cast: list(credits.cast).map(object).filter((person) => finite(person.id) > 0).slice(0, 18).map((person) => ({
+    cast: mergeCastMembers(list(credits.cast).map(object).map((person) => ({
       id: finite(person.id), name: text(person.name), character: text(person.character), profilePath: path(person.profile_path),
-    })),
+    }))).slice(0, 18),
     keywords: list(keywordData.keywords ?? keywordData.results).map(object).filter((keyword) => finite(keyword.id) > 0).map((keyword) => ({ id: finite(keyword.id), name: text(keyword.name) })),
     images: list(imageData.backdrops).map(object).map((item) => path(item.file_path)).filter((item): item is string => item !== null).slice(0, 12),
     recommendations: Array.isArray(object(raw.recommendations).results)

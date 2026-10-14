@@ -311,3 +311,11 @@ npm run start
 - **复检**：打开电影／电视剧榜单，下滑后从标题右侧切换TMDB／IMDB；读 `[data-catalog-start]` 与 `.catalog-heading` 的top，两者都应约0，不能只检查吸顶标题。再确认分类顺序、普通详情返回和继续滚动。截图 `artifacts/previews/frame-source-switch-alignment.png`；本轮开发服务持续运行，未重跑生产构建或部署。
 
 - **本轮详情返回复检**：1440px从IMDB热门电影的“大学炸弹客”进入详情，再用站内“返回榜单”；前后scrollY均1081.5、片名top均497.594，没有回到榜单开头。电影／剧集分类分别实测为“热门电影、Top 250 电影”和“热门剧集、Top 250 剧集”。
+
+## UI-24 详情演员重复记录
+
+- **原因与样本**：movie/450519《速度与激战》的credits将Joe Chambrello（1792850）分别以JC、J.C.返回。原normalizeDetail直接保留两条，DetailView以actor.id作为key，真实浏览器复现两次相同key警告。
+- **共用处理**：`lib/media-cast.ts` 的 `mergeCastMembers` 按有效人员ID合并，同名不同ID不合并；保留首次出现顺序及每个不重复角色，用“ / ”连接。重复记录可以补齐空姓名／头像，不改原数组。
+- **接入**：`normalizeDetail` 先合并完整演员记录，再应用既有18位显示上限，避免重复记录占名额或丢失后面的角色；`DetailView` 在渲染前调用相同函数，覆盖修复前的浏览器详情快照，不要求用户清空缓存。仍以唯一actor.id作为key，未改成下标规避。
+- **验证**：`tests/media-cast.test.ts` 4项覆盖电影／剧集、真实重复样本、多角色、同名不同人、稳定顺序、缺资料补齐、不修改快照、重复调用、合并后上限和无效ID；工作树和独立提交快照的128 / 128与类型检查通过。真实接口和页面从14条变为13位，Joe只显示一次且角色为JC / J.C.。浏览器旧数据热更新与重新加载均显示13张卡，刷新后没有新增控制台错误，横向浏览正常。
+- **复检入口**：`/movie/450519` → 主要演员 → Joe Chambrello；接口 `/api/details/movie/450519`，检查cast的ID唯一。截图 `artifacts/previews/frame-cast-duplicates-fixed.png`。本轮未改API请求、未重启开发服务，未运行生产构建／部署。
