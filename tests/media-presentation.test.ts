@@ -1,14 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { DEMO_MEDIA } from "../lib/demo";
-import { cardNumber, formatMediaDate, mergeMediaPages, selectFeaturedMedia } from "../lib/media-presentation";
+import { cardNumber, featuredIndicatorPositions, formatMediaDate, mergeMediaPages, selectFeaturedMedia } from "../lib/media-presentation";
 import { mediaKey } from "../lib/types";
 
-test("featured media selects five distinct works in current catalog order", () => {
-  const input = [DEMO_MEDIA[0], DEMO_MEDIA[0], ...DEMO_MEDIA.slice(1)];
+test("featured media selects ten distinct works in current catalog order", () => {
+  const works = Array.from({ length: 12 }, (_, i) => ({ ...DEMO_MEDIA[0], id: i + 1 }));
+  const input = [works[0], works[0], ...works.slice(1)];
   const selected = selectFeaturedMedia(input);
-  assert.equal(selected.length, 5);
-  assert.deepEqual(selected.map(mediaKey), DEMO_MEDIA.slice(0, 5).map(mediaKey));
+  assert.equal(selected.length, 10);
+  assert.deepEqual(selected.map(mediaKey), works.slice(0, 10).map(mediaKey));
 });
 
 test("carousel keeps movie and TV identities distinct and never pads a short result", () => {
@@ -51,4 +52,24 @@ test("recommendation pages append in order and deduplicate across and within pag
   const television = { ...first, mediaType: "tv" as const };
   assert.deepEqual(mergeMediaPages([first], [first, second, second, television]).map(mediaKey), [mediaKey(first), mediaKey(second), mediaKey(television)]);
   assert.deepEqual(mergeMediaPages([first], []), [first]);
+});
+
+
+test("five indicators track every position across ten films including both ends", () => {
+  for (let active = 0; active < 10; active++) {
+    const visible = featuredIndicatorPositions(10, active);
+    assert.equal(visible.length, 5);
+    assert.ok(visible.includes(active));
+    assert.ok(visible.every((position, i) => position >= 0 && position < 10 && (!i || position === visible[i - 1] + 1)));
+  }
+  assert.deepEqual(featuredIndicatorPositions(10, 0), [0, 1, 2, 3, 4]);
+  assert.deepEqual(featuredIndicatorPositions(10, 5), [3, 4, 5, 6, 7]);
+  assert.deepEqual(featuredIndicatorPositions(10, 9), [5, 6, 7, 8, 9]);
+});
+
+test("indicator windows never invent slides for short or empty catalogs", () => {
+  assert.deepEqual(featuredIndicatorPositions(0, 0), []);
+  assert.deepEqual(featuredIndicatorPositions(1, 0), [0]);
+  assert.deepEqual(featuredIndicatorPositions(3, 2), [0, 1, 2]);
+  assert.deepEqual(featuredIndicatorPositions(5, 4), [0, 1, 2, 3, 4]);
 });

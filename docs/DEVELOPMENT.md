@@ -137,7 +137,7 @@ npm run start
 - 桌面 `featured-image img` 使用 `cover` 放大铺满，允许适度裁切；900px 以下以及无背景图的竖海报回退使用 `contain`。`featured-ambient` 模糊层已在 UI-07 移除。
 - 页顶上下渐变、图片边缘蒙版匹配深浅主题；900px 以下图文上下排列。轮播外框用 `overflow: clip`，避免按钮聚焦时产生内部滚动偏移。
 - 移除暂停／继续按钮和永久暂停状态；`hovered`、`focused`、页面可见性、减少动画偏好共同控制自动切换。手动切换重置计时，离开交互区域恢复。
-- 复检 `/`、`/?media=tv`：调整窗口宽高，核对手机主图完整、桌面图片铺满、五部桌面切换高度稳定、无横向溢出；聚焦后应暂停，离开后等待 6 秒应继续。
+- 复检 `/`、`/?media=tv`：调整窗口宽高，核对手机主图完整、桌面图片铺满、十部桌面切换高度稳定、无横向溢出；聚焦后应暂停，离开后等待 6 秒应继续。
 
 - UI-06：900px 以下不再为 `.featured-copy` 设置 300px 最低高度，`.featured-actions` 使用固定 `margin-top: 18px`，禁止用自动外边距撑开简介与按钮。手机文字区随内容自然变高，复检 320／390／486／762px 下的长短简介。
 
@@ -272,3 +272,11 @@ npm run start
 - `formatFeaturedLabel` 共用“来源·榜单名”；Workspace使用chartMeta，IMDB使用原榜名称，找片标识其来源。预览仍标“预览”，不冒充实时榜单。
 - `BackToTop` 放在FrameShell，始终显示44px圆形按钮，兼容安全区；点按先通知usePageContinuity中止等待中的历史位置恢复，然后平滑回顶，减少动画模式直接回顶。
 - 验证：108项既有测试与类型检查；真实页面320／390／649／900／961／1440px无横向溢出；手机居中、数字上置，桌面位置不变；标题及海报跳转到正确详情，回顶scrollY由804变为0。截图：`artifacts/previews/frame-mobile-hero-controls.png`。本轮不改路由或构建配置，开发服务持续运行，未重跑生产构建。
+
+
+## UI-20 十部轮播与五个指示横条
+
+- `lib/media-presentation.ts`：FEATURED_LIMIT=10，featuredIndicatorPositions最多返回5个连续真实位置；当前影片在中部时窗口随之移动，首尾保持完整5条。短列表按实际数量显示，不补造作品。
+- `FeaturedCarousel` 共用指示窗口，数字显示实际总数。IMDB移除额外slice(0,5)，主榜单与找片沿用同一个selectFeaturedMedia。
+- 手机counter仅translateY(4px)，不移动箭头或横条；桌面不变。
+- 检查：110项测试与类型检查通过；新增指示窗口首尾／所有10个位置／短列表测试，选片测试核验10部去重保序。浏览器实测05→10→01→02始终5条且高亮正确；390px数字下移4px、横条宽127px且无横向溢出。

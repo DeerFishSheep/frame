@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { ArrowRight, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
 import { imageUrl, mediaHref, mediaKey, type Media } from "@/lib/types";
-import { FEATURED_INTERVAL_MS, featuredIndex, formatMediaDate, selectFeaturedMedia } from "@/lib/media-presentation";
+import { FEATURED_INTERVAL_MS, featuredIndex, featuredIndicatorPositions, formatMediaDate, selectFeaturedMedia } from "@/lib/media-presentation";
 import { useStableUpdate } from "@/lib/use-stable-update";
 import { useViewState } from "@/lib/view-state";
 import { MediaImage } from "./media-card";
@@ -130,7 +130,7 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
     {items.length > 1 && <div className="featured-controls" data-skeleton="line" onKeyDown={onKeyDown}>
       <span className="featured-counter" aria-hidden="true">{String(index + 1).padStart(2, "0")}<span> / {String(items.length).padStart(2, "0")}</span></span>
       <button className="carousel-arrow" onClick={() => select(index - 1)} aria-label="上一部"><ChevronLeft size={18}/></button>
-      <div className="carousel-dots" role="group" aria-label="选择轮播影片">{items.map((slide, position) => <button key={mediaKey(slide)} className={position === index ? "active" : ""} onClick={() => select(position)} aria-label={`切换到第 ${position + 1} 部：${slide.title}`} aria-pressed={position === index}><span/></button>)}</div>
+      <div className="carousel-dots" role="group" aria-label="选择轮播影片">{featuredIndicatorPositions(items.length, index).map(position => <button key={mediaKey(items[position])} className={position === index ? "active" : ""} onClick={() => select(position)} aria-label={`切换到第 ${position + 1} 部：${items[position].title}`} aria-pressed={position === index}><span/></button>)}</div>
       <button className="carousel-arrow" onClick={() => select(index + 1)} aria-label="下一部"><ChevronRight size={18}/></button>
     </div>}
   </section>;

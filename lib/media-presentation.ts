@@ -4,8 +4,16 @@ export function formatFeaturedLabel(source: DataSource, title: string) {
   return `${source === "demo" ? "预览" : source.toUpperCase()}·${title}`;
 }
 
-export const FEATURED_LIMIT = 5;
+export const FEATURED_LIMIT = 10;
+export const FEATURED_INDICATOR_LIMIT = 5;
 export const FEATURED_INTERVAL_MS = 6000;
+
+/** Keep a five-position window around the active film, clamped at either end. */
+export function featuredIndicatorPositions(count: number, index: number): number[] {
+  const size = Math.min(FEATURED_INDICATOR_LIMIT, count);
+  const start = Math.max(0, Math.min(index - Math.floor(size / 2), count - size));
+  return Array.from({ length: size }, (_, offset) => start + offset);
+}
 
 export function featuredIndex(selection: { key: string; index: number }, items: Media[]) {
   const matching = items.findIndex(item => mediaKey(item) === selection.key);

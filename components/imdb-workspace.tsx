@@ -54,7 +54,7 @@ export function ImdbWorkspace() {
   }
 
   return <div className="workspace workspace--featured imdb-workspace">
-    {items.length > 0 && <FeaturedFilm items={items.slice(0, 5)} label={current?.context.featuredLabel || formatFeaturedLabel("imdb", chart.label)} pending={loading}/>}
+    {items.length > 0 && <FeaturedFilm items={items} label={current?.context.featuredLabel || formatFeaturedLabel("imdb", chart.label)} pending={loading}/>}
     {loading && !current && <div className="skeleton featured-loading" aria-label="正在加载 IMDB 焦点影片"/>}
     <CatalogSection id="imdb-heading" title={current?.context.title || `IMDB · ${chart.label}`}
       actions={<button className="icon-button view-toggle" onClick={toggleLayout} aria-label={layout === "grid" ? "切换列表视图" : "切换海报视图"}>{layout === "grid" ? <List size={18}/> : <Grid2X2 size={18}/>}</button>}
