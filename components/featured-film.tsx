@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { ArrowRight, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
-import { imageUrl, mediaHref, mediaKey, type Media } from "@/lib/types";
+import { mediaHref, mediaKey, type Media } from "@/lib/types";
 import { FEATURED_INTERVAL_MS, FEATURED_INDICATOR_LIMIT, featuredIndex, featuredIndicatorPositions, formatMediaDate, selectFeaturedMedia } from "@/lib/media-presentation";
 import { useStableUpdate } from "@/lib/use-stable-update";
 import { useViewState } from "@/lib/view-state";
@@ -12,6 +12,7 @@ import { useMediaRegions } from "@/lib/use-media-regions";
 import { useFrame } from "./providers";
 import { resourceLoadingProps } from "./resource-feedback";
 import { sourceLabel } from "@/lib/catalog-sources";
+import { artworkSources } from "@/lib/media-artwork";
 
 export function FeaturedFilm({ items, label, pending = false, stateKey = "featured:catalog" }: { items: Media[]; label: string; pending?: boolean; stateKey?: string }) {
   const slides = selectFeaturedMedia(items);
@@ -42,7 +43,7 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
   const running = !pending && !reducedMotion && visible && !hovered && !focused && items.length > 1;
   const nextItem = items[(index + 1) % items.length];
   const activeKey = mediaKey(item), nextKey = mediaKey(nextItem);
-  const nextImage = imageUrl(nextItem.backdropPath || nextItem.posterPath, nextItem.backdropPath ? "w1280" : "w500");
+  const nextImage = artworkSources(nextItem, Boolean(nextItem.backdropPath))[0];
 
   useLayoutEffect(() => {
     if (!restoreIndicatorFocus.current) return;

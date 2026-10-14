@@ -1,6 +1,6 @@
-import { buildDoubanRequest, DOUBAN_PAGE_SIZE, type DoubanFilters } from "./query";
+import { buildDoubanRequest, DOUBAN_PAGE_SIZE, doubanListUrl, type DoubanFilters } from "./query";
 import { normalizeDoubanItem } from "./normalize";
-import type { Media } from "../types";
+import type { Media, MediaType } from "../types";
 
 export class DoubanError extends Error {
   constructor(message: string, readonly code: string, readonly status: number) { super(message); this.name = "DoubanError"; }
@@ -28,20 +28,50 @@ export function parseDoubanPage(data: unknown, filters: DoubanFilters): Omit<Dou
 export function createDoubanClient(options: { fetchImpl?: typeof fetch; now?: () => number; timeoutMs?: number } = {}) {
   const fetchImpl = options.fetchImpl ?? fetch, now = options.now ?? Date.now;
   const cache = new Map<string, { result: DoubanPage; at: number }>(), inflight = new Map<string, Promise<DoubanPage>>();
-  async function load(filters: DoubanFilters): Promise<DoubanPage> {
-    const request = buildDoubanRequest(filters), controller = new AbortController();
+  async function requestJson(url: string, referer: string): Promise<unknown> {
+    const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 12000);
     try {
-      const response = await fetchImpl(request.url, { redirect: "error", cache: "no-store", signal: controller.signal,
-        headers: { Accept: "application/json", Referer: request.referer, "User-Agent": "Mozilla/5.0" } });
+      const response = await fetchImpl(url, { redirect: "error", cache: "no-store", signal: controller.signal,
+        headers: { Accept: "application/json", Referer: referer, "User-Agent": "Mozilla/5.0" } });
       if (!response.ok) throw new DoubanError(response.status === 404 ? "片单不存在或无法公开访问。" : response.status === 403 || response.status === 429 ? "豆瓣暂时限制访问，请稍后重试。" : "豆瓣暂时无法提供数据，请重试。", "DOUBAN_UPSTREAM_FAILED", response.status === 404 ? 404 : response.status === 429 ? 429 : 502);
       let data: unknown;
       try { data = await response.json(); } catch { throw new DoubanError("豆瓣返回的内容无法读取，请稍后重试。", "DOUBAN_INVALID_RESPONSE", 502); }
-      return { ...parseDoubanPage(data, filters), retrievedAt: new Date(now()).toISOString(), stale: false };
+      return data;
     } catch (error) {
       if (error instanceof DoubanError) throw error;
       throw new DoubanError(controller.signal.aborted ? "连接豆瓣超时，请重试。" : "无法连接豆瓣，请稍后重试。", "DOUBAN_UNAVAILABLE", controller.signal.aborted ? 504 : 502);
     } finally { clearTimeout(timer); }
+  }
+  async function load(filters: DoubanFilters): Promise<DoubanPage> {
+    const request = buildDoubanRequest(filters);
+    return { ...parseDoubanPage(await requestJson(request.url, request.referer), filters), retrievedAt: new Date(now()).toISOString(), stale: false };
+  }
+  const metadata = new Map<string, { data: unknown; retrievedAt: string; at: number }>();
+  const pendingMetadata = new Map<string, Promise<{ data: unknown; retrievedAt: string; stale: boolean }>>();
+  function lookup(path: string, expectedId: string, referer: string, ttl = 60 * 60_000) {
+    const previous = metadata.get(path);
+    if (previous && now() - previous.at < ttl) return Promise.resolve({ ...previous, stale: false });
+    const pending = pendingMetadata.get(path); if (pending) return pending;
+    const promise = requestJson(`https://m.douban.com/rexxar/api/v2/${path}?for_mobile=1`, referer).then(data => {
+      if (!data || typeof data !== "object" || String((data as Record<string, unknown>).id) !== expectedId) throw new DoubanError("豆瓣资料编号不匹配，请重试。", "DOUBAN_INVALID_RESPONSE", 502);
+      const result = { data, retrievedAt: new Date(now()).toISOString(), at: now() };
+      metadata.delete(path); metadata.set(path, result);
+      while (metadata.size > 150) metadata.delete(metadata.keys().next().value!);
+      return { ...result, stale: false };
+    }).catch(error => {
+      if (previous && now() - previous.at < 24 * 60 * 60_000) return { ...previous, stale: true };
+      throw error;
+    }).finally(() => pendingMetadata.delete(path));
+    pendingMetadata.set(path, promise); return promise;
+  }
+  function subject(media: MediaType, id: string) {
+    if (!["movie", "tv"].includes(media) || !/^[1-9]\d{0,11}$/.test(id)) throw new DoubanError("作品编号无效。", "INVALID_SUBJECT", 400);
+    return lookup(`${media}/${id}`, id, `https://m.douban.com/${media}/${id}/`);
+  }
+  function collection(id: string) {
+    const url = doubanListUrl(id), [kind, identifier] = id.split(":");
+    return lookup(`${kind === "doulist" ? "doulist" : "subject_collection"}/${identifier}`, identifier, url, 10 * 60_000);
   }
   function page(filters: DoubanFilters): Promise<DoubanPage> {
     const key = `${filters.media}:${buildDoubanRequest(filters).url}`, previous = cache.get(key);
@@ -57,5 +87,5 @@ export function createDoubanClient(options: { fetchImpl?: typeof fetch; now?: ()
     }).finally(() => inflight.delete(key));
     inflight.set(key, promise); return promise;
   }
-  return { page };
+  return { page, subject, collection };
 }

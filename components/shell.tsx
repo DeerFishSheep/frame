@@ -10,13 +10,14 @@ import { BackToTop } from "./back-to-top";
 import { useFrame } from "./providers";
 import { readViewState } from "@/lib/view-state";
 import { usePageContinuity } from "@/lib/use-page-continuity";
-import { catalogSource, sourceLabel } from "@/lib/catalog-sources";
+import { catalogSource, isLegacyCollectionHref, sourceLabel } from "@/lib/catalog-sources";
 import { defaultDoubanFilters, doubanCharts, doubanParams } from "@/lib/douban/query";
 
 const navigation = [
   { id: "movie", label: "电影", href: "/" },
   { id: "tv", label: "电视剧", href: "/?media=tv" },
   { id: "discover", label: "找片", href: "/discover" },
+  { id: "lists", label: "片单", href: "/lists" },
   { id: "favorites", label: "我的收藏", href: "/favorites" },
 ];
 
@@ -25,17 +26,18 @@ export function FrameShell({ children }: { children: ReactNode }) {
   const params = useSearchParams();
   usePageContinuity(pathname, params.toString());
   const router = useRouter();
-  const { favorites, theme, toggleTheme, preview, setPreview, configured } = useFrame();
+  const { favorites, collections, theme, toggleTheme, preview, setPreview, configured } = useFrame();
   const [sourceOpen, setSourceOpen] = useState(false);
   const [query, setQuery] = useState(params.get("query") || "");
   const searchInput = useRef<HTMLInputElement>(null);
   const currentQuery = params.get("query") || "";
-  const source = pathname === "/" ? catalogSource(new URLSearchParams(params)) : "tmdb";
+  const collectionMode = pathname.startsWith("/lists") || pathname === "/favorites" && params.get("section") === "lists";
+  const source = collectionMode ? "douban" : pathname === "/" ? catalogSource(new URLSearchParams(params)) : "tmdb";
   const providerMode = source !== "tmdb", providerLabel = sourceLabel(source);
   const mediaNavigation = (item: typeof navigation[number]) => {
     if (pathname !== "/" || currentQuery || (item.id !== "movie" && item.id !== "tv")) return item.href;
     const remembered = readViewState<string | null>(`catalog-location:${item.id}:${source}`, null);
-    if (remembered) return remembered;
+    if (remembered && !(source === "douban" && isLegacyCollectionHref(remembered))) return remembered;
     if (source === "douban") {
       const chart = doubanCharts(item.id).find(chart => chart.value === params.get("chart"))?.value;
       const next = defaultDoubanFilters(item.id, chart);
@@ -46,6 +48,7 @@ export function FrameShell({ children }: { children: ReactNode }) {
     return `/?${next}`;
   };
   const active = pathname === "/favorites" ? "favorites"
+    : pathname === "/lists" || pathname.startsWith("/lists/") ? "lists"
     : pathname === "/discover" ? "discover"
     : pathname.startsWith("/movie/") ? "movie"
     : pathname.startsWith("/tv/") ? "tv"
@@ -85,7 +88,7 @@ export function FrameShell({ children }: { children: ReactNode }) {
         <Link className="site-brand" href="/" aria-label="帧榜电影"><Film size={25} strokeWidth={1.7}/><strong>帧榜<span>FRAME</span></strong></Link>
         <nav className="site-nav" aria-label="主导航">
           {navigation.map(item => <Link key={item.id} href={mediaNavigation(item)} scroll={pathname === "/" && (item.id === "movie" || item.id === "tv") ? false : undefined} className={active === item.id ? "active" : ""} aria-current={active === item.id ? "page" : undefined}>
-            {item.label}{item.id === "favorites" && favorites.length > 0 && <span className="nav-count">{favorites.length}</span>}
+            {item.label}{item.id === "favorites" && favorites.length + collections.length > 0 && <span className="nav-count">{favorites.length + collections.length}</span>}
           </Link>)}
         </nav>
         <form className="site-search" role="search" onSubmit={search} onKeyDown={event => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }}>

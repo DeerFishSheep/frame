@@ -11,6 +11,7 @@ export interface Media {
   title: string;
   originalTitle: string;
   posterPath: string | null;
+  posterFallbacks?: string[];
   backdropPath: string | null;
   overview: string;
   releaseDate: string;

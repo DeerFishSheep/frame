@@ -11,12 +11,16 @@ export type CatalogSourceId = typeof CATALOG_SOURCES[number]["id"];
 export function catalogSource(params: URLSearchParams): CatalogSourceId {
   return CATALOG_SOURCES.find(source => source.id === params.get("source"))?.id ?? "tmdb";
 }
+export function isLegacyCollectionHref(href: string) {
+  const url = new URL(href, "https://frame.local");
+  return url.pathname === "/" && url.searchParams.get("source") === "douban" && url.searchParams.get("chart") === "lists";
+}
 
 export function catalogSourceHref(target: CatalogSourceId, params: URLSearchParams, remember: (key: string) => string | undefined) {
   if (target === catalogSource(params)) return `/?${params}`;
   const media: MediaType = params.get("media") === "tv" ? "tv" : "movie";
   const previous = remember(`catalog-location:${media}:${target}`);
-  if (previous) return previous;
+  if (previous && !(target === "douban" && isLegacyCollectionHref(previous))) return previous;
   if (target === "douban") return `/?source=douban&media=${media}&chart=${media === "movie" ? "popular" : "realtime"}`;
   const chart = params.get("chart") === "popular" ? "popular" : "top";
   return target === "imdb" ? `/?source=imdb&media=${media}&chart=${chart}&sort=rank` : `/?media=${media}&chart=${chart}`;

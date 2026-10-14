@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ArrowUpRight, Bookmark, Film, Star } from "lucide-react";
-import { imageUrl, mediaHref, mediaKey, type Media } from "@/lib/types";
+import { mediaHref, mediaKey, type Media } from "@/lib/types";
+import { artworkSources } from "@/lib/media-artwork";
 import { formatCount } from "@/lib/ui";
 import { cardNumber, formatMediaDate } from "@/lib/media-presentation";
 import { useMediaRegions } from "@/lib/use-media-regions";
@@ -11,10 +12,11 @@ import { useFrame } from "./providers";
 import { sourceLabel } from "@/lib/catalog-sources";
 
 export function MediaImage({ item, backdrop = false, className = "" }: { item: Media; backdrop?: boolean; className?: string }) {
-  const [failedPath, setFailedPath] = useState<string | null>(null);
-  const src = imageUrl(backdrop ? item.backdropPath : item.posterPath, backdrop ? "w1280" : "w500");
-  return src && src !== failedPath
-    ? <img className={className} src={src} alt={backdrop ? "" : `${item.title}海报`} loading={backdrop ? "eager" : "lazy"} decoding="async" referrerPolicy="no-referrer" onError={() => setFailedPath(src)}/>
+  const [failed, setFailed] = useState<string[]>([]);
+  const failures = Array.isArray(failed) ? failed : [];
+  const src = artworkSources(item, backdrop).find(url => !failures.includes(url));
+  return src
+    ? <img key={src} className={className} src={src} alt={backdrop ? "" : `${item.title}海报`} loading={backdrop ? "eager" : "lazy"} decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(previous => Array.isArray(previous) && previous.includes(src) ? previous : [...(Array.isArray(previous) ? previous : []), src])}/>
     : <div className={`image-placeholder ${className}`}><Film size={32} strokeWidth={.9}/><span>{item.title}</span><small>暂无{backdrop ? "剧照" : "海报"}</small></div>;
 }
 

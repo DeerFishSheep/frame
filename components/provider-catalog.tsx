@@ -18,16 +18,17 @@ interface Props {
   source: CatalogSourceId; queryKey: string; page: number; title: string; ranked: boolean; originalUrl: string;
   charts: CatalogTab[]; sort?: ReactNode; controls?: ReactNode; error?: string;
   originalLabel?: string; countLabel?: string;
+  featured?: boolean; resourceGroup?: string;
   loadPage: (page: number, signal: AbortSignal) => Promise<CatalogResponse>; onReset: () => void;
 }
 
 /** IMDB, Douban and future adapters supply data/controls; loading, pagination and layout stay shared. */
-export function ProviderCatalog({ source, queryKey, page, title, ranked, originalUrl, charts, sort, controls, error: queryError, loadPage, onReset, originalLabel = "查看原榜", countLabel = "原榜" }: Props) {
+export function ProviderCatalog({ source, queryKey, page, title, ranked, originalUrl, charts, sort, controls, error: queryError, loadPage, onReset, originalLabel = "查看原榜", countLabel = "原榜", featured = true, resourceGroup = "catalog" }: Props) {
   const label = sourceLabel(source), moreAnchor = useRef<HTMLDivElement>(null);
   const prepare = useStableUpdate();
   const [layout, setLayout] = useViewState<"grid" | "list">("catalog-layout", "grid");
-  const resource = usePagedResource<CatalogView>({ key: `catalog:${source}:${queryKey}`, group: "catalog", page, enabled: !queryError,
-    loadPage: async (number, signal) => ({ ...await loadPage(number, signal), context: { title, featuredLabel: formatCatalogTitle(source, title), ranked, startPage: page, feature: true } }),
+  const resource = usePagedResource<CatalogView>({ key: `${resourceGroup}:${source}:${queryKey}`, group: resourceGroup, page, enabled: !queryError,
+    loadPage: async (number, signal) => ({ ...await loadPage(number, signal), context: { title, featuredLabel: formatCatalogTitle(source, title), ranked, startPage: page, feature: featured } }),
   });
   const current = resource.data, items = current?.results || [], loading = resource.pending, error = queryError || resource.error;
   const { loadMore, hasMore, loadingMore, moreError, autoPaused } = resource;
@@ -48,9 +49,9 @@ export function ProviderCatalog({ source, queryKey, page, title, ranked, origina
     try { localStorage.setItem("frame_layout_v2", next); } catch { /* Keep this visit's selection. */ }
   };
   const retry = () => queryError ? onReset() : resource.refresh();
-  return <div className="workspace workspace--featured">
-    {items.length > 0 && <FeaturedFilm items={items} label={current?.context.featuredLabel || formatCatalogTitle(source, title)} pending={loading}/>}
-    {loading && !current && <div className="skeleton featured-loading" aria-busy="true" aria-label={`正在加载 ${label} 焦点影片`}/>}
+  return <div className={`workspace ${featured ? "workspace--featured" : "workspace--collection"}`}>
+    {featured && items.length > 0 && <FeaturedFilm items={items} label={current?.context.featuredLabel || formatCatalogTitle(source, title)} pending={loading}/>}
+    {featured && loading && !current && <div className="skeleton featured-loading" aria-busy="true" aria-label={`正在加载 ${label} 焦点影片`}/>}
     <CatalogSection id={`${source}-heading`} title={current?.context.title || title} dataSource={current?.source || source}
       actions={<button className="icon-button view-toggle" onClick={toggleLayout} aria-label={layout === "grid" ? "切换列表视图" : "切换海报视图"}>{layout === "grid" ? <List size={18}/> : <Grid2X2 size={18}/>}</button>}
       charts={charts} chartLabel={`${label} 榜单分类`} chartAction={<a className="catalog-more" href={originalUrl} target="_blank" rel="noopener noreferrer">{originalLabel}<ArrowUpRight size={14}/></a>}

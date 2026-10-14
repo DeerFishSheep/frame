@@ -97,11 +97,14 @@ export function createTmdbService(client: Client) {
   }
 
   async function findByTitle(title: string, year: string, mediaType: MediaType) {
-    if (!title.trim() || title.length > 200 || !/^\d{4}$/.test(year)) return null;
+    return exactMediaMatch(await searchCandidates(title, year, mediaType), title, year, mediaType);
+  }
+  async function searchCandidates(title: string, year: string, mediaType: MediaType) {
+    if (!title.trim() || title.length > 200 || !/^\d{4}$/.test(year)) return [];
     const response = await client.request<unknown>(`/search/${mediaType}`, new URLSearchParams({ query: searchTitle(title, mediaType), language: "zh-CN", include_adult: "false", [mediaType === "movie" ? "year" : "first_air_date_year"]: year }));
     const results = object(response.data).results;
-    if (!Array.isArray(results)) return null;
-    return exactMediaMatch(results.map(raw => normalizeMedia(raw, mediaType)).filter(item => Number.isSafeInteger(item.id) && Number(item.id) > 0), title, year, mediaType);
+    if (!Array.isArray(results)) return [];
+    return results.map(raw => normalizeMedia(raw, mediaType)).filter(item => Number.isSafeInteger(item.id) && Number(item.id) > 0);
   }
-  return { catalog, detail, recommendations, keywords, findByImdbId, findByTitle, regions };
+  return { catalog, detail, recommendations, keywords, findByImdbId, findByTitle, searchCandidates, regions };
 }

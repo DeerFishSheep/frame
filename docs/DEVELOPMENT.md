@@ -125,7 +125,7 @@ npm run start
 
 ## UI-03 复检路径
 
-1. `/` 默认电影，主导航只有电影／电视剧／找片／收藏；兼容已有 `?media=movie` 链接。
+1. `/` 默认电影，主导航为电影／电视剧／找片／片单／收藏；兼容已有 `?media=movie` 链接。
 2. `/discover` 的 `#N`、前三项颜色、海报标签和交互与榜单卡片一致；搜索、收藏、推荐也复用 `MediaCard`。
 3. `/movie/969681` 顶部没有横幅；左海报右名称与资料；演员区域位于 `detail-content` 之后。
 4. “猜你喜欢”首屏保留完整推荐页；滚动到末尾触发 `/api/recommendations/movie/969681?page=2`。分页按复合 ID 去重，最后一页禁用继续向右按钮，空结果和失败分别显示状态。
@@ -323,11 +323,11 @@ npm run start
 ## DOUBAN-01 豆瓣榜单与片单
 
 - **入口与共用层**：`CatalogEntry` 注册DoubanWorkspace，标题右侧SourcePicker自动显示豆瓣。IMDB与豆瓣统一使用 `ProviderCatalog`，包括原位骨架、自动分页、失败重试、视图切换、轮播、计数和原站入口；底层仍是usePagedResource／ResourceRegion／CatalogSection，不引入单独刷新流程。
-- **控制与选项**：`lib/douban/options.json` 保存参考模块12.5.0的8片单与298类型榜ID，及推荐筛选选项。`query.ts` 统一枚举、媒介隔离、页码、URL与上游请求构造。类型榜为分类→具体榜单；片单支持预设与输入链接；更多推荐条件默认折叠。
+- **控制与选项**：`lib/douban/options.json` 保存参考模块12.5.0的8片单与298类型榜ID，及推荐筛选选项。`query.ts` 统一枚举、媒介隔离、页码、URL与上游请求构造。类型榜为分类→具体榜单；片单由LISTS-01迁至独立目录与详情，支持预设与输入链接；更多推荐条件默认折叠。
 - **数据获取**：`/api/douban` → server → service → client。只请求固定的m.douban.com/rexxar/api/v2路径，超时12秒、不跟随重定向；10分钟缓存、同请求合并、最多120页缓存、24小时内失败回退并标注旧时间。分页20条，最高500页；超限会显示范围，未知总数只显示已加载，不编造总数。
 - **身份与原始数据**：豆列条目id不是作品id，优先target_id／subject URL／uri。normalize保留豆瓣评分、票数、排名、中文名和类型；非影视与重复主体跳过，仍按上游start推进。未匹配使用douban:<id>，匹配后用TMDB详情ID；mediaKey始终优先doubanId，避免分季对应同一TMDB剧集导致卡片丢失。收藏允许两类身份并保存doubanId。
-- **资料匹配**：四个并发调用tmdb.findByTitle；唯一的片名／原名＋年份精确匹配才接入本站详情，重名／缺年份／不同年份不猜测。原始评分不会被TMDB值覆盖；匹配失败仍保留豆瓣海报与原站链接。日期只使用真实完整日期或明确年份＋月日，不能按年份补1月1日。
-- **图片与图标**：可靠匹配优先使用TMDB图片，否则允许固定doubanio照片域名；图片／轮播预加载不发送页面Referer。豆瓣本地SVG来自Simple Icons，来源见PLATFORM_ICONS.md。关于页、卡片评分、外链与页脚来源同步支持豆瓣。
+- **资料匹配**：四个并发进行可靠匹配；UI-25使用createDoubanMatcher，唯一片名／原名＋年份先匹配，同名同年再由导演或至少两名演员唯一核实，证据仍不足时不猜测。原始评分不会被TMDB值覆盖；匹配失败仍保留豆瓣海报与原站链接。日期只使用真实完整日期或明确年份＋月日，不能按年份补1月1日。
+- **图片与图标**：可靠匹配优先使用TMDB图片，保留原始备用图片；UI-25将固定doubanio照片域名通过本站图片接口加载，浏览器不发送页面Referer，服务端使用固定豆瓣Referer。豆瓣本地SVG来自Simple Icons，来源见PLATFORM_ICONS.md。关于页、卡片评分、外链与页脚来源同步支持豆瓣。
 - **真实验证**：主要模块分支、8内置片单、Top250末页、剧集／综艺口碑、推荐详细筛选及快捷分类均200；所有298类型榜只做了路由与选项静态回归，没有声称逐一远端验收。浏览器自定义subject_collection链接打开成功，自动20→40且40个唯一键，收藏刷新保留后撤销测试收藏；320px三列、选择器无溢出，切换IMDB再回豆瓣恢复喜剧类型榜且起点top=0.18。
 - **自动检查**：新增18项 `tests/douban.test.ts` 覆盖完整选项矩阵、参数／链接边界、混合条目、ID、日期、评分与匹配、缓存旧数据、收藏和4并发上限；全量146 / 146与类型检查通过。
 - **复检入口**：`/?source=douban&media=movie&chart=popular`；类型榜、片单、推荐及电视剧各选一项，切换来源、收藏刷新、列表续页。能力对应表与真实验收边界见 `docs/reference/DOUBAN_MODULE.md`。未进行服务器部署。
@@ -338,3 +338,26 @@ npm run start
 - **收藏身份补充**：榜单条目继续以豆瓣ID区分，但可靠匹配的同一TMDB影片在不同来源及详情页共用sameFavorite规则，收藏恢复也按别名去重；未匹配豆瓣条目仍以原ID保存。新增跨来源收藏回归。
 
 - **收藏端到端验收**：豆瓣片单收藏《钢铁侠》后进入本站详情，按钮显示“已收藏”；从详情取消后，返回豆瓣恢复“收藏钢铁侠”，测试收藏已撤销。最终146项测试与独立版本生产编译通过；页面控制台未出现新增错误。
+
+
+## UI-25 豆瓣海报与同名作品匹配
+
+- `lib/douban/matcher.ts` 的 `createDoubanMatcher`：先精确标题／年份，歧义时读取豆瓣原名与演职员；导演一致或至少两位演员一致、且只有一个候选通过才匹配。`searchTitle` 去掉Cf隐藏方向字符，避免《神探之痕迹》查不到。未匹配不隐藏条目。
+- `Media.posterFallbacks` 保留原始大小图；`lib/media-artwork.ts` 的 `artworkSources` 同时用于MediaImage和轮播预加载，失败切换下一安全图片。收藏校验同步兼容备用图。
+- `lib/douban/images.ts`／`app/api/images/douban/route.ts`：固定照片域名、禁止重定向、只接收常用图片类型，10秒每次超时、传输／5xx失败最多再试一次，6MB单图、32MB总缓存、1小时TTL。无用户Cookie和凭证传递。
+- 真实联调：《奥德赛》36808876对应TMDB1368337，导演核对排除同名同年1698863；《神探之痕迹》对应1439171。API与浏览器均显示海报、真实日期和本站详情；图片代理实际返回200 JPEG。
+- 回归入口：`tests/artwork.test.ts`。截图：`artifacts/previews/frame-douban-odyssey-fixed.png`。
+
+## LISTS-01 独立片单与整单收藏
+
+- 路由：`app/lists/page.tsx`、`app/lists/[source]/[slug]/page.tsx`；`CollectionDirectory` 展示8个模块预设和已收藏的自定义片单，`CollectionDetail` 展示三图封面、来源／创建者／原始数量及完整影片列表。`app/page.tsx` 将旧根路径豆瓣片单参数重定向至新详情。
+- 数据：`lib/douban/collections.ts` 的 `createCollectionService` 组合真实资料和前三个封面；先拒绝私密片单再取条目。`/api/lists/[source]/[slug]` 只解析固定来源ID，不请求用户任意URL。
+- 状态：`useCollection` 使用独立64项资源缓存；影片仍走ProviderCatalog／usePagedResource，`featured=false`，每片单独立resourceGroup，封面请求不会淘汰已浏览的影片分页。
+- 收藏：`lib/collections.ts` 校验整单快照，`FrameProvider.toggleCollection` 使用独立localStorage键；`FavoritesWorkspace` 分影片／片单，现有电影收藏身份规则保持。隐私模式存储访问失败时只暂存本页。
+- 样式：`.collection-grid` 桌面3列，900px及以下2列；既有`.media-grid` 手机3列。`CollectionOrigin` 区分用户片单／平台榜单，IMDB名称统一大写。
+- 已验收：8个真实元数据接口均200、每份3个封面；320／390px两列片单、导航无溢出，390px影片仍3列；整单收藏刷新保留、影片数量不增加，测试收藏已取消；旧链接浏览器跳转成功。
+- 复检入口：`/lists` → 漫威片单 → 收藏整个片单 → `/favorites?section=lists`。本地预览截图见artifacts/previews/frame-collection-directory-desktop.png与frame-collection-directory-mobile.png。
+
+- **返回验收**：漫威片单20→40（上游一次失败后原位重试成功），进入movie/99861再返回仍40条；scrollY2261→2257，卡片top343.71→347.71。最新目录无缺图占位，控制台无新增错误。
+
+- **交付检查**：当前工作树及独立暂存版本163 / 163与类型检查通过；独立快照webpack生产编译成功。未测试独立standalone运行，未部署。

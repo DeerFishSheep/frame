@@ -39,9 +39,10 @@ export function normalizeDoubanItem(value: unknown, fallbackMedia: MediaType): M
   const rating = object(item.rating), photos = Array.isArray(item.photos) ? item.photos : [];
   const rawGenres = Array.isArray(item.genres) ? item.genres.map(text) : (parts[offset + 1] || "").split(/\s+/).filter(name => genres.has(name));
   const rank = nonnegative(item.rank);
+  const posters = [...new Set([item.cover_url, object(item.pic).large, object(item.cover).url, object(item.pic).normal].map(picture).filter((path): path is string => !!path))];
   return {
     id: `douban:${id}`, doubanId: id, mediaType, title, originalTitle: text(item.original_title), source: "douban",
-    posterPath: picture(item.cover_url || object(item.pic).normal || object(item.cover).url),
+    posterPath: posters[0] || null, ...(posters.length ? { posterFallbacks: posters } : {}),
     backdropPath: photos.map(picture).find(Boolean) || null,
     overview: text(item.description || item.comment), releaseDate: fullDate(item.release_date, year), year,
     countryCodes: [...new Set(regions)], genreIds: [], genres: [...new Set(rawGenres.filter(Boolean))],

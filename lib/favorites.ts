@@ -1,5 +1,5 @@
 import { normalizeCountryCodes } from "./media-regions";
-import { mediaKey, type Media } from "./types";
+import { imageUrl, mediaKey, type Media } from "./types";
 
 export const FAVORITES_KEY = "frame_favorites_v2";
 
@@ -29,6 +29,7 @@ function restoreMedia(value: unknown): Media | null {
   if (typeof value.originalTitle !== "string" || typeof value.overview !== "string") return null;
   if (typeof value.releaseDate !== "string" || typeof value.year !== "string") return null;
   if (!isNullableString(value.posterPath) || !isNullableString(value.backdropPath)) return null;
+  if (value.posterFallbacks !== undefined && (!isStringArray(value.posterFallbacks) || value.posterFallbacks.length > 4 || value.posterFallbacks.some(path => !imageUrl(path)))) return null;
   if (!Array.isArray(value.genreIds) || !value.genreIds.every(isId) || !isStringArray(value.genres)) return null;
   if (!isNonNegative(value.voteAverage) || value.voteAverage > 10) return null;
   if (!isNonNegative(value.voteCount) || !Number.isSafeInteger(value.voteCount)) return null;
@@ -45,6 +46,7 @@ function restoreMedia(value: unknown): Media | null {
     title: value.title,
     originalTitle: value.originalTitle,
     posterPath: value.posterPath,
+    ...(value.posterFallbacks !== undefined ? { posterFallbacks: [...value.posterFallbacks] as string[] } : {}),
     backdropPath: value.backdropPath,
     overview: value.overview,
     releaseDate: value.releaseDate,
