@@ -2,10 +2,12 @@
 
 import { useCallback, useLayoutEffect, useRef } from "react";
 
+import { isPinnedAnchor } from "./scroll-anchors";
+
 interface Anchor { element: HTMLElement | null; key: string | null; top: number; y: number; x: number }
 function capture(): Anchor | null {
   if (typeof window === "undefined") return null;
-  const visible = (element: HTMLElement) => { const box = element.getBoundingClientRect(); return box.height > 0 && box.top >= 0 && box.top < window.innerHeight - 30; };
+  const visible = (element: HTMLElement) => { const box = element.getBoundingClientRect(); return !isPinnedAnchor(element) && box.height > 0 && box.top >= 0 && box.top < window.innerHeight - 30; };
   const focused = document.activeElement instanceof HTMLElement && document.activeElement.closest("main") && visible(document.activeElement) ? document.activeElement : null;
   const element = focused || [...document.querySelectorAll<HTMLElement>("[data-scroll-anchor]")].find(visible) || null;
   return { element, key: element?.dataset.scrollAnchor ?? null, top: element?.getBoundingClientRect().top ?? 0, y: window.scrollY, x: window.scrollX };
@@ -18,6 +20,8 @@ export function useStableUpdate() {
   useLayoutEffect(() => {
     const saved = anchor.current; anchor.current = null;
     if (!saved) return;
+    // A user scroll or history restoration after capture takes precedence over this render.
+    if (Math.abs(window.scrollY - saved.y) > 1 || Math.abs(window.scrollX - saved.x) > 1) return;
     const element = saved.element?.isConnected ? saved.element : saved.key
       ? [...document.querySelectorAll<HTMLElement>("[data-scroll-anchor]")].find(node => node.dataset.scrollAnchor === saved.key) : null;
     const delta = element ? element.getBoundingClientRect().top - saved.top : saved.y - window.scrollY;

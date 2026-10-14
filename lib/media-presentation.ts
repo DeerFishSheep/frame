@@ -1,7 +1,8 @@
+import { formatCatalogTitle } from "./catalog-sources";
 import { mediaKey, type DataSource, type Media } from "./types";
 
 export function formatFeaturedLabel(source: DataSource, title: string) {
-  return `${source === "demo" ? "预览" : source.toUpperCase()}·${title}`;
+  return formatCatalogTitle(source, title);
 }
 
 export const FEATURED_LIMIT = 10;

@@ -327,3 +327,16 @@
 - **实现**：featuredIndicatorPositions改为固定页；FeaturedCarousel使用裁切窗口与双页轨道，280ms transform过渡，仅在跨页时发生。非当前页不可交互且对辅助技术隐藏，键盘跨页后恢复当前条焦点。手机总偏移4+10=14px，数字不拦截指示条点击。
 - **验证**：工作树与独立提交快照类型检查及110 / 110测试通过，更新固定分组及不满5项尾页回归。真实页面05/10高亮第一页第5条、06/10高亮第二页第1条，轨道0→-127px；反向翻页捕获中间位移，焦点保持在对应第5／第6部按钮；10→1循环归页通过，1440px桌面计数偏移仍为none，窗口宽127px且无横向溢出。
 - **交付**：更新规范与文档；保持原有未提交改动，开发服务持续运行，纯交互改动未重跑生产构建。截图 `artifacts/previews/frame-paged-carousel-indicators.png` 供复检；入口UI-21、FeaturedCarousel和carousel-dot-track。
+
+
+## 2026-10-14 — 平台选择移入榜单标题栏，统一名称与图标
+
+- **关联任务**：UI-22。用户批准标题右侧“圆形平台图标＋平台名＋下拉箭头”，移除顶部来源栏；手机底部面板、桌面浮层，标题行吸顶；暂不加入平台搜索。
+- **共用实现**：CatalogSourceContext与SourcePicker由CatalogSection统一渲染；catalog-sources.ts集中平台元数据与导航规则。所有榜单及轮播标题共用formatCatalogTitle，修复TMDB缺少平台前缀，并兼容已有缓存标题。
+- **图标**：下载并保留TMDB官网favicon及IMDB官网声明的180px图标，存放public/platforms；页面使用本地地址，名称仍为TMDB／IMDB。原始地址与SHA-256记录在docs/reference/PLATFORM_ICONS.md。
+- **浏览状态**：来源切换保留媒介及各平台上次条件，当前来源重复选择只关闭面板。吸顶标题不再被当成可见影片锚点；共用位置逻辑避免旧渲染覆盖已发生的滚动，以及导航时把新页位置写入旧页。
+- **真实页面验证**：TMDB本周趋势与IMDB热门／人气优先可往返恢复；电视剧保留tv。手机面板贴底、桌面浮层宽320px且与按钮相距8px；图标全部成功，平台搜索输入框为0，Esc关闭归还焦点。320px标题／按钮无重叠与横向溢出。来源切换前后y=254、标题top=401.75一致；y=1058时标题吸顶top=0。站内详情返回仍定位同一影片，已记录坐标差值，未声称像素完全一致。
+- **检查**：工作树与独立提交快照类型检查及115 / 115测试通过，新增5项覆盖媒介隔离、条件恢复、默认映射、统一标题与图标文件。未改服务端接口；纯界面改动未重跑生产构建，开发服务持续运行。
+- **交付**：同步规则与进度，保留原有未提交改动；清理本次临时快照。复检先看UI-22、SourcePicker与catalog-sources.ts。
+
+- **截图**：`artifacts/previews/frame-source-heading-mobile.png`、`frame-source-picker-mobile.png`、`frame-source-picker-desktop.png`，均保存在本机供复检。

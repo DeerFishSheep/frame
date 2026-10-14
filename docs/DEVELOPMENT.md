@@ -219,7 +219,7 @@ npm run start
 5. `createImdbService.catalog` 先按完整榜单切页，再以最多6个并发调用 `tmdb.findByImdbId` 补充当前页资料；通过固定 `/find/tt...` 和 `external_source=imdb_id` 查找，仅采用当前媒介结果。IMDB评分／人数／原rank始终保留，匹配失败不丢条目。
 6. `Media.id` 支持数字TMDB ID或原始tt ID。`mediaHref`／`mediaKey` 对未匹配IMDB生成独立键和原站外链，已匹配作品沿用TMDB复合键与本站详情。`imageUrl` 只额外允许IMDB海报的固定Amazon图片域；收藏恢复校验并保存imdbId。
 7. `ImdbWorkspace` 复用 `CatalogPager` 自动续页；generation、AbortController、observer active与completedPage共同避免旧条件或重复请求回写。加载失败保留手动重试。旧收藏面板的评分标签改为“评分（按卡片来源）”。
-8. CSS搜索 `IMDB provider navigation`：平台来源在轮播上方；分类与排序位置由UI-15统一放到轮播下方、榜单标题下方，取消原轮播的负外边距遮挡；卡片小屏也显示评分来源。320／390／760px三列、1440px六列，未见横向溢出或日期评分重叠。
+8. CSS搜索 `IMDB provider navigation`：平台来源由UI-22移到榜单标题右侧；分类与排序位置由UI-15统一放到轮播下方、榜单标题下方，取消原轮播的负外边距遮挡；卡片小屏也显示评分来源。320／390／760px三列、1440px六列，未见横向溢出或日期评分重叠。
 9. 复检 `tests/imdb.test.ts`、`tests/catalog-pager.test.ts`，再检查四榜×四排序、Top250第13页与热门第5页。真实热门剧集中的Monster（tt13207736）验证未匹配仍保留第9位，点击链接在IMDB打开。
 
 
@@ -241,7 +241,7 @@ npm run start
 - `useStableUpdate` 在数据提交前捕获可见控件／内容锚点，布局提交后恢复视口；`usePageContinuity` 在站点外壳统一记录历史位置，后退／前进在内容就绪后按锚点恢复，用户滚轮／触摸／方向键会取消等待恢复。移除详情更新中的强制scrollTo(0)。
 - `useViewState`／`useScrollMemory` 共用最多64项界面状态，覆盖布局、轮播、收藏展示数量、横向分类栏、演员、剧照、推荐。浏览器内存缓存通过版本化的浏览器单例跨路由块／开发热更新复用；不宣称硬刷新、关闭浏览器或缓存淘汰后仍有离线恢复。
 - 轮播不再以整组影片ID作为React key重建；`featuredIndex` 优先保留当前影片，否则保留原位置并按新长度收敛。请求更新时暂停轮换；同一影片的详情重取不重建推荐组件。
-- 顶部来源与同页媒介链接、搜索更新使用scroll:false。来源切换复用该来源／媒介上次URL，点击已选来源沿用当前URL，避免把排序重置到默认。
+- 标题栏来源与同页媒介链接、搜索更新使用scroll:false。来源切换复用该来源／媒介上次URL，点击已选来源沿用当前URL，避免把排序重置到默认。
 - **复检**：`tests/resource-state.test.ts` 的12项回归覆盖各区域保留旧内容、失败重试、乱序／取消、缓存页数恢复、整段分页刷新失败、缓存边界、来源切换和轮播位置；既有7项分页测试继续覆盖真实共用分页器。浏览器检查IMDB排序、找片科幻筛选、搜索、40部列表返回、推荐横向返回。
 - **UI-16历史证据（更新画面已被UI-17覆盖）**：排序／筛选更新期间20张卡片、0骨架；搜索从“星际穿越”改为“哈利·波特”时保留5条，高度1200、标题y=186.195及scrollY=0均不变；返回40部列表前后scrollY=2595、同一遗传厄运卡片top=353.477一致；推荐横向返回前后scrollLeft=415.5。网络失败／旧响应等为自动模拟验证。
 
@@ -288,3 +288,15 @@ npm run start
 - 每页独立容器，非当前页aria-hidden和inert，不能误点或Tab进入；键盘跨页后在下一动画帧将焦点移到新的当前指示按钮，防止inert更新清掉焦点。沿用减少动画的CSS规则。
 - 手机序号再下移10px，总偏移14px，并设置pointer-events:none，避免遮住横条点击区域。
 - 实测：05/10为第一页第五条，06/10为第二页第一条；左移终点-127px，反向过渡捕获中间位置；前后键盘焦点均跟随当前影片。类型检查及110项测试通过，固定页映射及不足5项的尾页已有回归。
+
+
+## UI-22 共用标题栏平台选择
+
+- **入口与扩展**：`CatalogEntry` 提供 `CatalogSourceContext`，`CatalogSection` 统一放置 `SourcePicker`，来源按钮在视图按钮之前。`lib/catalog-sources.ts` 集中维护已接入平台名称、图标与来源URL规则；新增平台仍需实现数据工作区并在CatalogEntry接入，共用标题栏和选择面板自动复用。
+- **标题**：CatalogSection接收dataSource，统一formatCatalogTitle；兼容原有内存标题前缀，避免重复平台名。轮播formatFeaturedLabel也调用相同规则。预览保留“预览”，找片、搜索、收藏沿用自己的页面标题。
+- **浮层**：复用已有Radix Dialog。760px及以下用底部模态面板，桌面用触发按钮旁的非模态浮层；支持Esc、焦点归还、方向键选择和局部滚动。选择即关闭，同一平台不重新导航；没有平台搜索框。
+- **连续浏览**：保留movie／tv；每个来源与媒介分别恢复catalog-location条件。导航scroll:false并保留可见内容；吸顶标题用data-sticky-heading标记，`isPinnedAnchor` 让两个共用位置机制忽略固定标题。用户／历史已移动视口后，旧的渲染锚点不再覆盖它；URL先变化时不把新页滚动写入旧页记录。
+- **图标**：`public/platforms/tmdb.ico` 与 `imdb.png` 均为原始官方站点图标，UI只通过圆形容器显示；来源和校验值见 `docs/reference/PLATFORM_ICONS.md`。
+- **验证**：115项测试与类型检查通过；实测TMDB本周趋势→IMDB热门电影／人气优先→TMDB恢复本周趋势，电视剧切换保留tv。320px标题与按钮间距10px且无横向溢出；两图标均加载成功，面板输入框0个；Esc关闭后焦点回到触发按钮。桌面浮层宽320px，距按钮下缘8px，无遮罩。滚动到y=1058时标题top=0；一次来源切换前后scrollY=254、标题top=401.75一致。
+- **返回验证**：站内详情返回后仍定位到同一影片；记录的一组位置为scrollY 1901.5→1892.5、影片top 351.867→360.867，未标为像素完全一致。自动化聚焦会先将目标滚至视区中间，比较时需要使用聚焦后的坐标。
+- **复检**：`tests/catalog-sources.test.ts`，再检查手机与桌面面板、来源条件和粘性标题。截图放artifacts/previews；本轮保持开发服务运行，未重跑生产构建或部署。

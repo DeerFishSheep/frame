@@ -141,7 +141,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   return <div className={`workspace ${showFeature ? "workspace--featured" : ""}`}>
     {showFeature && featuredItems.length > 0 && <FeaturedFilm items={featuredItems} label={featuredLabel} pending={loading}/>}
     {showFeature && !featuredItems.length && loading && <div className="skeleton featured-loading" aria-label="正在加载焦点影片"/>}
-    <CatalogSection id="workspace-title" title={title}
+    <CatalogSection id="workspace-title" title={title} dataSource={!favoriteMode && !discoverMode && !searchMode ? response?.source || (preview ? "demo" : "tmdb") : undefined}
       badge={preview && !favoriteMode && <span className="preview-label">预览影片</span>}
       actions={<>
           {!favoriteMode && !discoverMode && !searchMode && filters.chart === "trending" && <div className="period-tabs" role="group" aria-label="趋势时间">

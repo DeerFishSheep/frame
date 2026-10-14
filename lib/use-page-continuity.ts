@@ -3,6 +3,8 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { readViewState, saveViewState } from "./view-state";
 
+import { isPinnedAnchor } from "./scroll-anchors";
+
 interface Position { x: number; y: number; anchor: string | null; top: number }
 function locationKey(path: string, search: string) {
   const params = new URLSearchParams(search);
@@ -11,7 +13,7 @@ function locationKey(path: string, search: string) {
 }
 function position(): Position {
   const anchor = [...document.querySelectorAll<HTMLElement>("[data-scroll-anchor]")].find(element => {
-    const box = element.getBoundingClientRect(); return box.height > 0 && box.top >= 0 && box.top < window.innerHeight;
+    const box = element.getBoundingClientRect(); return !isPinnedAnchor(element) && box.height > 0 && box.top >= 0 && box.top < window.innerHeight;
   });
   return { x: window.scrollX, y: window.scrollY, anchor: anchor?.dataset.scrollAnchor ?? null, top: anchor?.getBoundingClientRect().top ?? 0 };
 }
@@ -21,7 +23,12 @@ export function usePageContinuity(pathname: string, query: string) {
   const key = locationKey(pathname, query), current = useRef(key), restoring = useRef<string | null>(null);
   const finishRestore = useRef<(() => void) | null>(null);
   useEffect(() => {
-    const remember = () => { if (!restoring.current) saveViewState(`position:${current.current}`, position()); };
+    const remember = () => {
+      // Next can change the URL before the new page commits; never save its scroll to the old page.
+      if (!restoring.current && current.current === locationKey(window.location.pathname, window.location.search)) {
+        saveViewState(`position:${current.current}`, position());
+      }
+    };
     const pop = () => {
       remember();
       restoring.current = locationKey(window.location.pathname, window.location.search);
@@ -56,7 +63,8 @@ export function usePageContinuity(pathname: string, query: string) {
     function restore() {
       if (stopped || restoring.current !== key) return;
       const anchor = saved!.anchor ? [...document.querySelectorAll<HTMLElement>("[data-scroll-anchor]")].find(element => element.dataset.scrollAnchor === saved!.anchor) : null;
-      const top = anchor ? window.scrollY + anchor.getBoundingClientRect().top - saved!.top : saved!.y;
+      const pinnedSnapshot = anchor?.closest("[data-sticky-heading]") && saved!.top <= 1;
+      const top = anchor && !pinnedSnapshot ? window.scrollY + anchor.getBoundingClientRect().top - saved!.top : saved!.y;
       window.scrollTo({ top: Math.max(0, top), left: saved!.x, behavior: "instant" });
       if (!main!.querySelector('[aria-busy="true"]') && (!saved!.anchor || anchor)) {
         // Next's native history restoration can run after layout effects. Settle with it,

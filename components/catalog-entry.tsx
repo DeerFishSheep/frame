@@ -1,29 +1,34 @@
 "use client";
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { readViewState, saveViewState } from "@/lib/view-state";
+import { useStableUpdate } from "@/lib/use-stable-update";
+import { catalogSource, catalogSourceHref, type CatalogSourceId } from "@/lib/catalog-sources";
+import { CatalogSourceContext } from "./source-picker";
 import { Workspace } from "./workspace";
 import { ImdbWorkspace } from "./imdb-workspace";
 
-/** Keep provider selection outside either provider's independent filter vocabulary. */
+/** Source navigation stays shared; each adapter only supplies its own chart vocabulary. */
 export function CatalogEntry() {
-  const params = useSearchParams(), imdb = params.get("source") === "imdb";
+  const params = useSearchParams(), router = useRouter();
   const media = params.get("media") === "tv" ? "tv" : "movie";
-  const chart = params.get("chart") === "popular" ? "popular" : "top";
-  const current = `/?${params}`, source = imdb ? "imdb" : "tmdb";
+  const current = `/?${params}`, source = catalogSource(new URLSearchParams(params));
+  const prepareUpdate = useStableUpdate(), restoreFocus = useRef(false);
   useEffect(() => {
     if (!params.get("query")) saveViewState(`catalog-location:${media}:${source}`, current);
   }, [current, media, source, params]);
-  const tmdbHref = !imdb ? current : readViewState(`catalog-location:${media}:tmdb`, `/?media=${media}&chart=${chart}`);
-  const imdbHref = imdb ? current : readViewState(`catalog-location:${media}:imdb`, `/?source=imdb&media=${media}&chart=${chart}&sort=rank`);
-  return <div className="catalog-entry">
-    {!params.get("query") && <nav className="catalog-sources" aria-label="榜单来源">
-      <span>榜单来源</span>
-      <Link scroll={false} href={tmdbHref} className={!imdb ? "selected" : ""} aria-current={!imdb ? "page" : undefined}>TMDB</Link>
-      <Link scroll={false} href={imdbHref} className={imdb ? "selected" : ""} aria-current={imdb ? "page" : undefined}>IMDB</Link>
-    </nav>}
-    {imdb ? <ImdbWorkspace/> : <Workspace initialChart="trending"/>}
-  </div>;
+  useLayoutEffect(() => {
+    if (!restoreFocus.current) return;
+    restoreFocus.current = false;
+    const frame = requestAnimationFrame(() => document.querySelector<HTMLButtonElement>("[data-source-trigger]")?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [source]);
+  function select(next: CatalogSourceId) {
+    prepareUpdate(); restoreFocus.current = true;
+    router.push(catalogSourceHref(next, new URLSearchParams(params), key => readViewState<string | undefined>(key, undefined)), { scroll: false });
+  }
+  return <CatalogSourceContext.Provider value={params.get("query") ? null : { source, onSelect: select }}>
+    <div className="catalog-entry">{source === "imdb" ? <ImdbWorkspace/> : <Workspace initialChart="trending"/>}</div>
+  </CatalogSourceContext.Provider>;
 }

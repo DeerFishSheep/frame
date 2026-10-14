@@ -28,7 +28,7 @@ export function ImdbWorkspace() {
   const resource = usePagedResource<CatalogView>({
     key: `catalog:imdb:${key}`, group: "catalog", page: filters.page, enabled: !parsed.error,
     loadPage: async (page, signal) => ({ ...await fetchPage({ ...filters, page }, signal), context: {
-      title: `IMDB · ${chart.label}`, featuredLabel: formatFeaturedLabel("imdb", chart.label), ranked: filters.sort === "rank", startPage: filters.page, feature: true,
+      title: chart.label, featuredLabel: formatFeaturedLabel("imdb", chart.label), ranked: filters.sort === "rank", startPage: filters.page, feature: true,
     } }),
   });
   const current = resource.data, items = current?.results || [];
@@ -56,7 +56,7 @@ export function ImdbWorkspace() {
   return <div className="workspace workspace--featured imdb-workspace">
     {items.length > 0 && <FeaturedFilm items={items} label={current?.context.featuredLabel || formatFeaturedLabel("imdb", chart.label)} pending={loading}/>}
     {loading && !current && <div className="skeleton featured-loading" aria-label="正在加载 IMDB 焦点影片"/>}
-    <CatalogSection id="imdb-heading" title={current?.context.title || `IMDB · ${chart.label}`}
+    <CatalogSection id="imdb-heading" title={current?.context.title || chart.label} dataSource={current?.source || "imdb"}
       actions={<button className="icon-button view-toggle" onClick={toggleLayout} aria-label={layout === "grid" ? "切换列表视图" : "切换海报视图"}>{layout === "grid" ? <List size={18}/> : <Grid2X2 size={18}/>}</button>}
       charts={(["top", "popular"] as const).map(value => ({ id: value, label: imdbChart({ ...filters, chart: value }).label, selected: filters.chart === value, onSelect: () => change({ chart: value }) }))}
       chartLabel="IMDB 榜单分类"
