@@ -7,6 +7,7 @@ export interface TvSeasonEvidence extends Pick<MediaDetail, "directors" | "cast"
   seriesId: number;
   seasonNumber: number;
   airDate: string;
+  episodeCount?: number;
   posterPath: string | null;
   overview: string;
   imdbId: string | null;
@@ -55,6 +56,7 @@ export function createTmdbSeasonMatcher(client: Pick<ReturnType<typeof createTmd
     const directors = list(credits.crew).map(object).filter(person => person.job === "Director").flatMap(person => [text(person.name), text(person.original_name)].filter(Boolean));
     const poster = text(season.poster_path), imdb = text(object(raw.external_ids).imdb_id);
     return { seriesId: id, seasonNumber, airDate, directors, cast,
+      ...(Number.isSafeInteger(summary[0].episode_count) && Number(summary[0].episode_count) > 0 ? { episodeCount: Number(summary[0].episode_count) } : {}),
       posterPath: /^\/[a-zA-Z0-9_.-]+$/.test(poster) ? poster : null,
       overview: text(season.overview), imdbId: /^tt\d{5,12}$/.test(imdb) ? imdb : null };
   }

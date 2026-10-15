@@ -1,11 +1,37 @@
 import { creditsMatch, exactMediaCandidates, normalizedName, searchTitle, tvSeasonNumber } from "../media-match";
 import type { Media, MediaDetail, MediaType } from "../types";
+import { normalizeDoubanItem } from "./normalize";
+import { normalizeCountryCodes } from "../media-regions";
 import { validSeasonDate, type TvSeasonEvidence, type TvSeriesEvidence } from "../tmdb/season-match";
 
 const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 function people(value: unknown) {
   return Array.isArray(value) ? value.flatMap(person => [object(person).name, object(person).latin_name].filter((name): name is string => typeof name === "string" && !!name.trim())) : [];
 }
+
+const canonicalCountries = (value: unknown): string[] => [...new Set(normalizeCountryCodes(value).map(code => new Intl.Locale(`und-${code}`).region || code))];
+function seasonSourceCountries(raw: Record<string, unknown>, item: Media): string[] {
+  const values = Array.isArray(raw.countries) ? raw.countries.filter((value): value is string => typeof value === "string" && !!value.trim()) : [];
+  const seed = { id: item.doubanId, title: item.title, year: item.year };
+  // Reuse the same country-name parser as catalog and rating subjects, including Chinese aliases.
+  const fromNames = values.length ? normalizeDoubanItem({ ...seed, card_subtitle: `${item.year} / ${values.join(" ")} / ` }, "tv")?.countryCodes ?? [] : [];
+  const direct = [...new Set([...canonicalCountries(values), ...canonicalCountries(fromNames)])];
+  if (direct.length) return direct;
+  const normalized = normalizeDoubanItem({ ...raw, ...seed }, "tv")?.countryCodes ?? [];
+  if (normalized.length) return canonicalCountries(normalized);
+  const subtitle = [raw.card_subtitle, raw.subtitle, raw.info].find(value => typeof value === "string" && value.trim());
+  // A present but unrecognized subject region is not replaced with a potentially stale catalog region.
+  return values.length || subtitle ? [] : canonicalCountries(item.countryCodes);
+}
+function seasonSourceDates(raw: Record<string, unknown>): Set<string> {
+  const values = [raw.release_date, ...(Array.isArray(raw.pubdate) ? raw.pubdate : [])];
+  return new Set(values.flatMap(value => {
+    if (typeof value !== "string") return [];
+    const date = value.trim().match(/^\d{4}-\d{2}-\d{2}(?=$|[\s(（T])/)?.[0];
+    return date && validSeasonDate(date) ? [date] : [];
+  }));
+}
+const episodeCount = (value: unknown) => typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : undefined;
 
 /** Resolve same-title remakes from real credits; never choose the first popular search result. */
 export function createDoubanMatcher(dependencies: {
@@ -27,7 +53,9 @@ export function createDoubanMatcher(dependencies: {
     const original = typeof raw.original_title === "string" ? raw.original_title.trim() : "";
     if (original && tvSeasonNumber(original) !== null && tvSeasonNumber(original) !== seasonNumber) return null;
     const evidence = { directors: people(raw.directors), actors: people(raw.actors) };
-    if (!evidence.directors.length && new Set(evidence.actors.map(normalizedName)).size < 2) return null;
+    const sourceCountries = seasonSourceCountries(raw, item), sourceDates = seasonSourceDates(raw);
+    const sourceEpisodes = episodeCount(raw.episodes_count);
+    const wantedOriginal = original ? normalizedName(searchTitle(original, "tv")) : "";
     const names = new Set([item.title, original].filter(Boolean).map(name => normalizedName(searchTitle(name, "tv"))));
     const filter = (items: Media[]) => items.filter(candidate => candidate.mediaType === "tv" && typeof candidate.id === "number" && Number.isSafeInteger(candidate.id) && candidate.id > 0
       && /^\d{4}$/.test(candidate.year) && Number(candidate.year) <= Number(item.year)
@@ -38,12 +66,22 @@ export function createDoubanMatcher(dependencies: {
     }
     candidates = [...new Map(candidates.map(candidate => [candidate.id, candidate])).values()];
     if (!candidates.length || candidates.length > 4) return null;
+    candidates = candidates.filter(candidate => {
+      const countries = canonicalCountries(candidate.countryCodes);
+      return !sourceCountries.length || !countries.length || countries.some(country => sourceCountries.includes(country));
+    });
     const verified: Media[] = [];
     for (const candidate of candidates) {
       const season = await dependencies.seasonEvidence(Number(candidate.id), seasonNumber);
       if (!season || season.seriesId !== candidate.id || season.seasonNumber !== seasonNumber
         || !validSeasonDate(season.airDate) || season.airDate.slice(0, 4) !== item.year) continue;
-      if (!creditsMatch(season, evidence)) {
+      const returnedEpisodes = episodeCount(season.episodeCount);
+      if (sourceEpisodes !== undefined && returnedEpisodes !== undefined && sourceEpisodes !== returnedEpisodes) continue;
+      const countries = canonicalCountries(candidate.countryCodes);
+      const metadataConfirmed = candidates.length === 1 && !!wantedOriginal && normalizedName(candidate.originalTitle) === wantedOriginal
+        && sourceCountries.length > 0 && countries.some(country => sourceCountries.includes(country))
+        && (!sourceDates.size || sourceDates.has(season.airDate));
+      if (!metadataConfirmed && !creditsMatch(season, evidence)) {
         // This fallback confirms series identity only. Season facts and displayed credits stay seasonal.
         const wantedActors = new Set(evidence.actors.map(normalizedName).filter(Boolean));
         if (!dependencies.seriesEvidence || wantedActors.size < 2) continue;

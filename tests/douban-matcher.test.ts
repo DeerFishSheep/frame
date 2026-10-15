@@ -179,12 +179,12 @@ test("an explicit first season and a unique same-year series still require genui
   assert.equal(checked, 1);
 });
 
-test("season mapping refuses missing evidence, duplicated actor identities, and unrelated season credits", async () => {
+test("season mapping with incomplete metadata rejects missing evidence, duplicated actor identities, and unrelated season credits", async () => {
   for (const data of [{ title: seasonSource.title }, { ...seasonSubject, actors: [{ name: "演员甲" }] }, { ...seasonSubject, actors: [{ name: "演员甲" }, { name: "演员甲" }] }]) {
     let searched = 0;
     const match = seasonMatcher({ subject: async () => ({ data }), seasonCandidates: async () => { searched++; return [series]; } });
     assert.equal(await match(seasonSource), null);
-    assert.equal(searched, 0);
+    assert.equal(searched, 1);
   }
   for (const cast of [[person("演员甲", 1)], [person("演员甲", 1), person("演员乙", 1)], [person("另一演员", 3), person("别的演员", 4)]]) {
     assert.equal(await seasonMatcher({ seasonEvidence: async () => ({ ...season, cast }) })(seasonSource), null);
