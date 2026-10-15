@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowUpRight, Check, ChevronLeft, ChevronRight, Cloud, Link as LinkIcon, Magnet, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUpRight, Check, ChevronLeft, ChevronRight, Cloud, Link as LinkIcon, LoaderCircle, Magnet, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 import { RESOURCE_CHANNELS } from "@/lib/pansou/channels";
 import type { ResourceChannel, ResourceItem, ResourceSearchQuery, ResourceSearchResult } from "@/lib/pansou/types";
 import { mediaKey, type MediaDetail } from "@/lib/types";
@@ -66,6 +66,8 @@ function ResourceSearchState({ item, children }: { item: MediaDetail; children: 
   const [keyword, setKeyword] = useState(item.title);
   const [channels, setChannels] = useState<ResourceChannel[]>(allChannels);
   const [position, setPosition] = useState({ left: 16, top: 16 });
+  const [submitSequence, setSubmitSequence] = useState(0);
+  const submittedClose = useRef(false);
   const anchor = useRef<HTMLButtonElement | null>(null), panel = useRef<HTMLDivElement>(null);
   const prepare = useStableUpdate();
   const id = useId(), resultId = `resource-results-${id}`, panelId = `resource-picker-${id}`;
@@ -88,6 +90,20 @@ function ResourceSearchState({ item, children }: { item: MediaDetail; children: 
       return body as ResourceSearchResult;
     },
   });
+
+  // Only an explicit submission moves the viewport; refreshes and result updates do not.
+  useLayoutEffect(() => {
+    if (!submitSequence) return;
+    let secondFrame = 0;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        const target = document.getElementById(resultId);
+        target?.focus({ preventScroll: true });
+        target?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+      });
+    });
+    return () => { cancelAnimationFrame(firstFrame); cancelAnimationFrame(secondFrame); };
+  }, [submitSequence, resultId]);
 
   useLayoutEffect(() => {
     const query = window.matchMedia("(max-width: 760px)");
@@ -116,6 +132,7 @@ function ResourceSearchState({ item, children }: { item: MediaDetail; children: 
   }, [open, mobile, placePanel]);
 
   function openPicker(button: HTMLButtonElement) {
+    submittedClose.current = false;
     anchor.current = button;
     setKeyword(view.query?.keyword || item.title);
     setChannels(view.query?.channels ?? readChannels());
@@ -131,8 +148,10 @@ function ResourceSearchState({ item, children }: { item: MediaDetail; children: 
     const query = { keyword: clean, channels: allChannels().filter(id => channels.includes(id)) };
     try { localStorage.setItem(CHANNEL_PREFERENCE, JSON.stringify(query.channels)); } catch { /* Selection remains available in this page. */ }
     prepare();
+    submittedClose.current = true;
     setOpen(false);
     setView(current => ({ ...current, query, channel: "all", page: 1 }));
+    setSubmitSequence(value => value + 1);
     if (queryKey(query) === queryKey(view.query)) resource.refresh();
   }
   const suggestions = [...new Set([item.title, item.originalTitle, /^\d{4}$/.test(item.year) ? `${item.title} ${item.year}` : ""])].filter(Boolean);
@@ -147,7 +166,7 @@ function ResourceSearchState({ item, children }: { item: MediaDetail; children: 
         {mobile && <Dialog.Overlay className="source-picker-overlay"/>}
         <Dialog.Content id={panelId} ref={panel} className={`source-picker-panel ${styles.panel}`} style={mobile ? undefined : position}
           onOpenAutoFocus={event => { event.preventDefault(); if (!mobile) placePanel(); panel.current?.querySelector<HTMLButtonElement>("[data-channel-option]")?.focus({ preventScroll: true }); }}
-          onCloseAutoFocus={event => { event.preventDefault(); anchor.current?.focus({ preventScroll: true }); }}>
+          onCloseAutoFocus={event => { event.preventDefault(); if (!submittedClose.current) anchor.current?.focus({ preventScroll: true }); }}>
           <span className="source-picker-handle" aria-hidden="true"/>
           <div className="source-picker-head"><Dialog.Title>搜索资源</Dialog.Title><Dialog.Close className="icon-button" aria-label="关闭资源搜索"><X size={17}/></Dialog.Close></div>
           <Dialog.Description className="sr-only">编辑搜索关键词，选择一个或多个资源渠道后开始搜索。</Dialog.Description>
@@ -225,7 +244,7 @@ function ResourceRow({ item }: { item: ResourceItem }) {
     <ChannelBadge channel={item.channel}/>
     <div className={styles.resultCopy}>
       <h3 title={item.title}>{item.title}</h3>
-      <div className={styles.resultMeta}><span>{info.label}</span>{item.source && <span title={item.source}>{item.source}</span>}{date && <time dateTime={item.publishedAt!}>{date}</time>}{item.extractionCode && <span className={styles.extraction}>提取码 <code>{item.extractionCode}</code></span>}</div>
+      <div className={styles.resultMeta}><span>{info.label}</span>{date && <time dateTime={item.publishedAt!}>{date}</time>}{item.extractionCode && <span className={styles.extraction}>提取码 <code>{item.extractionCode}</code></span>}</div>
     </div>
   </article>;
 }
@@ -242,16 +261,18 @@ export function ResourceSearchResults() {
     if (view.query && resource.current && !resource.pending && view.page !== pagination.page) setPage(pagination.page);
   }, [view.query, view.page, resource.current, resource.pending, pagination.page, setPage]);
   if (!view.query) return null;
-  return <section id={resultId} className={styles.results} aria-labelledby={`${resultId}-heading`} aria-busy={resource.pending}>
+  return <section id={resultId} className={styles.results} tabIndex={-1} aria-labelledby={`${resultId}-heading`} aria-busy={resource.pending}>
     <div className={styles.resultsHeading} data-scroll-anchor={`resource-heading:${resultId}`}>
-      <div><h2 id={`${resultId}-heading`}>资源搜索</h2><p title={view.query.keyword}>“{view.query.keyword}”</p></div>
+      <div><h2 id={`${resultId}-heading`}>资源搜索</h2></div>
       <div className={styles.toolbar}>
         <button type="button" onClick={event => openPicker(event.currentTarget)}><SlidersHorizontal size={15}/><span>修改搜索</span></button>
         <button type="button" onClick={resource.refresh} disabled={resource.pending} aria-label="刷新资源搜索结果"><RefreshCw size={15}/><span>刷新</span></button>
       </div>
     </div>
     {resource.error && !resource.pending && <div className={styles.error} role="alert"><span>{resource.error}</span><button type="button" className="text-button" onClick={resource.refresh}><RefreshCw size={14}/>重试</button></div>}
-    <div className={styles.resultContent} {...resourceLoadingProps(resource.pending)}>
+    <div className={styles.resultViewport}>
+    {resource.pending && <div className={styles.searchLoading} role="status"><LoaderCircle className={styles.searchSpinner} size={28} aria-hidden="true"/><p>正在搜索“{view.query.keyword}”</p></div>}
+    <div className={styles.resultContent} {...resourceLoadingProps(resource.pending)} aria-hidden={resource.pending || undefined}>
       {items.length > 0 && <>
         <div className={styles.resultFilters} role="group" aria-label="筛选搜索结果渠道" data-skeleton="line">
           <button type="button" aria-pressed={view.channel === "all"} onClick={() => setChannel("all")}>全部<span>{items.length}</span></button>
@@ -270,6 +291,7 @@ export function ResourceSearchResults() {
       {resource.pending && items.length === 0 && <div className={styles.resultList} aria-hidden="true">{Array.from({ length: view.pageSize }, (_, index) => <div key={index} className={styles.skeletonRow} data-skeleton="block"/>)}</div>}
       {!resource.pending && !resource.error && items.length === 0 && <div className={styles.empty}><Search size={24} strokeWidth={1.4}/><h3>暂无匹配资源</h3><p>试试原名，或调整年份、季数和搜索渠道。</p><button type="button" className="text-button" onClick={event => openPicker(event.currentTarget)}>修改搜索<ArrowUpRight size={14}/></button></div>}
     </div>
-    <span className="sr-only" role="status">{resource.pending ? "正在搜索资源" : resource.error ? "" : `已获取 ${items.length} 条资源`}</span>
+    </div>
+    {!resource.pending && <span className="sr-only" role="status">{resource.error ? "" : `已获取 ${items.length} 条资源`}</span>}
   </section>;
 }

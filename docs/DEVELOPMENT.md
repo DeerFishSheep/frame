@@ -504,3 +504,12 @@ time确实改变顺序，但响应无完整上映日期，本轮未确认其内�
 ResourceRow取消底部按钮行。绝对定位的原生a／button覆盖整卡，HTTP(S)链接新窗口打开（noopener noreferrer），协议类型调用原copyText(resourceCopyText(item))；键盘行为由原生元素处理。标题和元数据保持可读，loading父级inert继续阻止旧内容操作。
 
 .resultList行高改为minmax(88px,auto)，结果卡按内容自适应，无五行占位。真实页面网盘卡只有1个整卡链接／0按钮，覆盖范围匹配卡片，短卡高度88px；10项现有复制／分页测试与类型检查通过。复制原生粘贴此前工具限制保持，未请求实际下载链接。截图artifacts/previews/frame-resource-compact-cards.png。
+
+
+## RES-06 搜索渠道排序与提交反馈
+
+`RESOURCE_CHANNELS`统一弹层、结果筛选和请求归一化顺序。`ResourceRow`不渲染source；结果标题只显示资源搜索，关键词仅在编辑与加载提示中显示。
+
+`ResourceSearchState`的submitSequence仅由有效提交递增；关闭弹层后两帧focus结果section（preventScroll）并scrollIntoView，支持减少动画偏好，卸载取消调度。submittedClose阻止提交后弹窗焦点恢复到旧按钮；普通关闭仍恢复。刷新／分页／响应完成不会重跑定位。
+
+`searchLoading`位于inert内容外并覆盖在骨架上层，居中LoaderCircle＋当前关键词；旧DOM保留尺寸但不可操作。真实提交y0→690.5、结果头部进入视口；刷新y690.5保持，来源标签／静态关键词均0。29项相关测试、类型检查通过；截图artifacts/previews/frame-resource-search-loading.png。

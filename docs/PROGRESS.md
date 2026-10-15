@@ -2,11 +2,11 @@
 
 最后核对：2026-10-15（北京时间）
 
-## 本次任务（RES-05，已验证完成）
+## 本次任务（RES-06，已验证完成）
 
-资源卡片移除独立打开／复制按钮，HTTP(S)整卡作为链接打开；磁力／电驴整卡复制原URL并保留提示。卡片改为88px起随内容自适应，分页及渠道逻辑保持。
+渠道按指定13项顺序排列；卡片来源和结果标题下关键词已移除。仅显式提交自动定位资源区域，加载期间居中动画显示当前关键词；刷新／分页／返回数据不触发重复滚动。
 
-已验证：真实页面整卡链接覆盖100%卡片、无独立按钮、短卡140→88px；10项复制／分页回归和类型检查通过。未打开实际下载资源；复制仍使用原处理函数。复检入口components/resource-search.tsx的ResourceRow及对应CSS，后续按用户反馈调整，不发布。
+真实页面验证顺序、静态文案移除、提交从y0滚到结果区、loading提示可见；刷新前后y690.5保持。29项相关测试与类型检查通过。复检入口ResourceSearchState的submitSequence和ResourceSearchResults；保持本地运行，不发布。
 
 ## 现在做到哪里
 
@@ -158,6 +158,7 @@
 | RES-04 | 资源分页、光鸭、真实图标与原URL复制 | 已实现／真实页面与模拟验证 | resourcePagination／resourceCopyText／normalizeResourceChannels；桌面10／手机5，实际几行显示几行；光鸭真实1条，11品牌图加载通过，251项基线回归 |
 | LOCAL-09 | 网络变化后的开发来源名单更新 | 已修复／实际局域网及模拟验证 | scripts/dev.mjs、createDevNetworkWatch、dev-control.sh；新IP19脚本200、TMDB20条，用户iPhone确认正常；新增16项监督器回归，最终267项 |
 | RES-05 | 紧凑整卡资源操作 | 已实现／真实页面与相关回归验证 | ResourceRow、.resultHitArea；HTTP(S)整卡链接，协议链接整卡复制；无按钮行，88px起自然高度；10项回归与类型检查通过 |
+| RES-06 | 搜索排序、定位与动态提示 | 已实现／真实页面与相关回归验证 | RESOURCE_CHANNELS、submitSequence、ResourceSearchResults；仅提交滚动、居中动画、来源／静态关键词移除，29项及类型检查通过 |
 
 有新的用户任务时，在此表补充任务，再按实际完成情况更新。
 
