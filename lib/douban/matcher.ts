@@ -1,6 +1,6 @@
 import { creditsMatch, exactMediaCandidates, normalizedName, searchTitle, tvSeasonNumber } from "../media-match";
 import type { Media, MediaDetail, MediaType } from "../types";
-import { validSeasonDate, type TvSeasonEvidence } from "../tmdb/season-match";
+import { validSeasonDate, type TvSeasonEvidence, type TvSeriesEvidence } from "../tmdb/season-match";
 
 const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 function people(value: unknown) {
@@ -14,6 +14,7 @@ export function createDoubanMatcher(dependencies: {
   detail: (media: MediaType, id: string) => Promise<{ detail: MediaDetail }>;
   seasonCandidates?: (title: string) => Promise<Media[]>;
   seasonEvidence?: (id: number, seasonNumber: number) => Promise<TvSeasonEvidence | null>;
+  seriesEvidence?: (id: number) => Promise<TvSeriesEvidence | null>;
   now?: () => number;
 }) {
   const cache = new Map<string, { match: Media | null; at: number }>(), inflight = new Map<string, Promise<Media | null>>();
@@ -41,9 +42,25 @@ export function createDoubanMatcher(dependencies: {
     for (const candidate of candidates) {
       const season = await dependencies.seasonEvidence(Number(candidate.id), seasonNumber);
       if (!season || season.seriesId !== candidate.id || season.seasonNumber !== seasonNumber
-        || !validSeasonDate(season.airDate) || season.airDate.slice(0, 4) !== item.year || !creditsMatch(season, evidence)) continue;
-      verified.push({ ...candidate, year: item.year, releaseDate: season.airDate, posterPath: season.posterPath || candidate.posterPath,
-        overview: season.overview || candidate.overview, imdbId: season.imdbId });
+        || !validSeasonDate(season.airDate) || season.airDate.slice(0, 4) !== item.year) continue;
+      if (!creditsMatch(season, evidence)) {
+        // This fallback confirms series identity only. Season facts and displayed credits stay seasonal.
+        const wantedActors = new Set(evidence.actors.map(normalizedName).filter(Boolean));
+        if (!dependencies.seriesEvidence || wantedActors.size < 2) continue;
+        const series = await dependencies.seriesEvidence(Number(candidate.id));
+        if (!series || series.seriesId !== candidate.id) continue;
+        const matchedIds = new Set<number>(), matchedNames = new Set<string>();
+        for (const actor of series.actors) {
+          if (!Number.isSafeInteger(actor.id) || actor.id < 1) continue;
+          const names = actor.names.map(normalizedName).filter(name => wantedActors.has(name));
+          if (!names.length) continue;
+          matchedIds.add(actor.id);
+          for (const name of names) matchedNames.add(name);
+        }
+        if (matchedIds.size < 2 || matchedNames.size < 2) continue;
+      }
+      verified.push({ ...candidate, seasonNumber: season.seasonNumber, year: item.year, releaseDate: season.airDate, posterPath: season.posterPath, posterFallbacks: undefined, backdropPath: null,
+        overview: season.overview, imdbId: season.imdbId });
     }
     return verified.length === 1 ? verified[0] : null;
   }

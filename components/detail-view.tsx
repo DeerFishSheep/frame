@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useAsyncResource } from "@/lib/use-async-resource";
 import { ResourceFeedback, resourceLoadingProps } from "./resource-feedback";
@@ -38,23 +38,27 @@ function CastPhoto({path,name}:{path:string|null;name:string}) {
 }
 
 export function DetailView({mediaType: requestedMediaType,id: requestedId}:{mediaType:MediaType;id:number}) {
-  const router=useRouter();
+  const router=useRouter(), params=useSearchParams();
   const {preview,isFavorite,toggle}=useFrame();
+  const detailParams = new URLSearchParams();
+  for (const key of ["source", "doubanId", "season"]) for (const value of params.getAll(key)) detailParams.append(key, value);
+  const detailQuery = detailParams.toString(), detailKey = `detail:v2:${preview}:${requestedMediaType}:${requestedId}:${detailQuery}`;
   const resource = useAsyncResource<{ item: MediaDetail; retrievedAt: string | null; stale: boolean }>({
-    key: `detail:${preview}:${requestedMediaType}:${requestedId}`, group: `detail:${requestedMediaType}:${requestedId}`,
+    key: detailKey, group: detailKey, keepPrevious: false,
     load: async signal => {
       if (preview) {
+        if (detailParams.has("season")) throw new Error("分季详情需要连接 TMDB 后查看。");
         const item = getDemoDetail(requestedMediaType, requestedId);
         if (!item) throw new Error("这部作品不在固定预览样本中。连接 TMDB 后可浏览完整资料。");
         return { item, retrievedAt: null, stale: false };
       }
-      const response = await fetch(`/api/details/${requestedMediaType}/${requestedId}`, { signal });
+      const response = await fetch(`/api/details/${requestedMediaType}/${requestedId}${detailQuery ? `?${detailQuery}` : ""}`, { signal });
       const item = await response.json();
       if (!response.ok) throw new Error(item.error || "暂时无法读取作品资料");
       return { item, retrievedAt: response.headers.get("X-Data-Retrieved-At"), stale: response.headers.get("X-Data-Stale") === "true" };
     },
   });
-  const item = resource.data?.item, error = resource.error, loading = resource.pending;
+  const item = resource.current ? resource.data?.item : undefined, error = resource.error, loading = resource.pending;
   const { context: ratingContext, rating, pending: ratingPending, retry: retryRating } = useDetailRating(item, requestedMediaType, requestedId);
   const retrievedAt = resource.data?.retrievedAt ?? null, stale = resource.data?.stale ?? false;
   const mediaType = item?.mediaType ?? requestedMediaType, id = item?.id ?? requestedId;
@@ -90,13 +94,13 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
               {formatRegions(item.countryCodes) && <span className="detail-region">{formatRegions(item.countryCodes)}</span>}
               {item.genres.map(genre => <span key={genre}>{genre}</span>)}
               {!!item.runtime && <span>{item.runtime} 分钟{mediaType === "tv" ? " / 集" : ""}</span>}
-              {!!item.numberOfSeasons && <span>{item.numberOfSeasons} 季</span>}
+              {item.seasonNumber ? <span>第 {item.seasonNumber} 季{item.numberOfEpisodes ? ` · ${item.numberOfEpisodes} 集` : ""}</span> : !!item.numberOfSeasons && <span>{item.numberOfSeasons} 季</span>}
             </div>
           </header>
           <div className="detail-rating-row" data-skeleton="line">
             <div className="detail-rating-block" {...resourceLoadingProps(ratingPending)} aria-busy={ratingPending}><span className="eyebrow" data-skeleton="line">{item.source === "demo" ? "预览资料" : `${sourceLabel(rating.source)} 评分`}</span>
               {item.source !== "demo" && rating.voteAverage > 0
-                ? <div className="detail-rating" data-skeleton="line"><Star size={19} fill="currentColor"/><strong>{rating.voteAverage.toFixed(1)}</strong><span>/ 10</span><small>{formatCount(rating.voteCount)} 人评分</small></div>
+                ? <div className="detail-rating" data-skeleton="line"><Star size={19} fill="currentColor"/><strong>{rating.voteAverage.toFixed(1)}</strong><span>/ 10</span>{rating.voteCount > 0 && <small>{formatCount(rating.voteCount)} 人评分</small>}</div>
                 : <p className="detail-no-rating">{item.source === "demo" ? "预览样本 · 评分待接入真实数据" : "暂无评分"}</p>}
               {rating.fallback && !ratingPending && <p className="detail-rating-note">{sourceLabel(ratingContext.source)}{rating.fallback === "missing" ? "暂无对应评分" : "评分暂不可用"}，显示 TMDB{rating.fallback === "unavailable" && <button className="text-button" onClick={retryRating}>重试</button>}</p>}
             </div>
@@ -109,7 +113,7 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
             <div><dt>{mediaType === "movie" ? "导演" : "主创"}</dt><dd>{item.directors.join("、") || "暂无资料"}</dd></div>
             <div><dt>{mediaType === "movie" ? "上映日期" : "首播日期"}</dt><dd>{formatMediaDate(item.releaseDate)}</dd></div>
             <div><dt>制片地区</dt><dd>{item.countries.join("、") || "暂无资料"}</dd></div>
-            <div><dt>作品状态</dt><dd>{statusNames[item.status] || item.status || "暂无资料"}</dd></div>
+            {item.seasonNumber ? <div><dt>本季集数</dt><dd>{item.numberOfEpisodes ? `${item.numberOfEpisodes} 集` : "暂无资料"}</dd></div> : <div><dt>作品状态</dt><dd>{statusNames[item.status] || item.status || "暂无资料"}</dd></div>}
           </dl>
         </div>
       </div>

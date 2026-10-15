@@ -1,16 +1,18 @@
-import type { Media, MediaDetail } from "./types";
+import { validSeasonNumber, type Media, type MediaDetail } from "./types";
 
 export type RatingSource = "tmdb" | "imdb" | "douban";
-export interface RatingContext { source: RatingSource; doubanId?: string }
+export interface RatingContext { source: RatingSource; doubanId?: string; seasonNumber?: number }
 export interface DetailRating {
   source: RatingSource; voteAverage: number; voteCount: number;
   retrievedAt: string | null; stale: boolean; fallback?: "missing" | "unavailable";
 }
 export function parseRatingContext(params: URLSearchParams): RatingContext {
-  if ([...params.keys()].some(key => !["source", "doubanId"].includes(key) || params.getAll(key).length !== 1)) throw new Error("评分来源参数无效。");
+  if ([...params.keys()].some(key => !["source", "doubanId", "season"].includes(key) || params.getAll(key).length !== 1)) throw new Error("评分来源参数无效。");
   const source = params.get("source") || "tmdb", doubanId = params.get("doubanId") || undefined;
   if (!["tmdb", "imdb", "douban"].includes(source) || doubanId && (source !== "douban" || !/^[1-9]\d{0,11}$/.test(doubanId))) throw new Error("评分来源参数无效。");
-  return { source: source as RatingSource, ...(doubanId ? { doubanId } : {}) };
+  const season = params.get("season");
+  if (season !== null && (!/^[1-9]\d?$/.test(season) || !validSeasonNumber(Number(season)))) throw new Error("季数参数无效。");
+  return { source: source as RatingSource, ...(doubanId ? { doubanId } : {}), ...(season !== null ? { seasonNumber: Number(season) } : {}) };
 }
 export function validRating(score: unknown, count: unknown): boolean {
   return typeof score === "number" && Number.isFinite(score) && score > 0 && score <= 10 && Number.isSafeInteger(count) && Number(count) > 0;

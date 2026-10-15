@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { ResourceCache } from "./resource-state";
 import { useAsyncResource } from "./use-async-resource";
 import { tmdbRating, type DetailRating, type RatingContext } from "./detail-rating";
-import type { MediaDetail, MediaType } from "./types";
+import { validSeasonNumber, type MediaDetail, type MediaType } from "./types";
 
 const cache = new ResourceCache(64);
 export function useDetailRating(item: MediaDetail | undefined, media: MediaType, id: number) {
@@ -12,7 +12,9 @@ export function useDetailRating(item: MediaDetail | undefined, media: MediaType,
   const context: RatingContext = { source: source === "douban" || source === "imdb" ? source : "tmdb" };
   const doubanId = params.get("doubanId");
   if (context.source === "douban" && doubanId && /^[1-9]\d{0,11}$/.test(doubanId)) context.doubanId = doubanId;
-  const query = new URLSearchParams({ source: context.source, ...(context.doubanId ? { doubanId: context.doubanId } : {}) }).toString();
+  const season = item?.seasonNumber ?? Number(params.get("season"));
+  if (media === "tv" && validSeasonNumber(season)) context.seasonNumber = season;
+  const query = new URLSearchParams({ source: context.source, ...(context.doubanId ? { doubanId: context.doubanId } : {}), ...(context.seasonNumber ? { season: String(context.seasonNumber) } : {}) }).toString();
   const key = `rating:${media}:${id}:${query}`, external = context.source !== "tmdb" && item?.source !== "demo";
   const resource = useAsyncResource<DetailRating>({ key, group: key, cache, keepPrevious: false, enabled: !!item && external,
     load: async signal => {

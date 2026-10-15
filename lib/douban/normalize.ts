@@ -53,7 +53,10 @@ export function normalizeDoubanItem(value: unknown, fallbackMedia: MediaType): M
 
 export function enrichDoubanMedia(item: Media, match: Media | null): Media {
   if (!match) return item;
+  const seasonNumber = item.mediaType === "tv" && match.mediaType === "tv" && Number.isSafeInteger(match.seasonNumber)
+    && Number(match.seasonNumber) >= 1 && Number(match.seasonNumber) <= 99 ? match.seasonNumber : undefined;
   return { ...item, id: match.id, imdbId: match.imdbId,
+    ...(seasonNumber !== undefined ? { seasonNumber } : {}),
     originalTitle: item.originalTitle || match.originalTitle,
     overview: match.overview || item.overview, releaseDate: item.releaseDate || match.releaseDate,
     posterPath: match.posterPath || item.posterPath, backdropPath: match.backdropPath || item.backdropPath,

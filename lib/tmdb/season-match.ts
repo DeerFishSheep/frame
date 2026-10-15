@@ -1,6 +1,6 @@
 import { searchTitle } from "../media-match";
 import type { Media, MediaDetail } from "../types";
-import type { createTmdbClient } from "./client";
+import { TmdbError, type createTmdbClient } from "./client";
 import { normalizeMedia, object } from "./normalize";
 
 export interface TvSeasonEvidence extends Pick<MediaDetail, "directors" | "cast"> {
@@ -10,6 +10,11 @@ export interface TvSeasonEvidence extends Pick<MediaDetail, "directors" | "cast"
   posterPath: string | null;
   overview: string;
   imdbId: string | null;
+}
+export interface TvSeriesEvidence {
+  seriesId: number;
+  /** Aliases belong to one person ID and can never count as multiple actors. */
+  actors: { id: number; names: string[] }[];
 }
 const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
 const list = (value: unknown): unknown[] => Array.isArray(value) ? value : [];
@@ -53,5 +58,24 @@ export function createTmdbSeasonMatcher(client: Pick<ReturnType<typeof createTmd
       posterPath: /^\/[a-zA-Z0-9_.-]+$/.test(poster) ? poster : null,
       overview: text(season.overview), imdbId: /^tt\d{5,12}$/.test(imdb) ? imdb : null };
   }
-  return { seasonCandidates, seasonEvidence };
+  async function seriesEvidence(id: number): Promise<TvSeriesEvidence | null> {
+    if (!Number.isSafeInteger(id) || id < 1) return null;
+    const response = await client.request<unknown>(`/tv/${id}`, new URLSearchParams({ language: "zh-CN", append_to_response: "aggregate_credits,external_ids" }));
+    const raw = object(response.data), credits = object(raw.aggregate_credits);
+    if (raw.id !== id || !Array.isArray(credits.cast) || (credits.id !== undefined && credits.id !== id)) {
+      throw new TmdbError("TMDB 返回的剧集身份资料无效，请重试。", "TMDB_INVALID_RESPONSE", 502);
+    }
+    const people = new Map<number, Set<string>>();
+    for (const value of credits.cast) {
+      const person = object(value);
+      if (!Number.isSafeInteger(person.id) || Number(person.id) < 1) continue;
+      const names = [text(person.name), text(person.original_name)].filter(Boolean);
+      if (!names.length) continue;
+      const aliases = people.get(Number(person.id)) ?? new Set<string>();
+      for (const name of names) aliases.add(name);
+      people.set(Number(person.id), aliases);
+    }
+    return { seriesId: id, actors: [...people].map(([personId, names]) => ({ id: personId, names: [...names] })) };
+  }
+  return { seasonCandidates, seasonEvidence, seriesEvidence };
 }

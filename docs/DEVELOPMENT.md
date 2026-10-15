@@ -527,7 +527,7 @@ ResourceRow取消底部按钮行。绝对定位的原生a／button覆盖整卡�
 - 真实样本：豆瓣38353939《杀死你的旅途 第二季》year=2026；TMDB298931整剧first_air_date=2025-09-26，第二季air_date=2026-10-08。旧searchTitle已经移除季后缀，失败点是first_air_date_year=2026筛掉2025首播的整剧，并非仅由名称后缀造成。
 - `tvSeasonNumber`仅解析明确有效季号1～99；明确季号（包含第一季）走`resolveSeason`。系列检索取消整剧首播年份限制，仍要求严格同名／原名、整剧年份不晚于本季、最多4个候选。
 - `createTmdbSeasonMatcher`复用server-only的tmdbClient，搜索/search/tv，再经/tv/{id}的append_to_response读取对应季／季credits／external_ids。核对series ID、季摘要与季号／日期、存在的episode归属，再由matcher要求豆瓣本季同年、导演或至少两名不同演员一致且候选唯一。空证据、歧义、异常不宽松匹配。
-- 榜单保留豆瓣分季标题／评分，补回该季海报、日期与简介；仍链接已有整剧/tv/{id}详情，不新增分季详情或更改详情身份。无明确季号TV沿用严格同年，电影沿用MATCH-01相邻一年核验。
+- 榜单保留豆瓣分季标题／评分，补回该季海报、日期与简介；MATCH-02当时仅链接整剧/tv/{id}详情，这一缺口现由下方MATCH-03补齐。无明确季号TV沿用严格同年，电影沿用MATCH-01相邻一年核验。
 - 24项匹配／适配器回归。真实/api/douban已返回298931、releaseDate=2026-10-08、第二季poster；点击进入本站详情，显示豆瓣8.5（实测详情406人评分）。
 
 ## RES-07 Pansou合法空响应
@@ -537,3 +537,25 @@ ResourceRow取消底部按钮行。绝对定位的原生a／button覆盖整卡�
 - 真实本地搜索200／items=[]／total=0，实际资源区显示`暂无“关键词”相关资源`；长关键词可换行。截图：artifacts/previews/frame-resource-empty-result.png。
 
 - **最终交付验证**：工作树与仅本次暂存差异的独立快照均290 / 290，类型检查及webpack生产编译通过。导航回归使用项目DEFAULT_FILTERS，而非写死用户工作树中的genreLogic，确保不依赖未提交改动。独立构建的依赖符号链接有standalone追踪边界提示；未执行服务器部署。开发服务保持，临时原始响应／隔离构建在本地提交前清理。
+
+
+## MATCH-03 分季详情贯穿与隔离
+
+- 根因：MATCH-02只将季海报／日期补到列表；`mediaHref`未携带季号，`DetailView`仍请求整剧API，缓存也仅按series ID。用户实际点击暴露了这一完整流程遗漏。
+- `Media.seasonNumber`仅由匹配核验成功后传递；`mediaHref`附加season=N，`mediaKey`将季号纳入身份。`restoreMedia`白名单保留季号，收藏别名不再让整剧／第1季／第2季共用裸tv:id；旧豆瓣收藏仅为身份比对识别标题季号，不能据此加载未核验内容。
+- `createMediaDetailService`处理显式季链接和旧source=douban&doubanId链接：先校验来源ID、季号、TMDB匹配身份，再请求对应季；冲突400、匹配异常502、真实缺季404，绝不静默退回整剧。无季普通影片／剧集仍调用原detail。
+- `createTmdbSeasonDetailService`在现有/tv/{id}接口通过append_to_response读取season/N、credits、images和推荐；核对series／season／episode归属。本季海报／简介／日期／演员／剧照／评分覆盖整剧字段；缺失不借第一季或整剧值，简介与海报只允许使用已核验同季豆瓣资料备用。评分人数缺失不伪造，前端隐藏未提供的人数。
+- 详情请求／缓存组包含source、doubanId、season，使用新版key及resource.current隔离切换；评分请求同样带季号，豆瓣匹配结果必须同季，季级IMDB评分不存在时回退本季TMDB，不冒充整剧分数。资源关键词、媒体横条、收藏链接按本季信息生成。
+- 真实验证：38353939对应298931 season2，海报/uUMdBJltlWCgiPzePVUQJBQ43gD.jpg，2026-10-08、6集、10演员、3剧照；简介为脱离帮派后重返黑道的第二季内容，豆瓣评分8.5／406。新链接点击与旧链接直接进入均正确；第一季日期2025-09-26、冲突季400、不存在季404、电影详情保持200。
+- 30项新增回归涵盖列表季号、分季字段无串入、旧链接、身份冲突、收藏／评分隔离和缺字段；工作树320 / 320与类型检查通过。截图artifacts/previews/frame-tv-season-detail.png；独立暂存快照320 / 320、类型检查及webpack生产编译通过；符号链接依赖仅有standalone追踪边界提示，未声称生产包独立启动。
+
+
+## MATCH-04 警之光第四季的译名漏匹配
+
+- 已核实豆瓣36781597原名Blue Lights Season 4、year2026；TMDB218344的season4存在、2026-09-29首播、6集。本季演职员只匹配到安迪·奥修，其他人中文译名不同，未达到两个不同演员阈值。不是缺少第四季。
+- TMDB人物also_known_as也不含所需豆瓣中文译名，不新增无效人物查询链；豆瓣官方HTML进入验证页，停止该路径。源API没有imdb_id、external_ids或tt编号；TMDB单边tt14466018不能用作两库已经对应的证明。
+- 实际aggregate_credits可与豆瓣核对4位不同人物：1659211安迪·奥修、211621乔安妮·克劳福德、97417乔纳森·哈登、97416理查德·多默。补充核验只确认系列身份，季号／季年份仍须匹配，详情仍取本季内容。
+- 用户询问更稳定方式：外部编号优先与确认后保存持久映射是后续设计方向，尚未实现持久映射表；当前仅现有进程内匹配缓存。TMDB官方/find支持IMDb查询电影、剧集及单集；季号仍要单独核验：https://developer.themoviedb.org/reference/find-by-id 。
+
+- 实现：`seriesEvidence`通过已有/tv/{id} append aggregate_credits读取完整系列人员，按人物ID合并name/original_name；格式异常抛错，不伪造未匹配。`resolveSeason`仅在本季结构／日期／年份通过而季演员核验不足时调用，每候选一次、最多4候选；至少两个不同人物ID且两个不同匹配名，不接受仅导演、同人多别名或歧义。无人物接口请求、无片名硬编码。
+- 真实本地榜单200／2.63秒，36781597已关联218344/season4。浏览器点击正确链接、2026-09-29／6集／8.7分／234人，控制台无错误；本季暂无中文简介，保持缺失。截图artifacts/previews/frame-blue-lights-season4.png。10项新增回归，含空季内容不继承整剧备用图；最终工作树与独立暂存快照330 / 330，类型检查及webpack生产编译通过；依赖符号链接的standalone追踪提示不代表生产包独立启动验收。

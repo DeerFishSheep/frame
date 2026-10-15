@@ -1,5 +1,6 @@
 import { normalizeCountryCodes } from "./media-regions";
-import { imageUrl, mediaKey, type Media } from "./types";
+import { imageUrl, mediaKey, validSeasonNumber, type Media } from "./types";
+import { tvSeasonNumber } from "./media-match";
 
 export const FAVORITES_KEY = "frame_favorites_v2";
 
@@ -24,6 +25,7 @@ function restoreMedia(value: unknown): Media | null {
   if (value.source === "imdb" && !imdbId) return null;
   if (value.doubanId !== undefined && !doubanId || value.source === "douban" && !doubanId) return null;
   if (value.mediaType !== "movie" && value.mediaType !== "tv") return null;
+  if (value.seasonNumber !== undefined && (value.mediaType !== "tv" || !validSeasonNumber(value.seasonNumber))) return null;
   if (value.source !== "tmdb" && value.source !== "imdb" && value.source !== "douban" && value.source !== "demo") return null;
   if (value.detailSource !== undefined && (typeof value.detailSource !== "string" || !["tmdb", "imdb", "douban"].includes(value.detailSource))) return null;
   if (value.detailDoubanId !== undefined && (value.detailSource !== "douban" || typeof value.detailDoubanId !== "string" || !/^[1-9]\d{0,11}$/.test(value.detailDoubanId))) return null;
@@ -45,6 +47,7 @@ function restoreMedia(value: unknown): Media | null {
     ...(imdbId ? { imdbId } : {}),
     ...(doubanId ? { doubanId } : {}),
     mediaType: value.mediaType,
+    ...(value.seasonNumber !== undefined ? { seasonNumber: value.seasonNumber as number } : {}),
     title: value.title,
     originalTitle: value.originalTitle,
     posterPath: value.posterPath,
@@ -108,7 +111,10 @@ export function toggleFavorite(items: Media[], item: Media): Media[] {
 }
 
 function favoriteAliases(item: Media) {
-  return typeof item.id === "number" ? [mediaKey(item), `${item.mediaType}:${item.id}`] : [mediaKey(item)];
+  // Older Douban favorites already represent a specific season, even before this field existed.
+  const seasonNumber = item.seasonNumber ?? (item.mediaType === "tv" && item.doubanId ? tvSeasonNumber(item.title) ?? undefined : undefined);
+  const identity = { ...item, seasonNumber };
+  return typeof item.id === "number" ? [mediaKey(identity), mediaKey({ ...identity, doubanId: undefined })] : [mediaKey(identity)];
 }
 
 /** Provider rows keep their own keys; a reliably matched work shares its saved state across sources. */

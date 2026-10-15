@@ -2,13 +2,15 @@
 
 最后核对：2026-10-15（北京时间）
 
-## 本次任务（NAV-01／MATCH-02／RES-07，已验证完成）
+## 本次任务（MATCH-03／MATCH-04，已验证完成）
 
-名称搜索和找片统一TMDB；新名称搜索默认全部，返回电影／电视剧恢复之前的榜单平台与条件。豆瓣明确季数的剧集改用季证据匹配，Pansou成功空结果正常显示暂无相关资源。
+补齐上一轮只修榜单、详情仍显示整剧资料的遗漏。已核验的seasonNumber贯穿列表、链接、详情API、评分、收藏、演员／剧照与资源搜索缓存；旧豆瓣链接未带season也会先核验对应季。
 
-真实验收：豆瓣TV→搜索（TMDB／全部）→TV、找片→TV、搜索清空条件恢复原豆瓣URL；IMDB→搜索→清空恢复原Top250。豆瓣38353939已关联TMDB298931，第二季日期2026-10-08，卡片进入本站详情、豆瓣评分8.5。Pansou真实total=0返回本站200／0条，浏览器显示暂无相关资源，控制台无错误。工作树与独立暂存快照均290 / 290，类型检查与webpack生产编译通过。隔离构建仅有依赖符号链接的standalone追踪边界提示，未进行服务器部署验收。
+真实验收：豆瓣38353939→TMDB298931第二季，榜单链接带season=2；新／旧链接均显示第二季标题、海报、2026-10-08首播、6集及本季简介，豆瓣8.5分／406人，资源关键词含第二季。第一季200／2025-09-26，错季400、不存在季404，电影详情200保持。浏览器控制台无错误；工作树和独立暂存快照均320 / 320，类型检查及webpack生产编译通过；隔离依赖符号链接有standalone追踪边界提示，未进行部署验收。
 
-复检入口：`lib/catalog-navigation.ts`、`lib/douban/matcher.ts`、`lib/pansou/client.ts`；先跑`npm test`，再复走上面的页面路径。当前只完成本地修复；详情沿用整剧页面，不新增分季详情路由。截图见`artifacts/previews/frame-search-platform-memory.png`与`frame-resource-empty-result.png`。
+复检入口：`lib/media-detail.ts`、`lib/tmdb/season-detail.ts`、`components/detail-view.tsx`；先运行`npm test`，再访问`/tv/298931?source=douban&doubanId=38353939&season=2`及去掉season的旧链接。截图`artifacts/previews/frame-tv-season-detail.png`。当前仅本地修复；不新增季选择器或服务器部署。
+
+MATCH-04真实验收：《警之光 第四季》36781597→218344/season4，日期2026-09-29、6集、豆瓣8.7／234人，列表点击进入正确本季详情。原因是本季演员译名只匹配1人，完整系列演员可确认4人；仅在季号／年份通过后补充系列身份核验，展示仍用本季数据。缺失本季简介保持缺失，不借第一季。新增10项回归通过；最终工作树与独立暂存快照330 / 330，类型检查与webpack生产编译通过。唯一编号优先与持久映射是用户询问的后续方案，尚未实现持久映射表。
 
 ## 现在做到哪里
 
@@ -164,6 +166,8 @@
 | NAV-01 | TMDB搜索默认全部、独立榜单来源记忆 | 已验证完成／真实页面与模拟验证 | `catalogNavigationHref`、`rememberCatalogLocation`、`buildSearchHref`；豆瓣／IMDB返回与清空通过，18项相关测试 |
 | MATCH-02 | 豆瓣分季剧集匹配TMDB整剧 | 已验证完成／真实接口、页面与模拟验证 | `resolveSeason`、`createTmdbSeasonMatcher`；38353939→298931，季号／年份／演职员唯一核对，24项相关测试 |
 | RES-07 | 资源空结果误报无效数据 | 已验证完成／真实接口、页面与模拟验证 | `normalize`、`ResourceSearchResults`；支持成功total=0省略merged_by_type，故障不当作空，24项Pansou测试 |
+| MATCH-03 | 分季详情与季身份隔离 | 已验证完成／真实接口、页面与模拟验证 | `createMediaDetailService`、`createTmdbSeasonDetailService`、`DetailView`；第二季海报／简介／日期／评分正确，旧链接自动核验，30项新增回归 |
+| MATCH-04 | 演员译名导致的季匹配漏失 | 已验证完成／真实接口、页面与模拟验证 | `seriesEvidence`、`resolveSeason`；36781597→218344第四季，完整系列至少两个不同人物核验，季内容不混入整剧；10项新增回归 |
 
 有新的用户任务时，在此表补充任务，再按实际完成情况更新。
 

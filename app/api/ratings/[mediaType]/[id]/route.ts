@@ -1,4 +1,4 @@
-import { tmdb } from "@/lib/tmdb/server";
+import { detailWithSeason } from "@/lib/media-detail-server";
 import { imdbClient } from "@/lib/imdb/server";
 import { doubanClient, matchDoubanMedia } from "@/lib/douban/server";
 import { createDetailRatingService } from "@/lib/detail-rating-service";
@@ -6,7 +6,7 @@ import { parseRatingContext } from "@/lib/detail-rating";
 import { apiError, dataHeaders } from "@/lib/tmdb/http";
 
 export const runtime = "nodejs";
-const rating = createDetailRatingService({ detail: tmdb.detail, imdb: imdbClient.rating, subject: doubanClient.subject, match: matchDoubanMedia });
+const rating = createDetailRatingService({ detail: detailWithSeason, imdb: imdbClient.rating, subject: doubanClient.subject, match: matchDoubanMedia });
 export async function GET(request: Request, { params }: { params: Promise<{ mediaType: string; id: string }> }) {
   let context;
   try { context = parseRatingContext(new URL(request.url).searchParams); }

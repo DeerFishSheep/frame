@@ -7,6 +7,8 @@ export interface Media {
   id: number | string;
   imdbId?: string | null;
   doubanId?: string;
+  /** Verified season identity within a TMDB television series. */
+  seasonNumber?: number;
   mediaType: MediaType;
   title: string;
   originalTitle: string;
@@ -35,6 +37,7 @@ export interface MediaDetail extends Media {
   id: number;
   runtime: number | null;
   numberOfSeasons: number | null;
+  numberOfEpisodes?: number | null;
   status: string;
   countries: string[];
   directors: string[];
@@ -90,14 +93,20 @@ export const DEFAULT_FILTERS: CatalogFilters = {
   sort: "popularity.desc", page: 1,
 };
 
-export const mediaKey = (item: Pick<Media, "mediaType" | "id" | "doubanId">) => item.doubanId ? `douban:${item.doubanId}` : typeof item.id === "string" ? `imdb:${item.id}` : `${item.mediaType}:${item.id}`;
-export function mediaHref(item: Pick<Media, "mediaType" | "id"> & Partial<Pick<Media, "source" | "detailSource" | "detailDoubanId" | "doubanId">>) {
+export const validSeasonNumber = (value: unknown): value is number => typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= 99;
+export const mediaKey = (item: Pick<Media, "mediaType" | "id" | "doubanId" | "seasonNumber">) => {
+  const identity = item.doubanId ? `douban:${item.doubanId}` : typeof item.id === "string" ? `imdb:${item.id}` : `${item.mediaType}:${item.id}`;
+  return item.mediaType === "tv" && validSeasonNumber(item.seasonNumber) ? `${identity}:season:${item.seasonNumber}` : identity;
+};
+export function mediaHref(item: Pick<Media, "mediaType" | "id"> & Partial<Pick<Media, "source" | "detailSource" | "detailDoubanId" | "doubanId" | "seasonNumber">>) {
   if (typeof item.id === "string") return /^tt\d{5,12}$/.test(item.id) ? `https://www.imdb.com/title/${item.id}/` : /^douban:[1-9]\d{0,11}$/.test(item.id) ? `https://movie.douban.com/subject/${item.id.slice(7)}/` : "/";
   const path = `/${item.mediaType}/${item.id}`, source = item.detailSource ?? item.source;
   const doubanId = item.detailDoubanId ?? item.doubanId;
-  if (source === "imdb") return `${path}?source=imdb`;
-  if (source === "douban") return `${path}?source=douban${doubanId && /^[1-9]\d{0,11}$/.test(doubanId) ? `&doubanId=${doubanId}` : ""}`;
-  return path;
+  const params = new URLSearchParams();
+  if (source === "imdb" || source === "douban") params.set("source", source);
+  if (source === "douban" && doubanId && /^[1-9]\d{0,11}$/.test(doubanId)) params.set("doubanId", doubanId);
+  if (item.mediaType === "tv" && validSeasonNumber(item.seasonNumber)) params.set("season", String(item.seasonNumber));
+  return params.size ? `${path}?${params}` : path;
 }
 export function imageUrl(path: string | null, size = "w500") {
   if (path) {
