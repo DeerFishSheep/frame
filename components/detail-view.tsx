@@ -19,6 +19,7 @@ import { mergeCastMembers } from "@/lib/media-cast";
 import { useDetailRating } from "@/lib/use-detail-rating";
 import { detailFavorite } from "@/lib/detail-rating";
 import { sourceLabel } from "@/lib/catalog-sources";
+import { ResourceSearchProvider, ResourceSearchButton, ResourceSearchResults } from "./resource-search";
 
 const statusNames:Record<string,string>={Released:"已上映", "Post Production":"后期制作", "In Production":"制作中", Planned:"筹备中", Rumored:"待确认",Canceled:"已取消", "Returning Series":"持续更新", Ended:"已完结", Pilot:"试播"};
 
@@ -66,7 +67,7 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
   const saved=isFavorite(item);
   // Old browser snapshots can predate server-side credit deduplication.
   const cast = mergeCastMembers(item.cast);
-  return <div className="detail-workspace resource-region" aria-busy={loading}>
+  return <ResourceSearchProvider item={item}><div className="detail-workspace resource-region" aria-busy={loading}>
     <ResourceFeedback pending={loading} error={error} retained onRetry={resource.refresh}/>
     <div className="detail-breadcrumb" data-scroll-anchor="detail-heading">
       <button className="back-link" onClick={back}><ArrowLeft size={15}/>返回榜单</button>
@@ -77,8 +78,7 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
         <div className="detail-poster" data-skeleton="block"><MediaImage item={item}/></div>
         <div className="detail-actions" data-skeleton="block">
           <button className={`primary-button full-width ${saved ? "is-saved" : ""}`} disabled={ratingPending} onClick={() => toggle(detailFavorite(item, rating, ratingContext))} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "加入收藏"}</button>
-          <a className="secondary-button full-width" aria-label="在 TMDB 查看" href={`https://www.themoviedb.org/${mediaType}/${id}`} target="_blank" rel="noopener noreferrer"><span><span className="detail-action-verb">在 </span>TMDB<span className="detail-action-verb"> 查看</span></span><ArrowUpRight size={15}/></a>
-          {item.imdbId && <a className="secondary-button full-width" aria-label="在 IMDB 查看" href={`https://www.imdb.com/title/${item.imdbId}/`} target="_blank" rel="noopener noreferrer"><span><span className="detail-action-verb">在 </span>IMDB<span className="detail-action-verb"> 查看</span></span><ArrowUpRight size={15}/></a>}
+          <ResourceSearchButton/>
         </div>
       </aside>
       <div className="detail-main">
@@ -114,6 +114,7 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
         </div>
       </div>
     </div>
+    <ResourceSearchResults/>
     {cast.length > 0 && <DetailMediaStrip pending={loading} title="主要演员" kind="cast" stateKey={mediaKey(item)}>
       {cast.map(actor => <div className="cast-card" key={actor.id}><CastPhoto path={actor.profilePath} name={actor.name}/><strong data-skeleton="line" title={actor.name}>{actor.name}</strong><span data-skeleton="line" title={actor.character}>{actor.character || "角色未提供"}</span></div>)}
     </DetailMediaStrip>}
@@ -121,7 +122,7 @@ export function DetailView({mediaType: requestedMediaType,id: requestedId}:{medi
       {item.images.map((path, index) => <StillPhoto key={path} path={path} title={item.title} index={index}/>)}
     </DetailMediaStrip>}
     <RecommendationsRail pending={loading} key={`${mediaKey(item)}:${item.source}`} source={item.source} initial={item.recommendations} mediaType={mediaType} id={id}/>
-  </div>;
+  </div></ResourceSearchProvider>;
 }
 
 function ArrowRightIcon(){return <ArrowUpRight size={14}/>;}

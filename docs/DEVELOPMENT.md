@@ -451,3 +451,25 @@ time确实改变顺序，但响应无完整上映日期，本轮未确认其内�
 - `tests/imdb.test.ts`新增旧链接／分页／请求方向／其他榜单不变的回归。
 
 - **最终验证**：IMDB原rank与popularity各100条真实ID顺序逐项完全一致；浏览器旧rank链接显示人气优先选中、共3项排序，Top250仍4项。工作树及独立暂存快照220 / 220、类型检查与webpack生产编译通过。依赖符号链接有standalone追踪边界提示，未据此声明生产包独立运行或服务器验收。IMDB截图：artifacts/previews/frame-imdb-popular-sort.png；本地开发持续运行，未发布。
+
+
+## RES-01 资源搜索接口
+
+- 配置：`.env.local`中的`PANSOU_BASE_URL`仅由服务端读取；`.env.example`不带真实地址。当前本地联调使用用户指定服务，不修改远端部署。更换服务无需改浏览器代码。
+- `POST /api/resources/search`：JSON为`{keyword, channels}`；`lib/pansou/channels.ts`统一13种类型、名称与颜色，`types.ts`定义独立ResourceItem，不能混入影视Media或假称按影片ID精确匹配。
+- `validateResourceSearch`验证关键词1～100字、非空渠道白名单；客户端不能指定上游URL。`createPansouClient`固定请求/api/search，conc=4、res=merge、默认不强制refresh，保留上游缓存；25秒超时、响应4MiB／请求8KiB上限，取消与HTTP/业务/格式错误分开。
+- 合并返回根级／data.merged_by_type；仅选中渠道，日期按有效时间倒序，链接协议限制为HTTP(S)或对应magnet/ed2k，拒绝凭证URL和脚本协议。相同渠道同链接去重并补全提取码等缺字段，输出实际可用数量；全部坏链接不假装空结果。
+- 快照语义：官方README和api/handler.go说明后台插件继续填充缓存，但未提供complete标记；界面用实际已获取条数和手动刷新，不声称全网搜索完结。来源：https://github.com/fish2018/pansou 与 https://github.com/fish2018/pansou/blob/main/api/handler.go 。
+
+
+## RES-02／03 详情搜索窗口与结果
+
+- `components/detail-view.tsx`用ResourceSearchProvider包住已有详情，操作区放ResourceSearchButton，detail-content后、演员前放ResourceSearchResults。删除原TMDB/IMDB操作链接；评分来源与影片资料保持。
+- `components/resource-search.tsx`使用与SourcePicker相同的Radix窗口和共享视觉类：桌面420px浮层，手机底部面板。13类型默认全选、可清空／多选，关键词可编辑；偏好仅提交时写frame_resource_channels_v1。样式隔离在resource-search.module.css，没有改全局平台切换行为。
+- 请求与展示状态按mediaKey和关键词／渠道隔离，复用useAsyncResource与useViewState，离开时取消；加载仅遮罩结果区，保留尺寸，不自动跳顶。切片显示20条是已返回快照的客户端展开，不是上游分页。链接和元数据作为React文本渲染，长标题两行；搜索结果不标注虚构影片匹配率。
+- 真实验收：上游健康200；三渠道140条、本地200；全部13类型得到269条（当前8类有数据），夸克113、115为11。20→40展开、切渠道、清空禁用提交、刷新后115单选保留通过；快切查询y=546保持，换片25376无旧结果，返回411088恢复115筛选／结果。
+- 320／390／1440px无页面横向溢出，手机面板完整在视口内、桌面浮层未超边界；控制台无新增错误。截图：artifacts/previews/frame-resource-picker-mobile.png、frame-resource-picker-desktop.png、frame-resource-results-mobile.png。
+- 复制按钮已显示成功反馈；自动化虚拟剪贴板不能读取网页原生剪贴板，本轮不声称真实设备粘贴已验收。没有打开下载链接或验证分享有效期，合法空结果／错误／危险URL用合成样本测试。
+- 瞬断复现：一次快速改词后NETWORK_ERROR，原结果保留，手动重试恢复269。client增加仅网络错误一次重试，最多两次共享25秒总期限；取消、超时、HTTP、业务及格式错误不重试。tests/pansou.test.ts新增20项边界回归，工作树240 / 240及类型检查通过。
+
+- **最终验收**：最终工作树与独立暂存版本240 / 240、类型检查、webpack生产编译通过，新/api/resources/search已构建。依赖采用符号链接，有standalone文件追踪边界提示，未据此声明生产包独立启动或服务器验收。真实搜索最终269条、控制台无新增错误，临时视口恢复，开发服务保持；只做本地提交，未发布Github或部署。
