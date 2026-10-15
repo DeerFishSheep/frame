@@ -49,10 +49,10 @@ test("changing genre group replaces its dependent board and all 298 boards remai
       const grouped = selectDoubanFilter(base, "group", group.value);
       assert.equal(grouped.collection, group.boards[0].value);
       const row = doubanFilterRows(grouped).find(row => row.key === "collection");
-      if (group.boards.length === 1) assert.equal(row, undefined);
-      else assert.deepEqual(row!.options, group.boards);
+      assert.ok(row);
+      assert.deepEqual(row.options.map(option => option.value), group.boards.map(board => board.value));
       for (const board of group.boards) {
-        const selected = row ? selectDoubanFilter(grouped, "collection", board.value) : grouped;
+        const selected = selectDoubanFilter(grouped, "collection", board.value);
         assert.equal(selected.collection, board.value);
         assert.equal(new URL(buildDoubanRequest(selected).url).pathname, `/rexxar/api/v2/subject_collection/${board.value}/items`);
         roundTrip(selected); visited++;
@@ -132,7 +132,7 @@ test("tag changes reject hidden fields, cross-group boards and invalid values be
 
 test("visible chart navigation hides realtime and lists without deleting API compatibility", () => {
   assert.deepEqual(visibleDoubanCharts("movie").map(chart => chart.value).sort(), ["genres", "now", "recommend", "top", "weekly"]);
-  assert.deepEqual(visibleDoubanCharts("tv").map(chart => chart.value), ["weekly", "genres", "recommend"]);
+  assert.deepEqual(visibleDoubanCharts("tv").map(chart => chart.value), ["recommend", "weekly", "genres"]);
   assert.equal(defaultDoubanFilters("tv").chart, "weekly");
   for (const media of ["movie", "tv"] as const) {
     assert.ok(doubanCharts(media).some(chart => chart.value === "realtime"));

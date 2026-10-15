@@ -12,13 +12,16 @@ export interface DoubanFilters {
 }
 const charts: { value: DoubanChart; title: string; movieOnly?: boolean }[] = [
   { value: "popular", title: "热门电影", movieOnly: true }, { value: "realtime", title: "实时热榜" },
-  { value: "weekly", title: "一周口碑" }, { value: "top", title: "Top 250", movieOnly: true },
-  { value: "now", title: "影院热映", movieOnly: true }, { value: "genres", title: "类型榜" },
-  { value: "recommend", title: "热门推荐" }, { value: "lists", title: "片单" },
+  { value: "weekly", title: "一周口碑" }, { value: "top", title: "TOP 250", movieOnly: true },
+  { value: "now", title: "影院热映", movieOnly: true }, { value: "genres", title: "类型榜单" },
+  { value: "recommend", title: "选电影" }, { value: "lists", title: "片单" },
 ];
-export const doubanCharts = (media: MediaType) => charts.filter(chart => media === "movie" || !chart.movieOnly);
+export const doubanCharts = (media: MediaType) => charts.filter(chart => media === "movie" || !chart.movieOnly)
+  .map(chart => chart.value === "recommend" && media === "tv" ? { ...chart, title: "选电视剧" } : chart);
 // Legacy popular/realtime APIs remain available; popular now lives under recommendation categories.
-export const visibleDoubanCharts = (media: MediaType) => doubanCharts(media).filter(chart => !["popular", "realtime", "lists"].includes(chart.value));
+const visibleChartOrder: DoubanChart[] = ["recommend", "weekly", "now", "genres", "top"];
+export const visibleDoubanCharts = (media: MediaType) => doubanCharts(media).filter(chart => visibleChartOrder.includes(chart.value))
+  .sort((a, b) => visibleChartOrder.indexOf(a.value) - visibleChartOrder.indexOf(b.value));
 export const weeklyOptions = (media: MediaType) => options.weekly.list_type.filter(option => media === "movie" ? option.value === "movie_weekly_best" : option.value !== "movie_weekly_best");
 export const realtimeOptions = (media: MediaType) => options.realtime.hot_type.filter(option => option.value === `${media}_real_time_hotest` || option.value === "subject_real_time_hotest");
 
@@ -105,12 +108,12 @@ export function migrateDoubanPopularHref(href: string) {
 export function doubanChart(filters: DoubanFilters) {
   const { chart, media } = filters;
   let collection = filters.collection, title = charts.find(item => item.value === chart)!.title;
-  if (chart === "top") { collection = "movie_top250"; title = "Top 250 电影"; }
+  if (chart === "top") { collection = "movie_top250"; title = "TOP 250 电影"; }
   if (chart === "now") collection = "movie_showing";
   if (chart === "genres") title = options.genres[media].find(group => group.value === filters.group)!.boards.find(board => board.value === collection)!.title;
   if (chart === "weekly") title = weeklyOptions(media).find(option => option.value === collection)!.title;
   if (chart === "realtime") title = collection === "subject_real_time_hotest" ? "书影音热榜 · 影视" : `${media === "movie" ? "电影" : "剧集"}实时热榜`;
-  if (chart === "recommend") title = `热播${media === "movie" ? "电影" : "剧集"}推荐`;
+  if (chart === "recommend") title = media === "movie" ? "选电影" : "选电视剧";
   if (chart === "lists") title = options.lists.find(list => list.value === filters.list)?.title || "自定义片单";
   return { title, collection, ranked: ["realtime", "weekly", "genres", "top"].includes(chart) || chart === "lists" && filters.list.startsWith("collection:"),
     url: chart === "lists" ? doubanListUrl(filters.list) : collection ? `https://m.douban.com/subject_collection/${collection}` : "https://movie.douban.com/explore" };

@@ -37,7 +37,6 @@ export function ProviderCatalogResults({ source, current, loading, error, queryE
         <span data-skeleton="line">{loading ? "正在加载…" : error ? hasItems ? "更新失败，已保留上次内容" : "加载失败" : `${current?.stale ? "缓存数据 · " : ""}${sourceLabel(current?.source || source)} · ${formatTime(current?.retrievedAt || null)} 更新`}</span>
         {visible && <span data-skeleton="line">{visible.totalResultsExact === false ? `已加载 ${formatCount(items.length)} 部` : visible.source === "douban" ? `${countLabel}共 ${formatCount(visible.totalResults)} 项` : `${formatCount(visible.totalResults)} 部 · ${visible.context.ranked ? "原榜顺序" : "当前排序结果"}`}</span>}
       </div>
-      {visible?.notice && !loading && <p className="provider-notice" role="status">{visible.notice}</p>}
       <ResourceRegion pending={loading} error={error} retained={hasItems} onRetry={retry}>
         {loading && !hasItems ? <MediaSkeletons/> : error && !hasItems ? <div className="empty-state" data-skeleton="block" role="alert"><RefreshCw size={28}/><h3>暂时无法加载 {label}</h3><p>{error}</p><button className="primary-button" onClick={retry}>{queryError ? "重置条件" : "重试"}</button></div>
           : items.length ? <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={current?.context.ranked} resultIndex={((current?.context.startPage ?? page) - 1) * 20 + index + 1}/>)}</div>

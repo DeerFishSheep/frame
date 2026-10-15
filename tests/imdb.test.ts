@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MediaCard } from "../components/media-card";
 import { FrameProvider } from "../components/providers";
 import { buildImdbRequest, createImdbClient, ImdbError, parseImdbChart, type ImdbTitle } from "../lib/imdb/client";
-import { IMDB_SORTS, imdbChart, imdbParams, parseImdbFilters, type ImdbFilters } from "../lib/imdb/query";
+import { IMDB_SORTS, imdbSortOptions, imdbChart, imdbParams, parseImdbFilters, type ImdbFilters } from "../lib/imdb/query";
 import { createImdbService, imdbMedia } from "../lib/imdb/service";
 import { createTmdbClient } from "../lib/tmdb/client";
 import { createTmdbService } from "../lib/tmdb/service";
@@ -37,6 +37,20 @@ test("IMDB accepts exactly the module's four charts, four sorts and bounded page
   assert.equal(filters("chart=top&page=13").page, 13);
   for (const query of ["media=all", "chart=now", "sort=vote_average.desc", "page=0", "page=1.5", "page=14", "chart=popular&page=6", "media=movie&media=tv", "sort=rank&sort=popularity", "source=tmdb", "url=https://example.com", "genres=28", "query=film"]) {
     assert.throws(() => filters(query), query);
+  }
+});
+
+test("popular movie sort aliases preserve old links and paging without hiding Top 250 sorts", () => {
+  const legacy = filters("media=movie&chart=popular&sort=rank&page=3");
+  assert.equal(legacy.sort, "popularity");
+  assert.equal(legacy.page, 3);
+  assert.equal(filters("chart=popular").sort, "popularity");
+  assert.equal(imdbParams({ ...legacy, sort: "rank" }).get("sort"), "popularity");
+  assert.deepEqual(imdbSortOptions(legacy).map(option => option.value), ["popularity", "user_rating", "num_votes"]);
+  assert.deepEqual(JSON.parse(new URL(buildImdbRequest(legacy)).searchParams.get("variables")!).sort, { sortBy: "POPULARITY", sortOrder: "ASC" });
+  for (const query of ["media=movie&chart=top", "media=tv&chart=top", "media=tv&chart=popular"]) {
+    assert.equal(filters(query).sort, "rank");
+    assert.equal(imdbSortOptions(filters(query)), IMDB_SORTS);
   }
 });
 

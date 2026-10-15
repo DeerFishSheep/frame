@@ -11,6 +11,15 @@ export const IMDB_SORTS = [
 export type ImdbSort = typeof IMDB_SORTS[number]["value"];
 export interface ImdbFilters { media: MediaType; chart: "top" | "popular"; sort: ImdbSort; page: number }
 
+/** Popular movies use popularity as the single entry for the original popularity chart. */
+export function imdbSortOptions(filters: Pick<ImdbFilters, "media" | "chart">) {
+  return filters.media === "movie" && filters.chart === "popular"
+    ? [IMDB_SORTS[2], IMDB_SORTS[1], IMDB_SORTS[3]] : IMDB_SORTS;
+}
+function effectiveSort(filters: Pick<ImdbFilters, "media" | "chart" | "sort">): ImdbSort {
+  return filters.media === "movie" && filters.chart === "popular" && filters.sort === "rank" ? "popularity" : filters.sort;
+}
+
 export function parseImdbFilters(params: URLSearchParams): ImdbFilters {
   const value = (key: string, fallback: string) => {
     if (params.getAll(key).length > 1) throw new QueryError(`参数 ${key} 不能重复。`);
@@ -26,11 +35,11 @@ export function parseImdbFilters(params: URLSearchParams): ImdbFilters {
   const allowed = new Set(["source", "media", "chart", "sort", "page"]);
   for (const key of params.keys()) if (!allowed.has(key)) throw new QueryError("IMDB 榜单不支持此筛选条件，请重新选择榜单。");
   if (params.has("source") && value("source", "imdb") !== "imdb") throw new QueryError("榜单来源无效。");
-  return { media, chart, sort: sort as ImdbSort, page: Number(page) };
+  return { media, chart, sort: effectiveSort({ media, chart, sort: sort as ImdbSort }), page: Number(page) };
 }
 
 export function imdbParams(filters: ImdbFilters) {
-  return new URLSearchParams({ source: "imdb", media: filters.media, chart: filters.chart, sort: filters.sort, page: String(filters.page) });
+  return new URLSearchParams({ source: "imdb", media: filters.media, chart: filters.chart, sort: effectiveSort(filters), page: String(filters.page) });
 }
 
 export function imdbChart(filters: Pick<ImdbFilters, "media" | "chart">) {

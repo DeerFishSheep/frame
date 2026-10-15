@@ -22,6 +22,8 @@ export function creditsMatch(detail: Pick<MediaDetail, "directors" | "cast">, ev
   const directors = new Set(evidence.directors.map(normalizedName).filter(Boolean));
   const actors = new Set(evidence.actors.map(normalizedName).filter(Boolean));
   const director = detail.directors.some(name => directors.has(normalizedName(name)));
-  const cast = new Set(detail.cast.map(actor => normalizedName(actor.name)).filter(name => actors.has(name))).size;
-  return director || cast >= 2;
+  const matched = detail.cast.filter(actor => actors.has(normalizedName(actor.name)));
+  const distinctNames = new Set(matched.map(actor => normalizedName(actor.name))).size;
+  const distinctPeople = new Set(matched.map(actor => actor.id)).size;
+  return director || distinctNames >= 2 && distinctPeople >= 2;
 }

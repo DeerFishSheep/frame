@@ -326,7 +326,7 @@ npm run start
 - **控制与选项**：`lib/douban/options.json` 保存参考模块12.5.0的8片单与298类型榜ID，及推荐筛选选项。`query.ts` 统一枚举、媒介隔离、页码、URL与上游请求构造。类型榜为分类→具体榜单；片单由LISTS-01迁至独立目录与详情，支持预设与输入链接；UI-28将可用推荐条件直接展开为标签，不再折叠或使用下拉框。
 - **数据获取**：`/api/douban` → server → service → client。只请求固定的m.douban.com/rexxar/api/v2路径，超时12秒、不跟随重定向；10分钟缓存、同请求合并、最多120页缓存、24小时内失败回退并标注旧时间。分页20条，最高500页；超限会显示范围，未知总数只显示已加载，不编造总数。
 - **身份与原始数据**：豆列条目id不是作品id，优先target_id／subject URL／uri。normalize保留豆瓣评分、票数、排名、中文名和类型；非影视与重复主体跳过，仍按上游start推进。未匹配使用douban:<id>，匹配后用TMDB详情ID；mediaKey始终优先doubanId，避免分季对应同一TMDB剧集导致卡片丢失。收藏允许两类身份并保存doubanId。
-- **资料匹配**：四个并发进行可靠匹配；UI-25使用createDoubanMatcher，唯一片名／原名＋年份先匹配，同名同年再由导演或至少两名演员唯一核实，证据仍不足时不猜测。原始评分不会被TMDB值覆盖；匹配失败仍保留豆瓣海报与原站链接。日期只使用真实完整日期或明确年份＋月日，不能按年份补1月1日。
+- **资料匹配**：四个并发进行可靠匹配；UI-25使用createDoubanMatcher，唯一片名／原名＋年份先匹配。MATCH-01在电影严格匹配未果时核对带年份搜索返回的相邻一年同名候选；导演一致或至少两名不同演员一致，且唯一通过才关联。电视剧仍严格同年。原始评分不会被TMDB值覆盖；未匹配保留豆瓣海报和原站链接。日期只使用真实完整日期或明确年份＋月日，不能按年份补1月1日。
 - **图片与图标**：可靠匹配优先使用TMDB图片，保留原始备用图片；UI-25将固定doubanio照片域名通过本站图片接口加载，浏览器不发送页面Referer，服务端使用固定豆瓣Referer。豆瓣本地SVG来自Simple Icons，来源见PLATFORM_ICONS.md。关于页、卡片评分、外链与页脚来源同步支持豆瓣。
 - **真实验证**：主要模块分支、8内置片单、Top250末页、剧集／综艺口碑、推荐详细筛选及快捷分类均200；所有298类型榜只做了路由与选项静态回归，没有声称逐一远端验收。浏览器自定义subject_collection链接打开成功，自动20→40且40个唯一键，收藏刷新保留后撤销测试收藏；320px三列、选择器无溢出，切换IMDB再回豆瓣恢复喜剧类型榜且起点top=0.18。
 - **自动检查**：新增18项 `tests/douban.test.ts` 覆盖完整选项矩阵、参数／链接边界、混合条目、ID、日期、评分与匹配、缓存旧数据、收藏和4并发上限；全量146 / 146与类型检查通过。
@@ -385,7 +385,7 @@ npm run start
 
 ## UI-28 豆瓣标签筛选与入口精简
 
-- `lib/douban/filter-options.ts` 的 `doubanFilterRows` 按当前榜单／媒介／分类给出可用行，单选项不显示；`selectDoubanFilter` 严格验证当前行及选项，换group重置collection、分类切换清除不支持字段，保留其他有效条件并回到page1。
+- `lib/douban/filter-options.ts` 的 `doubanFilterRows` 按当前榜单／媒介／分类给出可用行；UI-30使具体榜单即使只有一项也显示，其他单选项仍隐藏。`selectDoubanFilter` 严格验证当前行及选项，换group重置collection、分类切换清除不支持字段，保留其他有效条件并回到page1。
 - `DoubanWorkspace` 删除select/details和独立排序槽，复用找片的discover-filter-row／quick-options／filter-chip，排序在区域末尾。保留prepare+router.replace(scroll:false)、ProviderCatalog共享骨架与分页；重复选当前值不请求，非默认时可重置。
 - `visibleDoubanCharts` 只控制站点显示，排除realtime和已独立的lists；原API枚举和请求映射保留。TV默认weekly；`isHiddenDoubanHref`阻止导航恢复隐藏榜，`app/page.tsx`将旧realtime链接转到电影popular／剧集weekly，避免停在无入口的分类。
 - `FrameShell.navigation` 中片单前移至找片之前。样式集中在 `.catalog-filters.douban-controls`，与现有标签样式共用，不添加平台专属下拉。
@@ -431,3 +431,23 @@ time确实改变顺序，但响应无完整上映日期，本轮未确认其内�
 - **联调**：本地APIweekly10、Top250首20／总250／第13页10、剧情类型20、全球TV口碑10、漫威片单140／封面3均200。三个报告榜单页面已恢复；全部298榜仅请求构造回归，未声称逐一真实联调。
 
 - **最终页面与交付**：用户报告的剧情类型榜实测20卡、一周口碑10卡、Top250首20自动续页到40卡，错误空态消失且控制台无错误。截图：artifacts/previews/frame-douban-boards-restored.png。工作树与独立暂存快照203 / 203、类型检查、webpack生产编译通过；依赖符号链接仍有standalone追踪边界提示，未测试独立生产包启动／服务器。未重启开发服务，原有用户修改保留。
+
+
+## UI-30／MATCH-01 豆瓣标签与电影跨年匹配
+
+- `query.ts.visibleDoubanCharts`：电影顺序为选电影／一周口碑／影院热映／类型榜单／TOP 250；电视剧为选电视剧／一周口碑／类型榜单。只调整展示顺序／名称，保留请求映射、Referer、原榜名称、URL与分页。
+- `filter-options.ts.doubanFilterRows`：具体榜单行即使只有一个也显示，标签仅移除末尾重复的当前类型＋片＋榜，保留“榜”；短片与TV分类单独适配，不修改options.json中的原名和ID。电影口碑仍无单项筛选行。
+- `ProviderCatalogResults` 移除说明性notice渲染，包含旧缓存的匹配说明；真正错误／重试及缓存状态保持。
+- **真实原因**：豆瓣26580232的《看不见的客人》是2016年，原名Contratiempo；TMDB中文名和原名的2016年限定搜索均已返回411088，但该条主上映日期2017-01-06，旧exactMediaCandidates将其剔除。原始豆瓣subject未提供IMDB编号。导演奥里奥尔·保罗和8名演员一致，2026年同名翻拍1058588不应匹配。
+- `createDoubanMatcher`：保留同年唯一快速路径；失败时只从现有带年份搜索结果中，筛出电影同名／同原名且相差不超过1年的候选。每个必须读取详情并核对导演或至少2名不同演员，唯一通过才接受；详情ID／媒介必须一致，候选超过4个则拒绝。TV不放宽年份，不新增无年份搜索或网页抓取。
+- `creditsMatch` 同时检查不同演员姓名与不同演员ID，避免一人的多个别名被当成两位证据。不修改共享搜索结果数组。最多2次搜索、1次豆瓣subject、4次详情；原成功1小时／未匹配5分钟缓存和请求合并保留，异常不缓存。
+- **页面与接口**：真实/api/douban结果关联411088、imdbId tt4857264、完整日期2017-01-06；保留豆瓣year2016和8.8分。真实卡片点击进入带source=douban&doubanId=26580232的本站详情，显示豆瓣8.8／1463288人。返回榜单成功；剧情显示单个“高分经典榜”，喜剧22个短标签和TV对应顺序通过。320／390／1440px无页面或筛选横向溢出，手机仍3列。
+- **回归**：新增tests/douban-labels.test.ts的4项展示／保留错误测试、tests/douban-matcher.test.ts的12项匹配与缓存边界测试；现有筛选回归更新。未宣称所有未匹配影片都已解决。截图在artifacts/previews/frame-douban-labels-refined.png和frame-invisible-guest-matched.png。
+
+## UI-31 IMDB热门电影排序入口合并
+
+- `lib/imdb/query.ts.imdbSortOptions` 只对热门电影返回人气优先／IMDB评分／评分数量，`ImdbWorkspace`使用这一展示列表。Top250与剧集排序保持原样。
+- 解析和序列化统一把热门电影旧rank映射为popularity；省略sort也使用人气优先。兼容旧链接和历史条件，保留页码。实际请求为POPULARITY ASC，评分与人数排序仍由上游完成。
+- `tests/imdb.test.ts`新增旧链接／分页／请求方向／其他榜单不变的回归。
+
+- **最终验证**：IMDB原rank与popularity各100条真实ID顺序逐项完全一致；浏览器旧rank链接显示人气优先选中、共3项排序，Top250仍4项。工作树及独立暂存快照220 / 220、类型检查与webpack生产编译通过。依赖符号链接有standalone追踪边界提示，未据此声明生产包独立运行或服务器验收。IMDB截图：artifacts/previews/frame-imdb-popular-sort.png；本地开发持续运行，未发布。

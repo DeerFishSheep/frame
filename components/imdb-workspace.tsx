@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import type { CatalogResponse } from "@/lib/types";
-import { IMDB_SORTS, imdbChart, imdbParams, parseImdbFilters, type ImdbFilters } from "@/lib/imdb/query";
+import { imdbSortOptions, imdbChart, imdbParams, parseImdbFilters, type ImdbFilters } from "@/lib/imdb/query";
 import { ProviderCatalog } from "./provider-catalog";
 
 export function ImdbWorkspace() {
@@ -17,7 +17,7 @@ export function ImdbWorkspace() {
   return <ProviderCatalog source="imdb" queryKey={imdbParams(filters).toString()} page={filters.page} title={chart.label} ranked={filters.sort === "rank"} originalUrl={chart.url}
     error={parsed.error} onReset={() => change({ media: "movie", chart: "top", sort: "rank" })} loadPage={(page, signal) => fetchPage({ ...filters, page }, signal)}
     charts={(["popular", "top"] as const).map(value => ({ id: value, label: imdbChart({ ...filters, chart: value }).label, selected: filters.chart === value, onSelect: () => change({ chart: value }) }))}
-    sort={IMDB_SORTS.map(option => <button key={option.value} className={`filter-chip ${filters.sort === option.value ? "active" : ""}`} aria-pressed={filters.sort === option.value} onClick={() => change({ sort: option.value })}>{option.label}</button>)}/>;
+    sort={imdbSortOptions(filters).map(option => <button key={option.value} className={`filter-chip ${filters.sort === option.value ? "active" : ""}`} aria-pressed={filters.sort === option.value} onClick={() => change({ sort: option.value })}>{option.label}</button>)}/>;
 }
 
 async function fetchPage(filters: ImdbFilters, signal: AbortSignal): Promise<CatalogResponse> {

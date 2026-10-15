@@ -11,8 +11,8 @@ export interface DoubanFilterRow {
 export function doubanFilterRows(filters: DoubanFilters): DoubanFilterRow[] {
   const { media, chart } = filters;
   const rows: DoubanFilterRow[] = [];
-  const add = (key: keyof DoubanFilters, label: string, options: DoubanFilterRow["options"]) => {
-    if (options.length > 1) rows.push({ key, label, options });
+  const add = (key: keyof DoubanFilters, label: string, options: DoubanFilterRow["options"], includeSingle = false) => {
+    if (options.length > (includeSingle ? 0 : 1)) rows.push({ key, label, options });
   };
   if (chart === "popular") {
     add("area", "地区", DOUBAN_OPTIONS.popular.area);
@@ -22,7 +22,11 @@ export function doubanFilterRows(filters: DoubanFilters): DoubanFilterRow[] {
   } else if (chart === "genres") {
     const groups = DOUBAN_OPTIONS.genres[media];
     add("group", media === "movie" ? "电影类型" : "剧集分类", groups);
-    add("collection", "具体榜单", groups.find(group => group.value === filters.group)?.boards ?? []);
+    const suffix = `${media === "movie" && !filters.group.endsWith("片") ? `${filters.group}片` : filters.group}榜`;
+    const boards = (groups.find(group => group.value === filters.group)?.boards ?? []).map(board => ({
+      ...board, title: board.title.endsWith(suffix) ? `${board.title.slice(0, -suffix.length)}榜` : board.title,
+    }));
+    add("collection", "具体榜单", boards, true);
   } else if (chart === "recommend") {
     const choices = DOUBAN_OPTIONS.recommend[media];
     add("category", "推荐分类", choices.category);
