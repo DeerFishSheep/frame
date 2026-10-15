@@ -91,7 +91,7 @@ test("filtering the snapshot preserves source order and yields complete distinct
 });
 
 test("stored channel subsets discard retired others without silently replacing it with Guangya", () => {
-  assert.deepEqual(normalizeResourceChannels(["others", "115", "quark", "115"]), ["quark", "115"]);
+  assert.deepEqual(normalizeResourceChannels(["others", "115", "quark", "115"]), ["115", "quark"]);
   assert.deepEqual(normalizeResourceChannels(["guangya", "quark"]), ["quark", "guangya"]);
   assert.deepEqual(normalizeResourceChannels(["115", "bad-channel", 115]), ["115"]);
 });

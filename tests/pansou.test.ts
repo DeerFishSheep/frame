@@ -13,8 +13,7 @@ const client = (payload: unknown) => createPansouClient({ baseUrl: "http://searc
 test("search validation accepts all thirteen supported channels and normalizes duplicates without mutating input", () => {
   const all = RESOURCE_CHANNELS.map(channel => channel.id);
   assert.equal(new Set(all).size, 13);
-  assert.deepEqual(new Set(all), new Set(["baidu", "aliyun", "quark", "guangya", "tianyi", "uc", "mobile", "115", "pikpak", "xunlei", "123", "magnet", "ed2k"]));
-  assert.equal(all[all.indexOf("quark") + 1], "guangya");
+  assert.deepEqual(all, ["115", "aliyun", "quark", "baidu", "123", "xunlei", "guangya", "uc", "tianyi", "mobile", "pikpak", "magnet", "ed2k"]);
   const input = { keyword: "  公共资料  ", channels: [...all].reverse().concat("115", "quark") };
   const before = structuredClone(input);
   assert.deepEqual(validateResourceSearch(input), { keyword: "公共资料", channels: all });
@@ -40,7 +39,7 @@ test("upstream address comes only from server configuration and request values c
     assert.equal(url.origin, "http://search.example.test:23456");
     assert.equal(url.pathname, "/api/search");
     assert.equal(url.searchParams.get("kw"), "公共资料 & 2026");
-    assert.equal(url.searchParams.get("cloud_types"), "quark,115");
+    assert.equal(url.searchParams.get("cloud_types"), "115,quark");
     assert.equal(url.searchParams.get("conc"), "4");
     assert.equal(url.searchParams.get("res"), "merge");
     assert.equal(url.searchParams.has("refresh"), false);
