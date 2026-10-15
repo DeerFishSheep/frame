@@ -8,6 +8,7 @@ export interface TvSeasonEvidence extends Pick<MediaDetail, "directors" | "cast"
   seasonNumber: number;
   airDate: string;
   episodeCount?: number;
+  aliases?: string[];
   posterPath: string | null;
   overview: string;
   imdbId: string | null;
@@ -36,7 +37,7 @@ export function createTmdbSeasonMatcher(client: Pick<ReturnType<typeof createTmd
   async function seasonEvidence(id: number, seasonNumber: number): Promise<TvSeasonEvidence | null> {
     if (!Number.isSafeInteger(id) || id < 1 || !Number.isSafeInteger(seasonNumber) || seasonNumber < 1 || seasonNumber > 99) return null;
     const seasonKey = `season/${seasonNumber}`;
-    const response = await client.request<unknown>(`/tv/${id}`, new URLSearchParams({ language: "zh-CN", append_to_response: `${seasonKey},${seasonKey}/credits,external_ids` }));
+    const response = await client.request<unknown>(`/tv/${id}`, new URLSearchParams({ language: "zh-CN", append_to_response: `${seasonKey},${seasonKey}/credits,external_ids,alternative_titles` }));
     const raw = object(response.data), season = object(raw[seasonKey]);
     const summary = list(raw.seasons).map(object).filter(item => item.season_number === seasonNumber);
     const airDate = text(season.air_date);
@@ -54,8 +55,11 @@ export function createTmdbSeasonMatcher(client: Pick<ReturnType<typeof createTmd
       }));
     });
     const directors = list(credits.crew).map(object).filter(person => person.job === "Director").flatMap(person => [text(person.name), text(person.original_name)].filter(Boolean));
+    const alternativeTitles = object(raw.alternative_titles);
+    const aliases = Array.isArray(alternativeTitles.results) && (alternativeTitles.id === undefined || alternativeTitles.id === id)
+      ? [...new Set(alternativeTitles.results.map(value => text(object(value).title)).filter(Boolean))] : [];
     const poster = text(season.poster_path), imdb = text(object(raw.external_ids).imdb_id);
-    return { seriesId: id, seasonNumber, airDate, directors, cast,
+    return { seriesId: id, seasonNumber, airDate, directors, cast, aliases,
       ...(Number.isSafeInteger(summary[0].episode_count) && Number(summary[0].episode_count) > 0 ? { episodeCount: Number(summary[0].episode_count) } : {}),
       posterPath: /^\/[a-zA-Z0-9_.-]+$/.test(poster) ? poster : null,
       overview: text(season.overview), imdbId: /^tt\d{5,12}$/.test(imdb) ? imdb : null };

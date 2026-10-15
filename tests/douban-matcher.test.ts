@@ -205,7 +205,7 @@ test("wrong series, season number, invalid air date or mismatched season year ca
     let inspected = 0;
     const match = seasonMatcher({ seasonCandidates: async () => [wrong], seasonEvidence: async () => { inspected++; return season; } });
     assert.equal(await match(seasonSource), null);
-    assert.equal(inspected, 0);
+    assert.equal(inspected, wrong.id === 123 ? 1 : 0, "a plausible alternate title may need one official-alias lookup; wrong-year/type candidates do not");
   }
 });
 

@@ -39,13 +39,17 @@ export function createDoubanMatcher(dependencies: {
     const sourceDates = seasonSourceDates(raw);
     const wantedOriginal = original ? normalizedName(searchTitle(original, "tv")) : "";
     const names = new Set([item.title, original].filter(Boolean).map(name => normalizedName(searchTitle(name, "tv"))));
-    const filter = (items: Media[]) => items.filter(candidate => candidate.mediaType === "tv" && typeof candidate.id === "number" && Number.isSafeInteger(candidate.id) && candidate.id > 0
-      && /^\d{4}$/.test(candidate.year) && Number(candidate.year) <= Number(item.year)
-      && [candidate.title, candidate.originalTitle].some(name => names.has(normalizedName(name))));
-    let candidates = filter(await dependencies.seasonCandidates(item.title));
+    const plausible = (items: Media[]) => items.filter(candidate => candidate.mediaType === "tv" && typeof candidate.id === "number" && Number.isSafeInteger(candidate.id) && candidate.id > 0
+      && /^\d{4}$/.test(candidate.year) && Number(candidate.year) <= Number(item.year));
+    const exact = (items: Media[]) => items.filter(candidate => [candidate.title, candidate.originalTitle].some(name => names.has(normalizedName(name))));
+    const pool = plausible(await dependencies.seasonCandidates(item.title));
+    let candidates = exact(pool);
     if (!candidates.length && original && normalizedName(searchTitle(original, "tv")) !== normalizedName(searchTitle(item.title, "tv"))) {
-      candidates = filter(await dependencies.seasonCandidates(original));
+      pool.push(...plausible(await dependencies.seasonCandidates(original)));
+      candidates = exact(pool);
     }
+    const needsOfficialAlias = candidates.length === 0;
+    if (needsOfficialAlias) candidates = pool;
     candidates = [...new Map(candidates.map(candidate => [candidate.id, candidate])).values()];
     if (!candidates.length || candidates.length > 4) return null;
     const verified: Media[] = [];
@@ -53,6 +57,7 @@ export function createDoubanMatcher(dependencies: {
       const season = await dependencies.seasonEvidence(Number(candidate.id), seasonNumber);
       if (!season || season.seriesId !== candidate.id || season.seasonNumber !== seasonNumber
         || !validSeasonDate(season.airDate) || season.airDate.slice(0, 4) !== item.year) continue;
+      if (needsOfficialAlias && !season.aliases?.some(alias => names.has(normalizedName(alias)))) continue;
       // Identify works from names and season evidence; provider episode totals and region coverage vary.
       const metadataConfirmed = candidates.length === 1 && !!wantedOriginal && normalizedName(candidate.originalTitle) === wantedOriginal
         && (!sourceDates.size || sourceDates.has(season.airDate));

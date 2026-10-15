@@ -57,7 +57,7 @@ test("season evidence uses appended season credits and never substitutes whole-s
   assert.ok(!evidence.directors.includes("仅整剧导演"));
   const url = new URL(requestUrl);
   assert.equal(url.pathname, "/3/tv/298931");
-  assert.deepEqual(new Set(url.searchParams.get("append_to_response")?.split(",")), new Set(["season/2", "season/2/credits", "external_ids"]));
+  assert.deepEqual(new Set(url.searchParams.get("append_to_response")?.split(",")), new Set(["season/2", "season/2/credits", "external_ids", "alternative_titles"]));
   const omittedIds = seasonPayload();
   delete (omittedIds["season/2"] as Partial<typeof omittedIds["season/2"]>).id;
   delete (omittedIds["season/2/credits"] as Partial<typeof omittedIds["season/2/credits"]>).id;
