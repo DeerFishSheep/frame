@@ -37,7 +37,8 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
   const suppressSwipeClick = useRef(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const item = items[index];
-  const detailLink = { href: mediaHref(item), target: typeof item.id === "string" ? "_blank" : undefined, rel: typeof item.id === "string" ? "noopener noreferrer" : undefined };
+  const href = mediaHref(item), external = /^https?:\/\//.test(href);
+  const detailLink = { href, target: external ? "_blank" : undefined, rel: external ? "noopener noreferrer" : undefined };
   const saved = isFavorite(item);
   const { label: region, countryCodes } = useMediaRegions(item);
   const running = !pending && !reducedMotion && visible && !hovered && !focused && items.length > 1;
@@ -138,7 +139,7 @@ function FeaturedCarousel({ items, label, pending, stateKey }: { items: Media[];
         <div className="featured-meta" data-skeleton="line"><span>{item.mediaType === "tv" ? "电视剧" : "电影"}</span><time dateTime={item.releaseDate || undefined}>{formatMediaDate(item.releaseDate)}</time><span className="featured-genres">{[region, item.genres.join(" / ") || "类型待补充"].filter(Boolean).join(" · ")}</span></div>
         <p data-skeleton="text">{item.overview || "点击查看作品资料。"}</p>
         <div className="featured-actions" data-skeleton="block">
-          <Link className="primary-button" {...detailLink}>{typeof item.id === "string" ? `在 ${sourceLabel(item.source)} 查看` : "查看详情"}<ArrowRight size={16}/></Link>
+          <Link className="primary-button" {...detailLink}>{external ? `在 ${sourceLabel(item.source)} 查看` : "查看详情"}<ArrowRight size={16}/></Link>
           <button className="featured-save" onClick={() => toggle({ ...item, countryCodes })} aria-pressed={saved}><Bookmark size={17} fill={saved ? "currentColor" : "none"}/>{saved ? "已收藏" : "收藏"}</button>
         </div>
       </div>

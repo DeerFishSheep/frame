@@ -56,6 +56,7 @@ export function enrichDoubanMedia(item: Media, match: Media | null): Media {
   const seasonNumber = item.mediaType === "tv" && match.mediaType === "tv" && Number.isSafeInteger(match.seasonNumber)
     && Number(match.seasonNumber) >= 1 && Number(match.seasonNumber) <= 99 ? match.seasonNumber : undefined;
   return { ...item, id: match.id, imdbId: match.imdbId,
+    ...(match.sourceSeasonNumber ? { sourceSeasonNumber: match.sourceSeasonNumber } : {}),
     ...(seasonNumber !== undefined ? { seasonNumber } : {}),
     originalTitle: item.originalTitle || match.originalTitle,
     overview: match.overview || item.overview, releaseDate: item.releaseDate || match.releaseDate,

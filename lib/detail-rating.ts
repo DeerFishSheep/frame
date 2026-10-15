@@ -1,4 +1,4 @@
-import { validSeasonNumber, type Media, type MediaDetail } from "./types";
+import { validSeasonNumber, type Media } from "./types";
 
 export type RatingSource = "tmdb" | "imdb" | "douban";
 export interface RatingContext { source: RatingSource; doubanId?: string; seasonNumber?: number }
@@ -18,7 +18,7 @@ export function validRating(score: unknown, count: unknown): boolean {
   return typeof score === "number" && Number.isFinite(score) && score > 0 && score <= 10 && Number.isSafeInteger(count) && Number(count) > 0;
 }
 /** Saving a detail retains the rating's real provider, without changing its TMDB identity. */
-export function detailFavorite(item: MediaDetail, rating: DetailRating, context: RatingContext): MediaDetail {
+export function detailFavorite<T extends Media>(item: T, rating: DetailRating, context: RatingContext): T {
   if (item.source === "demo") return item;
   return { ...item, source: rating.source, detailSource: context.source, voteAverage: rating.voteAverage, voteCount: rating.voteCount,
     ...(context.source === "douban" && context.doubanId ? { detailDoubanId: context.doubanId } : {}),

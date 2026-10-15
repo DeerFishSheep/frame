@@ -27,7 +27,7 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
   const number = cardNumber(item, showRank, resultIndex);
   const date = formatMediaDate(item.releaseDate);
   const genres = [...new Set(item.genres)];
-  const href = mediaHref(item), external = typeof item.id === "string";
+  const href = mediaHref(item), external = /^https?:\/\//.test(href);
   const ratingLabel = sourceLabel(item.source);
   return <article className="media-card" data-scroll-anchor={`media:${mediaKey(item)}`}>
     <div className="poster-wrap" data-skeleton="block">

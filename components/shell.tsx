@@ -33,8 +33,9 @@ export function FrameShell({ children }: { children: ReactNode }) {
   const searchInput = useRef<HTMLInputElement>(null);
   const currentQuery = params.get("query") || "";
   const paramString = params.toString(), location = `${pathname}?${paramString}`;
+  const doubanDetailMode = /^\/douban\/(?:movie|tv)\//.test(pathname);
   const collectionMode = pathname.startsWith("/lists") || pathname === "/favorites" && params.get("section") === "lists";
-  const source = collectionMode ? "douban" : pathname === "/" ? catalogDataSource(new URLSearchParams(params)) : "tmdb";
+  const source = collectionMode || doubanDetailMode ? "douban" : pathname === "/" ? catalogDataSource(new URLSearchParams(params)) : "tmdb";
   const providerMode = source !== "tmdb", providerLabel = sourceLabel(source);
   const mediaNavigation = (item: typeof navigation[number]) => {
     if (item.id !== "movie" && item.id !== "tv") return item.href;
@@ -44,8 +45,8 @@ export function FrameShell({ children }: { children: ReactNode }) {
   const active = pathname === "/favorites" ? "favorites"
     : pathname === "/lists" || pathname.startsWith("/lists/") ? "lists"
     : pathname === "/discover" ? "discover"
-    : pathname.startsWith("/movie/") ? "movie"
-    : pathname.startsWith("/tv/") ? "tv"
+    : pathname.startsWith("/movie/") || pathname.startsWith("/douban/movie/") ? "movie"
+    : pathname.startsWith("/tv/") || pathname.startsWith("/douban/tv/") ? "tv"
     : pathname === "/" ? params.get("media") === "tv" ? "tv" : "movie" : "";
 
   useEffect(() => setQuery(currentQuery), [currentQuery, pathname]);
@@ -112,8 +113,8 @@ export function FrameShell({ children }: { children: ReactNode }) {
         <Dialog.Content className="info-dialog">
           <Dialog.Close className="dialog-close icon-button" aria-label="关闭数据说明"><X size={19}/></Dialog.Close>
           <Dialog.Title>数据来源</Dialog.Title>
-          <Dialog.Description>{providerMode ? `当前榜单、评分和评分数量来自${providerLabel}；本站详情由可靠匹配的 TMDB 资料补充。` : preview ? "当前展示固定的预览影片，不代表今日榜单。" : "影视资料和榜单来自 TMDB，按接口返回顺序展示。"}</Dialog.Description>
-          <p className="source-instruction">{providerMode ? `榜单按来源顺序展示，评分保留${providerLabel}原始数据；暂未匹配本站详情的作品仍可在原站查看。` : configured ? "已配置 TMDB，可以切换真实数据与预览影片。" : "TMDB 真实榜单尚未启用。预览可以体验选片、详情和收藏。"}</p>
+          <Dialog.Description>{doubanDetailMode ? "当前作品由豆瓣资料展示，可靠匹配后补充 TMDB 信息；评分标明实际来源。" : providerMode ? `当前榜单、评分和评分数量来自${providerLabel}；本站详情由可靠匹配的 TMDB 资料补充。` : preview ? "当前展示固定的预览影片，不代表今日榜单。" : "影视资料和榜单来自 TMDB，按接口返回顺序展示。"}</Dialog.Description>
+          {!doubanDetailMode && <p className="source-instruction">{providerMode ? `榜单按来源顺序展示，评分保留${providerLabel}原始数据。` : configured ? "已配置 TMDB，可以切换真实数据与预览影片。" : "TMDB 真实榜单尚未启用。预览可以体验选片、详情和收藏。"}</p>}
           {!providerMode && !configured && <details className="connection-help"><summary>本地数据接入说明</summary><p>在本地 .env.local 中配置 <code>TMDB_API_KEY</code> 或 <code>TMDB_API_READ_ACCESS_TOKEN</code>，重启应用后即可联调。</p></details>}
           {!providerMode && <button className="primary-button full-width" onClick={() => { setPreview(!preview); setSourceOpen(false); }}>{preview ? "切换真实数据" : "查看预览影片"}</button>}
           <Link className="text-link" href="/about" onClick={() => setSourceOpen(false)}>完整来源说明<ArrowUpRight size={14}/></Link>

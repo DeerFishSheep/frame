@@ -9,6 +9,8 @@ export interface Media {
   doubanId?: string;
   /** Verified season identity within a TMDB television series. */
   seasonNumber?: number;
+  /** Season label supplied by the original provider; it can differ from TMDB's numbering. */
+  sourceSeasonNumber?: number;
   mediaType: MediaType;
   title: string;
   originalTitle: string;
@@ -55,6 +57,9 @@ export interface MediaPage {
   totalResults: number;
 }
 
+/** Shared detail UI also supports a native provider entry without inventing a TMDB ID. */
+export type DisplayDetail = Omit<MediaDetail, "id"> & { id: number | string };
+
 export interface CatalogResponse extends MediaPage {
   retrievedAt: string | null;
   source: DataSource;
@@ -94,14 +99,17 @@ export const DEFAULT_FILTERS: CatalogFilters = {
 };
 
 export const validSeasonNumber = (value: unknown): value is number => typeof value === "number" && Number.isSafeInteger(value) && value >= 1 && value <= 99;
-export const mediaKey = (item: Pick<Media, "mediaType" | "id" | "doubanId" | "seasonNumber">) => {
+export const mediaKey = (item: Pick<Media, "mediaType" | "id" | "doubanId" | "seasonNumber" | "sourceSeasonNumber">) => {
   const identity = item.doubanId ? `douban:${item.doubanId}` : typeof item.id === "string" ? `imdb:${item.id}` : `${item.mediaType}:${item.id}`;
-  return item.mediaType === "tv" && validSeasonNumber(item.seasonNumber) ? `${identity}:season:${item.seasonNumber}` : identity;
+  const season = item.doubanId ? item.sourceSeasonNumber ?? item.seasonNumber : item.seasonNumber;
+  return item.mediaType === "tv" && validSeasonNumber(season) ? `${identity}:season:${season}` : identity;
 };
 export function mediaHref(item: Pick<Media, "mediaType" | "id"> & Partial<Pick<Media, "source" | "detailSource" | "detailDoubanId" | "doubanId" | "seasonNumber">>) {
-  if (typeof item.id === "string") return /^tt\d{5,12}$/.test(item.id) ? `https://www.imdb.com/title/${item.id}/` : /^douban:[1-9]\d{0,11}$/.test(item.id) ? `https://movie.douban.com/subject/${item.id.slice(7)}/` : "/";
   const path = `/${item.mediaType}/${item.id}`, source = item.detailSource ?? item.source;
   const doubanId = item.detailDoubanId ?? item.doubanId;
+  const nativeId = typeof item.id === "string" && /^douban:[1-9]\d{0,11}$/.test(item.id) ? item.id.slice(7) : doubanId;
+  if ((source === "douban" || typeof item.id === "string" && item.id.startsWith("douban:")) && nativeId && /^[1-9]\d{0,11}$/.test(nativeId)) return `/douban/${item.mediaType}/${nativeId}`;
+  if (typeof item.id === "string") return /^tt\d{5,12}$/.test(item.id) ? `https://www.imdb.com/title/${item.id}/` : "/";
   const params = new URLSearchParams();
   if (source === "imdb" || source === "douban") params.set("source", source);
   if (source === "douban" && doubanId && /^[1-9]\d{0,11}$/.test(doubanId)) params.set("doubanId", doubanId);
