@@ -13,7 +13,8 @@ const client = (payload: unknown) => createPansouClient({ baseUrl: "http://searc
 test("search validation accepts all thirteen supported channels and normalizes duplicates without mutating input", () => {
   const all = RESOURCE_CHANNELS.map(channel => channel.id);
   assert.equal(new Set(all).size, 13);
-  assert.deepEqual(new Set(all), new Set(["baidu", "aliyun", "quark", "tianyi", "uc", "mobile", "115", "pikpak", "xunlei", "123", "magnet", "ed2k", "others"]));
+  assert.deepEqual(new Set(all), new Set(["baidu", "aliyun", "quark", "guangya", "tianyi", "uc", "mobile", "115", "pikpak", "xunlei", "123", "magnet", "ed2k"]));
+  assert.equal(all[all.indexOf("quark") + 1], "guangya");
   const input = { keyword: "  公共资料  ", channels: [...all].reverse().concat("115", "quark") };
   const before = structuredClone(input);
   assert.deepEqual(validateResourceSearch(input), { keyword: "公共资料", channels: all });
@@ -76,6 +77,23 @@ test("both native and wrapped merged responses normalize fields and keep only th
     assert.ok(result.items[0].id);
     assert.ok(Number.isFinite(Date.parse(result.retrievedAt)));
   }
+});
+
+test("Guangya is requested as its own channel and legacy others resources are never relabelled as Guangya", async () => {
+  assert.throws(() => validateResourceSearch({ keyword: query.keyword, channels: ["others"] }), errorCode("INVALID_QUERY", 400));
+  const api = createPansouClient({ baseUrl: "https://search.example.test", fetchImpl: async input => {
+    assert.equal(new URL(String(input)).searchParams.get("cloud_types"), "quark,guangya");
+    return json({ code: 0, data: { merged_by_type: {
+      guangya: [entry("https://guangya.example.test/public")],
+      others: [entry("https://unknown.example.test/public")],
+    } } });
+  } });
+  const result = await api.search({ keyword: query.keyword, channels: ["guangya", "quark"] });
+  assert.equal(result.total, 1);
+  assert.equal(result.items[0].channel, "guangya");
+  assert.equal(result.items[0].url, "https://guangya.example.test/public");
+  const onlyLegacy = await client({ merged_by_type: { others: [entry("https://unknown.example.test/public")] } }).search({ keyword: query.keyword, channels: ["guangya"] });
+  assert.deepEqual(onlyLegacy.items, []);
 });
 
 test("a successful empty merge stays an honest empty result", async () => {

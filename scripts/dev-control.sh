@@ -7,6 +7,7 @@ cd -- "$project_dir" || exit 1
 port=3000
 url="http://localhost:$port"
 log_file="$project_dir/.tmp/dev.log"
+wrapper_file="$project_dir/.tmp/dev-wrapper.pid"
 
 listeners() {
   /usr/sbin/lsof -nP -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u
@@ -30,12 +31,41 @@ dev_parent() {
   case "$command" in *"/next dev"*) printf '%s\n' "$parent" ;; *) return 1 ;; esac
 }
 
+# The PID file is only a hint: validate executable, command and exact working directory.
+is_dev_wrapper() {
+  local pid="$1" command executable
+  [[ "$pid" =~ ^[0-9]+$ ]] && [ "$pid" -gt 1 ] || return 1
+  [ "$(process_cwd "$pid")" = "$project_dir" ] || return 1
+  executable="$(/bin/ps -p "$pid" -o comm=)"
+  [ "${executable##*/}" = "node" ] || return 1
+  command="$(/bin/ps -p "$pid" -o command=)"
+  case "$command" in
+    *"node scripts/dev.mjs"|*"node scripts/dev.mjs "*|*"node $project_dir/scripts/dev.mjs"|*"node $project_dir/scripts/dev.mjs "*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+wrapper_pid() {
+  local pid
+  [ -r "$wrapper_file" ] || return 1
+  IFS= read -r pid < "$wrapper_file" || return 1
+  is_dev_wrapper "$pid" || return 1
+  printf '%s\n' "$pid"
+}
+
+dev_controller() {
+  local parent wrapper
+  parent="$(dev_parent "$1")" || return 1
+  wrapper="$(/bin/ps -p "$parent" -o ppid= | tr -d ' ')"
+  if is_dev_wrapper "$wrapper"; then printf '%s\n' "$wrapper"; else printf '%s\n' "$parent"; fi
+}
+
 ready() {
   [ "$(/usr/bin/curl --noproxy '*' -s -o /dev/null -w '%{http_code}' --max-time 2 "$url/")" = 200 ]
 }
 
 start_dev() {
-  local pid current launcher attempt
+  local pid current launcher attempt wrapper
   current="$(listeners)"
   if [ -n "$current" ]; then
     for pid in $current; do
@@ -49,6 +79,26 @@ start_dev() {
       return 0
     fi
     printf 'FRAME 进程已在运行，但页面暂未就绪。请查看：%s\n' "$log_file"
+    return 1
+  fi
+
+  # During a network restart the validated supervisor can be alive without a listener.
+  wrapper="$(wrapper_pid)" || wrapper=""
+  if [ -n "$wrapper" ]; then
+    printf 'FRAME 正在启动或更新局域网地址，等待现有进程就绪…\n'
+    for ((attempt=0; attempt<30; attempt++)); do
+      if ! is_dev_wrapper "$wrapper"; then
+        printf 'FRAME 启动进程已退出，请查看日志：%s\n' "$log_file"
+        return 1
+      fi
+      current="$(listeners)"
+      for pid in $current; do
+        dev_parent "$pid" >/dev/null || { printf '3000端口被其他服务占用，未修改或停止它。\n'; return 1; }
+      done
+      if [ -n "$current" ] && ready; then printf 'FRAME 已启动：%s\n' "$url"; return 0; fi
+      sleep 1
+    done
+    printf 'FRAME 仍在准备中，未重复启动。请查看日志：%s\n' "$log_file"
     return 1
   fi
 
@@ -102,9 +152,10 @@ NODE
 }
 
 stop_dev() {
-  local current pid parent attempt
+  local current pid parent attempt wrapper
   current="$(listeners)"
-  if [ -z "$current" ]; then
+  wrapper="$(wrapper_pid)" || wrapper=""
+  if [ -z "$current" ] && [ -z "$wrapper" ]; then
     printf 'FRAME 当前没有在3000端口运行。\n'
     return 0
   fi
@@ -115,12 +166,13 @@ stop_dev() {
       return 1
     }
   done
+  if [ -n "$wrapper" ]; then kill -TERM "$wrapper" 2>/dev/null || true; fi
   for pid in $current; do
-    parent="$(dev_parent "$pid")" || continue
+    parent="$(dev_controller "$pid")" || continue
     kill -TERM "$parent" 2>/dev/null || true
   done
   for ((attempt=0; attempt<30; attempt++)); do
-    if [ -z "$(listeners)" ]; then
+    if [ -z "$(listeners)" ] && ! wrapper_pid >/dev/null; then
       printf 'FRAME 已停止。\n'
       return 0
     fi

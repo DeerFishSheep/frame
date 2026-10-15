@@ -187,7 +187,7 @@ npm run start
 ## LOCAL-07 局域网开发访问
 
 - `npm run dev` 监听0.0.0.0；手机用Mac实际局域网IP访问。`next.config.ts` 的 `allowedDevOrigins` 调用 `lib/dev-origins.ts/getLocalDevOrigins`，启动时获取本机非回环、RFC1918私有IPv4地址，去重后按具体主机名放行。
-- 地址只接受本机接口记录，排除公网、无效、IPv6及通配符；不以手机的客户端IP或任意网段设置白名单。DHCP或Wi-Fi更换后重启即可重新获取。
+- 地址只接受本机接口记录，排除公网、无效、IPv6及通配符；不以手机的客户端IP或任意网段设置白名单。LOCAL-09由开发启动监视器在DHCP或Wi-Fi地址稳定变化后自动有序重启，重新获取具体地址。
 - Next.js 16.4的开发资源来源检查可造成HTML/API成功但JS脚本403，客户端无法启动后一直显示加载骨架。复检首页中实际script src，分别携带localhost、局域网IP和无关Origin：前两者应200，后者应403。
 - `tests/dev-origins.test.ts` 检查私有地址边界、重复、失效接口和地址更换。实体iPhone刷新另行确认，不能把Mac模拟Origin请求写成手机浏览器验收。
 
@@ -465,11 +465,35 @@ time确实改变顺序，但响应无完整上映日期，本轮未确认其内�
 ## RES-02／03 详情搜索窗口与结果
 
 - `components/detail-view.tsx`用ResourceSearchProvider包住已有详情，操作区放ResourceSearchButton，detail-content后、演员前放ResourceSearchResults。删除原TMDB/IMDB操作链接；评分来源与影片资料保持。
-- `components/resource-search.tsx`使用与SourcePicker相同的Radix窗口和共享视觉类：桌面420px浮层，手机底部面板。13类型默认全选、可清空／多选，关键词可编辑；偏好仅提交时写frame_resource_channels_v1。样式隔离在resource-search.module.css，没有改全局平台切换行为。
-- 请求与展示状态按mediaKey和关键词／渠道隔离，复用useAsyncResource与useViewState，离开时取消；加载仅遮罩结果区，保留尺寸，不自动跳顶。切片显示20条是已返回快照的客户端展开，不是上游分页。链接和元数据作为React文本渲染，长标题两行；搜索结果不标注虚构影片匹配率。
+- `components/resource-search.tsx`使用与SourcePicker相同的Radix窗口和共享视觉类：桌面420px浮层，手机底部面板。13类型默认全选、可清空／多选，关键词可编辑；偏好仅提交时写frame_resource_channels_v1，RES-04由normalizeResourceChannels迁移旧全选并剔除others。样式隔离在resource-search.module.css，没有改全局平台切换行为。
+- 请求与展示状态按mediaKey和关键词／渠道隔离，复用useAsyncResource与useViewState，离开时取消；加载仅遮罩结果区，保留尺寸，不自动跳顶。RES-04已替换为快照分页：>760px每页10条、两列5行；手机每页5条、单列5行。链接和元数据作为React文本渲染，长标题两行；搜索结果不标注虚构影片匹配率。
 - 真实验收：上游健康200；三渠道140条、本地200；全部13类型得到269条（当前8类有数据），夸克113、115为11。20→40展开、切渠道、清空禁用提交、刷新后115单选保留通过；快切查询y=546保持，换片25376无旧结果，返回411088恢复115筛选／结果。
 - 320／390／1440px无页面横向溢出，手机面板完整在视口内、桌面浮层未超边界；控制台无新增错误。截图：artifacts/previews/frame-resource-picker-mobile.png、frame-resource-picker-desktop.png、frame-resource-results-mobile.png。
 - 复制按钮已显示成功反馈；自动化虚拟剪贴板不能读取网页原生剪贴板，本轮不声称真实设备粘贴已验收。没有打开下载链接或验证分享有效期，合法空结果／错误／危险URL用合成样本测试。
 - 瞬断复现：一次快速改词后NETWORK_ERROR，原结果保留，手动重试恢复269。client增加仅网络错误一次重试，最多两次共享25秒总期限；取消、超时、HTTP、业务及格式错误不重试。tests/pansou.test.ts新增20项边界回归，工作树240 / 240及类型检查通过。
 
 - **最终验收**：最终工作树与独立暂存版本240 / 240、类型检查、webpack生产编译通过，新/api/resources/search已构建。依赖采用符号链接，有standalone文件追踪边界提示，未据此声明生产包独立启动或服务器验收。真实搜索最终269条、控制台无新增错误，临时视口恢复，开发服务保持；只做本地提交，未发布Github或部署。
+
+
+## RES-04 原始链接复制、分页与品牌图标
+
+- `resourceCopyText`只返回item.url，HTTP／磁力／电驴一致；原编码、参数、hash保持，绝不附加提取码或改写链接。原生粘贴仍受浏览器虚拟剪贴板限制，复制内容契约有合成样本回归。
+- `resourcePagination`切分一次完整快照，桌面10／手机5，最多5个页码；`resourcePageForSize`按旧页起始offset换算，缩放后仍包含原首条。ResourceSearchResults切渠道／提交回1，成功刷新缩水夹紧；本片页码继续由useViewState保留。
+- CSS结果网格桌面2列／手机1列，按实际行数收缩；早先为保位预留五行的min-height已按用户最新反馈撤销。真实115共11条，末页只有1条；手机对应第3页1条，无越界。复制通知统一“已复制链接”。
+- 渠道按用户截图的13项展示，guangya独立加入，others不作为选项／允许请求类型，不将其旧结果改标为光鸭。v2隔离旧结果和视图缓存；旧全选变新全选，旧子集仅保留合法值。上游README仍有others兼容说明，本站入口范围按此次用户要求。
+- `RESOURCE_CHANNELS.icon`指向public/icons/resource-channels下11品牌资产，见docs/reference/RESOURCE_CHANNEL_ICONS.md；磁力、电驴是协议图标。全部11图浏览器加载成功，320px面板无溢出。
+- 真实本地API仅guangya返回200／1条；新13渠道组合共268条，原others的2条不混入。390px每页5条、下一页无重复，1440px10条／2列／5行；手机第2页缩到桌面第1页仍包含原首条，115筛选回1与末页禁用通过。
+- 新增光鸭、8项分页／偏好和2项复制回归；工作树251项及类型检查通过。前端与资产分工、测试Agent独立复检；不执行远程部署。
+
+
+## LOCAL-09 换网络后局域网开发页面只剩框架
+
+- 根因：此前getLocalDevOrigins仅在Next启动取样。本次Mac从192.168.0.101换到192.168.8.59，运行进程仍允许旧IP；日志明确Blocked cross-origin /_next/hmr，新IP网页200但实际script403。不是TMDB没有数据，也不是本轮分页逻辑造成。
+- `scripts/dev.mjs`为npm run dev入口，转发原Next CLI及端口参数；`lib/dev-network-watch.mjs/createDevNetworkWatch`每2秒采样本机具体私有IPv4，稳定1.5秒后再次核对，向旧Next发TERM，等close才启动新Next。地址回退取消；变化为第三地址重新等稳定；读网卡失败不kill。没有通配放行，也没有更改Next安全默认值。
+- stop优先：普通正常退出、崩溃、spawn错误均结束监视器，不自动复活。`.tmp/dev-wrapper.pid`仅作提示，0600且exit仅清除自己的PID；dev-control.sh按cwd／node可执行／入口命令及Next父链验证，启动防重复，停止也覆盖网络重启无监听间隙，绝不强杀或只信PID。
+- 真实受控stop旧服务→start新监视器成功；重复start提示已运行。新IP的19个实际脚本（仅Referer、cross-site/no-cors）均200；Origin对照localhost200、新IP200、旧IP403、陌生403；LAN/api/catalog真实TMDB20条。具体接口地址使用当前网卡IP，用户随后在iPhone实际刷新并确认“已正常显示”。
+- `tests/dev-network-watch.test.ts`新增16项模拟生命周期，连同旧dev-origins3项19项通过；模拟证明只在旧进程关闭后重启、stop各时机优先、抖动合并和精确私有地址。没有实际切换用户Wi-Fi；自动换网机制由依赖注入测试覆盖。
+
+- **高度修复实测**：最终选择光鸭1条结果，网格自然高度140px、computed min-height=0px，分页紧接卡片；原732px五行占位已移除。截图artifacts/previews/frame-resource-single-row.png。工作树最终267项与类型检查通过，含LOCAL-09新增16项。
+
+- **最终交付**：工作树与独立暂存快照267 / 267、类型检查及webpack生产编译通过；依赖符号链接产生standalone追踪边界提示，未声称独立生产包启动／服务器验收。运行中的本地服务已由监视器接管；iPhone用户确认正常。保留用户未提交改动，清理本任务探针／临时构建，截图与运行中的PID提示保留。

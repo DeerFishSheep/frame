@@ -1,20 +1,23 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowUpRight, Check, ChevronDown, Copy, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUpRight, Check, ChevronLeft, ChevronRight, Cloud, Copy, Link as LinkIcon, Magnet, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 import { RESOURCE_CHANNELS } from "@/lib/pansou/channels";
 import type { ResourceChannel, ResourceItem, ResourceSearchQuery, ResourceSearchResult } from "@/lib/pansou/types";
 import { mediaKey, type MediaDetail } from "@/lib/types";
 import { useAsyncResource } from "@/lib/use-async-resource";
 import { useStableUpdate } from "@/lib/use-stable-update";
 import { useViewState } from "@/lib/view-state";
+import { resourcePageForSize, resourcePageSize, resourcePagination } from "@/lib/resource-pagination";
+import { normalizeResourceChannels } from "@/lib/resource-preferences";
+import { resourceCopyText } from "@/lib/resource-copy";
 import { resourceLoadingProps } from "./resource-feedback";
 import { useFrame } from "./providers";
 import styles from "./resource-search.module.css";
 
 const CHANNEL_PREFERENCE = "frame_resource_channels_v1";
-const PAGE_SIZE = 20;
+const SEARCH_STATE_VERSION = "v2";
 const allChannels = () => RESOURCE_CHANNELS.map(channel => channel.id);
 const channelInfo = (id: ResourceChannel) => RESOURCE_CHANNELS.find(channel => channel.id === id)!;
 const queryKey = (query: ResourceSearchQuery | null) => query ? JSON.stringify([query.keyword, query.channels]) : "idle";
@@ -22,14 +25,15 @@ const queryKey = (query: ResourceSearchQuery | null) => query ? JSON.stringify([
 interface SearchView {
   query: ResourceSearchQuery | null;
   channel: ResourceChannel | "all";
-  visible: number;
+  page: number;
+  pageSize: number;
 }
 interface ResourceSearchContextValue {
   open: boolean;
   openPicker: (anchor: HTMLButtonElement) => void;
   view: SearchView;
   setChannel: (channel: ResourceChannel | "all") => void;
-  showMore: () => void;
+  setPage: (page: number) => void;
   resource: ReturnType<typeof useAsyncResource<ResourceSearchResult>>;
   resultId: string;
   panelId: string;
@@ -44,22 +48,19 @@ const useResourceSearch = () => {
 function readChannels(): ResourceChannel[] {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(CHANNEL_PREFERENCE) || "null");
-    if (Array.isArray(saved)) {
-      const selected = allChannels().filter(id => saved.includes(id));
-      if (selected.length) return selected;
-    }
+    return normalizeResourceChannels(saved);
   } catch { /* Channel selection still works when browser storage is unavailable. */ }
   return allChannels();
 }
 
 /** Scope both requests and browsing state to one title, including when the route reuses its component. */
 export function ResourceSearchProvider({ item, children }: { item: MediaDetail; children: ReactNode }) {
-  return <ResourceSearchState key={mediaKey(item)} item={item}>{children}</ResourceSearchState>;
+  return <ResourceSearchState key={`${SEARCH_STATE_VERSION}:${mediaKey(item)}`} item={item}>{children}</ResourceSearchState>;
 }
 
 function ResourceSearchState({ item, children }: { item: MediaDetail; children: ReactNode }) {
   const identity = mediaKey(item);
-  const [view, setView] = useViewState<SearchView>(`resource-search:${identity}`, { query: null, channel: "all", visible: PAGE_SIZE });
+  const [view, setView] = useViewState<SearchView>(`resource-search:${SEARCH_STATE_VERSION}:${identity}`, { query: null, channel: "all", page: 1, pageSize: resourcePageSize(false) });
   const [open, setOpen] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [keyword, setKeyword] = useState(item.title);
@@ -69,7 +70,7 @@ function ResourceSearchState({ item, children }: { item: MediaDetail; children: 
   const prepare = useStableUpdate();
   const id = useId(), resultId = `resource-results-${id}`, panelId = `resource-picker-${id}`;
   const resource = useAsyncResource<ResourceSearchResult>({
-    key: `resources:${identity}:${queryKey(view.query)}`, group: `resources:${identity}`, enabled: Boolean(view.query),
+    key: `resources:${SEARCH_STATE_VERSION}:${identity}:${queryKey(view.query)}`, group: `resources:${SEARCH_STATE_VERSION}:${identity}`, enabled: Boolean(view.query),
     load: async signal => {
       let response: Response;
       try {
@@ -88,12 +89,17 @@ function ResourceSearchState({ item, children }: { item: MediaDetail; children: 
     },
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const query = window.matchMedia("(max-width: 760px)");
-    const sync = () => setMobile(query.matches);
+    const sync = () => {
+      const nextSize = resourcePageSize(query.matches);
+      prepare();
+      setMobile(query.matches);
+      setView(current => current.pageSize === nextSize ? current : { ...current, page: resourcePageForSize(current.page, current.pageSize, nextSize), pageSize: nextSize });
+    };
     sync(); query.addEventListener("change", sync);
     return () => query.removeEventListener("change", sync);
-  }, []);
+  }, [prepare, setView]);
   const placePanel = useCallback(() => {
     const box = anchor.current?.getBoundingClientRect();
     if (!box) return;
@@ -126,14 +132,14 @@ function ResourceSearchState({ item, children }: { item: MediaDetail; children: 
     try { localStorage.setItem(CHANNEL_PREFERENCE, JSON.stringify(query.channels)); } catch { /* Selection remains available in this page. */ }
     prepare();
     setOpen(false);
-    setView(current => ({ ...current, query, channel: "all", visible: PAGE_SIZE }));
+    setView(current => ({ ...current, query, channel: "all", page: 1 }));
     if (queryKey(query) === queryKey(view.query)) resource.refresh();
   }
   const suggestions = [...new Set([item.title, item.originalTitle, /^\d{4}$/.test(item.year) ? `${item.title} ${item.year}` : ""])].filter(Boolean);
   return <ResourceSearchContext.Provider value={{
     open, openPicker, view, resource, resultId, panelId,
-    setChannel: channel => { prepare(); setView(current => ({ ...current, channel, visible: PAGE_SIZE })); },
-    showMore: () => { prepare(); setView(current => ({ ...current, visible: current.visible + PAGE_SIZE })); },
+    setChannel: channel => { prepare(); setView(current => ({ ...current, channel, page: 1 })); },
+    setPage: page => { prepare(); setView(current => current.page === page ? current : { ...current, page }); },
   }}>
     <Dialog.Root open={open} onOpenChange={setOpen} modal={mobile}>
       {children}
@@ -175,7 +181,12 @@ export function ResourceSearchButton() {
 
 function ChannelBadge({ channel }: { channel: ResourceChannel }) {
   const info = channelInfo(channel);
-  return <span className={styles.channelBadge} style={{ "--channel-color": info.color } as CSSProperties} aria-hidden="true">{info.shortLabel}</span>;
+  const [failedIcon, setFailedIcon] = useState<string | null>(null);
+  return <span className={styles.channelBadge} style={{ "--channel-color": info.color } as CSSProperties} aria-hidden="true">
+    {info.icon && failedIcon !== info.icon
+      ? <img src={info.icon} alt="" width={28} height={28} onError={() => setFailedIcon(info.icon!)}/>
+      : channel === "magnet" ? <Magnet size={19}/> : channel === "ed2k" ? <LinkIcon size={19}/> : <Cloud size={19}/>}
+  </span>;
 }
 
 function resourceDate(value: string | null) {
@@ -203,8 +214,8 @@ function ResourceRow({ item }: { item: ResourceItem }) {
   const http = /^https?:\/\//i.test(item.url);
   const copy = async () => {
     try {
-      await copyText(http && item.extractionCode ? `${item.url}\n提取码：${item.extractionCode}` : item.url);
-      notify(item.extractionCode && http ? "已复制链接和提取码" : "已复制资源链接");
+      await copyText(resourceCopyText(item));
+      notify("已复制链接");
     } catch { notify("复制失败，请重试", true); }
   };
   return <article className={styles.resultRow} data-scroll-anchor={`resource:${item.id}`} data-skeleton="block">
@@ -221,13 +232,17 @@ function ResourceRow({ item }: { item: ResourceItem }) {
 }
 
 export function ResourceSearchResults() {
-  const { openPicker, view, setChannel, showMore, resource, resultId } = useResourceSearch();
-  if (!view.query) return null;
+  const { openPicker, view, setChannel, setPage, resource, resultId } = useResourceSearch();
   const data = resource.current || resource.pending ? resource.data : null;
   const items = data?.items ?? [];
   const counts = new Map<ResourceChannel, number>();
   for (const item of items) counts.set(item.channel, (counts.get(item.channel) || 0) + 1);
   const filtered = view.channel === "all" ? items : items.filter(item => item.channel === view.channel);
+  const pagination = resourcePagination(filtered.length, view.page, view.pageSize);
+  useLayoutEffect(() => {
+    if (view.query && resource.current && !resource.pending && view.page !== pagination.page) setPage(pagination.page);
+  }, [view.query, view.page, resource.current, resource.pending, pagination.page, setPage]);
+  if (!view.query) return null;
   return <section id={resultId} className={styles.results} aria-labelledby={`${resultId}-heading`} aria-busy={resource.pending}>
     <div className={styles.resultsHeading} data-scroll-anchor={`resource-heading:${resultId}`}>
       <div><h2 id={`${resultId}-heading`}>资源搜索</h2><p title={view.query.keyword}>“{view.query.keyword}”</p></div>
@@ -241,13 +256,19 @@ export function ResourceSearchResults() {
       {items.length > 0 && <>
         <div className={styles.resultFilters} role="group" aria-label="筛选搜索结果渠道" data-skeleton="line">
           <button type="button" aria-pressed={view.channel === "all"} onClick={() => setChannel("all")}>全部<span>{items.length}</span></button>
-          {RESOURCE_CHANNELS.filter(channel => counts.has(channel.id)).map(channel => <button key={channel.id} type="button" aria-pressed={view.channel === channel.id} onClick={() => setChannel(channel.id)}>{channel.label}<span>{counts.get(channel.id)}</span></button>)}
+          {RESOURCE_CHANNELS.filter(channel => counts.has(channel.id) || channel.id === view.channel).map(channel => <button key={channel.id} type="button" aria-pressed={view.channel === channel.id} onClick={() => setChannel(channel.id)}>{channel.label}<span>{counts.get(channel.id) || 0}</span></button>)}
         </div>
-        <div className={styles.resultList}>{filtered.slice(0, view.visible).map(item => <ResourceRow key={item.id} item={item}/>)}</div>
-        {filtered.length === 0 && <p className={styles.emptyChannel}>此渠道暂无资源</p>}
-        <div className={styles.resultFoot} data-skeleton="line"><span>已获取 {items.length} 条资源{data?.retrievedAt ? ` · ${resourceDate(data.retrievedAt)}` : ""}</span>{filtered.length > view.visible && <button type="button" onClick={showMore}>显示更多<ChevronDown size={15}/></button>}</div>
+        <div className={styles.resultList}>{filtered.slice(pagination.start, pagination.end).map(item => <ResourceRow key={item.id} item={item}/>)}{filtered.length === 0 && <p className={styles.emptyChannel}>此渠道暂无资源</p>}</div>
+        <div className={styles.resultFoot} data-skeleton="line">
+          <span>共 {filtered.length} 条 · 第 {pagination.page} / {pagination.totalPages} 页</span>
+          <nav className={styles.pagination} aria-label="资源搜索结果分页">
+            <button type="button" className={styles.pageArrow} disabled={pagination.page === 1} onClick={() => setPage(pagination.page - 1)} aria-label="上一页资源"><ChevronLeft size={15}/></button>
+            {pagination.pages.map(page => <button key={page} type="button" aria-label={`第 ${page} 页资源`} aria-current={page === pagination.page ? "page" : undefined} onClick={() => setPage(page)}>{page}</button>)}
+            <button type="button" className={styles.pageArrow} disabled={pagination.page === pagination.totalPages} onClick={() => setPage(pagination.page + 1)} aria-label="下一页资源"><ChevronRight size={15}/></button>
+          </nav>
+        </div>
       </>}
-      {resource.pending && items.length === 0 && <div className={styles.resultList} aria-hidden="true">{Array.from({ length: 5 }, (_, index) => <div key={index} className={styles.skeletonRow} data-skeleton="block"/>)}</div>}
+      {resource.pending && items.length === 0 && <div className={styles.resultList} aria-hidden="true">{Array.from({ length: view.pageSize }, (_, index) => <div key={index} className={styles.skeletonRow} data-skeleton="block"/>)}</div>}
       {!resource.pending && !resource.error && items.length === 0 && <div className={styles.empty}><Search size={24} strokeWidth={1.4}/><h3>暂无匹配资源</h3><p>试试原名，或调整年份、季数和搜索渠道。</p><button type="button" className="text-button" onClick={event => openPicker(event.currentTarget)}>修改搜索<ArrowUpRight size={14}/></button></div>}
     </div>
     <span className="sr-only" role="status">{resource.pending ? "正在搜索资源" : resource.error ? "" : `已获取 ${items.length} 条资源`}</span>

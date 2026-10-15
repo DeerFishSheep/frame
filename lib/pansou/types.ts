@@ -1,4 +1,4 @@
-export type ResourceChannel = "baidu" | "aliyun" | "quark" | "tianyi" | "uc" | "mobile" | "115" | "pikpak" | "xunlei" | "123" | "magnet" | "ed2k" | "others";
+export type ResourceChannel = "baidu" | "aliyun" | "quark" | "guangya" | "tianyi" | "uc" | "mobile" | "115" | "pikpak" | "xunlei" | "123" | "magnet" | "ed2k";
 export interface ResourceSearchQuery { keyword: string; channels: ResourceChannel[]; }
 export interface ResourceItem {
   id: string;
