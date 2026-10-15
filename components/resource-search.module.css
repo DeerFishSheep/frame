@@ -64,7 +64,7 @@
 .pagination button:disabled { cursor: not-allowed; opacity: .35; }
 .empty, .emptyChannel { padding: 35px 15px; text-align: center; color: var(--dim); }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 10px; min-height: 190px; border: 1px dashed var(--border); border-radius: 10px; }
-.empty h3 { color: var(--text); font-size: 14px; font-weight: 500; }
+.empty h3 { max-width: 100%; overflow-wrap: anywhere; color: var(--text); font-size: 14px; font-weight: 500; }
 .empty p { color: var(--muted); font-size: 12px; }
 .emptyChannel { grid-column: 1 / -1; }
 .skeletonRow { height: var(--resource-row-height); border-radius: 9px; }

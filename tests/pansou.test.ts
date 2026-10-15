@@ -104,6 +104,44 @@ test("a successful empty merge stays an honest empty result", async () => {
   }
 });
 
+test("an explicitly zero Pansou response can omit merged_by_type instead of returning an empty map", async () => {
+  for (const data of [
+    { total: 0 },
+    { total: 0, merged_by_type: null },
+    { total: 0, results: [] },
+    { total: 0, results: null },
+    { total: 0, merged_by_type: null, results: [] },
+  ]) for (const payload of [data, { code: 0, message: "success", data }]) {
+    const result = await client(payload).search(query);
+    assert.deepEqual(result.items, []);
+    assert.equal(result.total, 0);
+    assert.equal(result.keyword, query.keyword);
+    assert.deepEqual(result.channels, ["115", "quark"]);
+  }
+});
+
+test("missing merge data is empty only with a numeric zero and no contradictory result payload", async () => {
+  for (const data of [
+    {}, { total: 1 }, { total: "0" }, { total: null }, { total: false },
+    { total: 0, merged_by_type: [] }, { total: 0, merged_by_type: "" },
+    { total: 0, results: [entry("https://test.example/public")] },
+    { total: 0, results: {} }, { total: 0, results: "" },
+  ]) {
+    await assert.rejects(client({ code: 0, data }).search(query), errorCode("INVALID_RESPONSE", 502));
+  }
+});
+
+test("business failures at either envelope level cannot masquerade as a successful zero-result response", async () => {
+  for (const payload of [
+    { code: 500, data: { total: 0 } },
+    { code: 0, error: "upstream failed", data: { total: 0 } },
+    { code: 0, data: { total: 0, code: 500 } },
+    { code: 0, data: { total: 0, error: "upstream failed" } },
+  ]) {
+    await assert.rejects(client(payload).search(query), errorCode("UPSTREAM_ERROR", 502));
+  }
+});
+
 test("HTTP, business, and malformed responses cannot be mistaken for empty search results", async () => {
   for (const status of [401, 403, 404, 429, 500]) {
     const api = createPansouClient({ baseUrl: "https://search.example.test", fetchImpl: async () => json({ error: "private upstream detail" }, status) });

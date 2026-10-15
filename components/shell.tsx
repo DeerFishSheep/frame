@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowUpRight, Film, Moon, Search, Sun, X } from "lucide-react";
 import { buildSearchHref } from "@/lib/navigation";
@@ -10,8 +10,8 @@ import { BackToTop } from "./back-to-top";
 import { useFrame } from "./providers";
 import { readViewState } from "@/lib/view-state";
 import { usePageContinuity } from "@/lib/use-page-continuity";
-import { catalogSource, isHiddenDoubanHref, sourceLabel } from "@/lib/catalog-sources";
-import { defaultDoubanFilters, visibleDoubanCharts, doubanParams, migrateDoubanPopularHref } from "@/lib/douban/query";
+import { catalogDataSource, sourceLabel } from "@/lib/catalog-sources";
+import { catalogNavigationHref } from "@/lib/catalog-navigation";
 
 const navigation = [
   { id: "movie", label: "电影", href: "/" },
@@ -29,23 +29,17 @@ export function FrameShell({ children }: { children: ReactNode }) {
   const { favorites, collections, theme, toggleTheme, preview, setPreview, configured } = useFrame();
   const [sourceOpen, setSourceOpen] = useState(false);
   const [query, setQuery] = useState(params.get("query") || "");
+  const [savedNavigation, setSavedNavigation] = useState<{ location: string; movie: string; tv: string } | null>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const currentQuery = params.get("query") || "";
+  const paramString = params.toString(), location = `${pathname}?${paramString}`;
   const collectionMode = pathname.startsWith("/lists") || pathname === "/favorites" && params.get("section") === "lists";
-  const source = collectionMode ? "douban" : pathname === "/" ? catalogSource(new URLSearchParams(params)) : "tmdb";
+  const source = collectionMode ? "douban" : pathname === "/" ? catalogDataSource(new URLSearchParams(params)) : "tmdb";
   const providerMode = source !== "tmdb", providerLabel = sourceLabel(source);
   const mediaNavigation = (item: typeof navigation[number]) => {
-    if (pathname !== "/" || currentQuery || (item.id !== "movie" && item.id !== "tv")) return item.href;
-    const remembered = readViewState<string | null>(`catalog-location:${item.id}:${source}`, null);
-    const restored = remembered && source === "douban" ? migrateDoubanPopularHref(remembered) : remembered;
-    if (restored && !(source === "douban" && isHiddenDoubanHref(restored))) return restored;
-    if (source === "douban") {
-      const chart = visibleDoubanCharts(item.id).find(chart => chart.value === params.get("chart"))?.value;
-      const next = defaultDoubanFilters(item.id, chart);
-      return `/?${doubanParams(next)}`;
-    }
-    const next = new URLSearchParams(params); next.set("media", item.id); next.delete("page");
-    return `/?${next}`;
+    if (item.id !== "movie" && item.id !== "tv") return item.href;
+    return savedNavigation?.location === location ? savedNavigation[item.id]
+      : catalogNavigationHref(item.id, pathname, new URLSearchParams(params));
   };
   const active = pathname === "/favorites" ? "favorites"
     : pathname === "/lists" || pathname.startsWith("/lists/") ? "lists"
@@ -55,6 +49,12 @@ export function FrameShell({ children }: { children: ReactNode }) {
     : pathname === "/" ? params.get("media") === "tv" ? "tv" : "movie" : "";
 
   useEffect(() => setQuery(currentQuery), [currentQuery, pathname]);
+  // Read browser-owned chart memory only after hydration; SSR and the first client render share URLs.
+  useLayoutEffect(() => {
+    const remember = (key: string) => readViewState<string | undefined>(key, undefined);
+    const current = new URLSearchParams(paramString);
+    setSavedNavigation({ location, movie: catalogNavigationHref("movie", pathname, current, remember), tv: catalogNavigationHref("tv", pathname, current, remember) });
+  }, [location, pathname, paramString]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -73,19 +73,19 @@ export function FrameShell({ children }: { children: ReactNode }) {
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push(buildSearchHref(pathname, new URLSearchParams(params), query), { scroll: false });
+    router.push(buildSearchHref(pathname, new URLSearchParams(params), query, key => readViewState<string | undefined>(key, undefined)), { scroll: false });
   }
 
   function clearSearch() {
     setQuery("");
     searchInput.current?.focus();
-    if (currentQuery) router.push(buildSearchHref(pathname, new URLSearchParams(params), ""), { scroll: false });
+    if (currentQuery) router.push(buildSearchHref(pathname, new URLSearchParams(params), "", key => readViewState<string | undefined>(key, undefined)), { scroll: false });
   }
 
   return <>
     <header className="site-header">
       <div className="site-header-inner">
-        <Link className="site-brand" href="/" aria-label="帧榜电影"><Film size={25} strokeWidth={1.7}/><strong>帧榜<span>FRAME</span></strong></Link>
+        <Link className="site-brand" href={mediaNavigation(navigation[0])} aria-label="帧榜电影"><Film size={25} strokeWidth={1.7}/><strong>帧榜<span>FRAME</span></strong></Link>
         <nav className="site-nav" aria-label="主导航">
           {navigation.map(item => <Link key={item.id} href={mediaNavigation(item)} scroll={pathname === "/" && (item.id === "movie" || item.id === "tv") ? false : undefined} className={active === item.id ? "active" : ""} aria-current={active === item.id ? "page" : undefined}>
             {item.label}{item.id === "favorites" && favorites.length + collections.length > 0 && <span className="nav-count">{favorites.length + collections.length}</span>}
@@ -102,7 +102,7 @@ export function FrameShell({ children }: { children: ReactNode }) {
     </header>
     <main className="main-shell">{children}</main>
     <footer className="site-footer">
-      <Link href="/" className="footer-brand">帧榜<span>FRAME</span></Link>
+      <Link href={mediaNavigation(navigation[0])} className="footer-brand">帧榜<span>FRAME</span></Link>
       <span>电影 · 电视剧 · 好片收藏</span>
       <div className="footer-links"><button onClick={() => setSourceOpen(true)}>{providerMode ? `${providerLabel} 数据` : preview ? "预览模式" : "TMDB 数据"}</button><Link href="/about">关于与数据来源</Link></div>
     </footer>

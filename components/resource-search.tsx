@@ -289,7 +289,7 @@ export function ResourceSearchResults() {
         </div>
       </>}
       {resource.pending && items.length === 0 && <div className={styles.resultList} aria-hidden="true">{Array.from({ length: view.pageSize }, (_, index) => <div key={index} className={styles.skeletonRow} data-skeleton="block"/>)}</div>}
-      {!resource.pending && !resource.error && items.length === 0 && <div className={styles.empty}><Search size={24} strokeWidth={1.4}/><h3>暂无匹配资源</h3><p>试试原名，或调整年份、季数和搜索渠道。</p><button type="button" className="text-button" onClick={event => openPicker(event.currentTarget)}>修改搜索<ArrowUpRight size={14}/></button></div>}
+      {!resource.pending && !resource.error && items.length === 0 && <div className={styles.empty}><Search size={24} strokeWidth={1.4}/><h3>暂无“{view.query.keyword}”相关资源</h3><p>试试原名，或调整年份、季数和搜索渠道。</p><button type="button" className="text-button" onClick={event => openPicker(event.currentTarget)}>修改搜索<ArrowUpRight size={14}/></button></div>}
     </div>
     </div>
     {!resource.pending && <span className="sr-only" role="status">{resource.error ? "" : `已获取 ${items.length} 条资源`}</span>}

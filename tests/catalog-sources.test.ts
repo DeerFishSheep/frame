@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { CATALOG_SOURCES, catalogSource, catalogSourceHref, formatCatalogTitle } from "../lib/catalog-sources";
+import { CATALOG_SOURCES, catalogDataSource, catalogSource, catalogSourceHref, catalogSourceLocation, formatCatalogTitle } from "../lib/catalog-sources";
 import { formatFeaturedLabel } from "../lib/media-presentation";
 import { CatalogSection } from "../components/catalog-section";
 
@@ -52,4 +52,22 @@ test("every selectable platform has a bundled image so icons require no external
     assert.ok(bytes.length > 100);
     assert.ok(source.icon.endsWith(".svg") && /<svg[^>]+viewBox=/.test(bytes.toString()) || bytes.subarray(0, 4).equals(Buffer.from([0, 0, 1, 0])) || bytes.subarray(0, 4).equals(Buffer.from([137, 80, 78, 71])));
   }
+});
+
+test("search and Discover use TMDB without changing the separate chart source identity", () => {
+  for (const source of ["douban", "imdb"] as const) {
+    const params = new URLSearchParams(`source=${source}&query=暗黑`);
+    assert.equal(catalogDataSource(params), "tmdb");
+    assert.equal(catalogSource(params), source);
+    assert.equal(catalogDataSource(new URLSearchParams(`source=${source}&chart=discover`)), "tmdb");
+    assert.equal(catalogDataSource(new URLSearchParams(`source=${source}&chart=top`)), source);
+  }
+});
+
+test("restoration refuses search, Discover and mismatched provider/media locations", () => {
+  for (const invalid of ["/?source=imdb&media=movie&query=test", "/discover?source=imdb&media=movie", "/?source=imdb&media=tv", "/?source=douban&media=movie", "https://example.com/?source=imdb&media=movie"]) {
+    assert.equal(catalogSourceLocation("imdb", "movie", () => invalid), undefined);
+  }
+  const location = "/?source=imdb&media=movie&chart=top&sort=num_votes&page=3";
+  assert.equal(catalogSourceLocation("imdb", "movie", () => location), location);
 });

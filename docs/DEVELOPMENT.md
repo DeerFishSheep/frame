@@ -513,3 +513,27 @@ ResourceRow取消底部按钮行。绝对定位的原生a／button覆盖整卡�
 `ResourceSearchState`的submitSequence仅由有效提交递增；关闭弹层后两帧focus结果section（preventScroll）并scrollIntoView，支持减少动画偏好，卸载取消调度。submittedClose阻止提交后弹窗焦点恢复到旧按钮；普通关闭仍恢复。刷新／分页／响应完成不会重跑定位。
 
 `searchLoading`位于inert内容外并覆盖在骨架上层，居中LoaderCircle＋当前关键词；旧DOM保留尺寸但不可操作。真实提交y0→690.5、结果头部进入视口；刷新y690.5保持，来源标签／静态关键词均0。29项相关测试、类型检查通过；截图artifacts/previews/frame-resource-search-loading.png。
+
+
+## NAV-01 名称搜索与榜单来源分离
+
+- `catalogDataSource`只决定本页请求：名称搜索／找片固定TMDB。`lib/catalog-navigation.ts`只在真实榜单页面记录preferred source/media及每个media/source的URL；查询、找片、收藏不覆盖记录，复用现有view-state会话内存。
+- `FrameShell`在layout effect读取导航记忆，SSR与首次客户端渲染保持一致；电影／电视剧、两处品牌链接、清空搜索均使用统一恢复函数。`buildSearchHref`每次新全站搜索从干净TMDB条件开始，media=all；收藏本地搜索保持。
+- `CatalogEntry`修复旧source=douban/imdb与query混用链接，并在共享Workspace移除搜索条件时恢复原平台；popstate目的地单独识别，避免把浏览器历史跳转误当作清空搜索。不新增豆瓣／IMDB名称搜索接口。
+- 18项针对回归；真实浏览器验证豆瓣TV的搜索→TV、找片→TV、搜索清空条件恢复完整URL，IMDB搜索→顶部清空恢复Top250。控制台无错误。
+
+## MATCH-02 豆瓣季年份与TMDB系列首播年份
+
+- 真实样本：豆瓣38353939《杀死你的旅途 第二季》year=2026；TMDB298931整剧first_air_date=2025-09-26，第二季air_date=2026-10-08。旧searchTitle已经移除季后缀，失败点是first_air_date_year=2026筛掉2025首播的整剧，并非仅由名称后缀造成。
+- `tvSeasonNumber`仅解析明确有效季号1～99；明确季号（包含第一季）走`resolveSeason`。系列检索取消整剧首播年份限制，仍要求严格同名／原名、整剧年份不晚于本季、最多4个候选。
+- `createTmdbSeasonMatcher`复用server-only的tmdbClient，搜索/search/tv，再经/tv/{id}的append_to_response读取对应季／季credits／external_ids。核对series ID、季摘要与季号／日期、存在的episode归属，再由matcher要求豆瓣本季同年、导演或至少两名不同演员一致且候选唯一。空证据、歧义、异常不宽松匹配。
+- 榜单保留豆瓣分季标题／评分，补回该季海报、日期与简介；仍链接已有整剧/tv/{id}详情，不新增分季详情或更改详情身份。无明确季号TV沿用严格同年，电影沿用MATCH-01相邻一年核验。
+- 24项匹配／适配器回归。真实/api/douban已返回298931、releaseDate=2026-10-08、第二季poster；点击进入本站详情，显示豆瓣8.5（实测详情406人评分）。
+
+## RES-07 Pansou合法空响应
+
+- 实测上游成功体为`{code:0,message:"success",data:{total:0}}`，没有merged_by_type；旧适配器将缺字段误判无效。现在只在明确total=0、merge缺失／null且results为空或缺失时接受空数组。
+- 根级／data级业务错误、非JSON、HTTP错误、正total缺map、异常类型或全部危险链接仍报错；不靠文案掩盖故障。24项Pansou回归覆盖这些边界。
+- 真实本地搜索200／items=[]／total=0，实际资源区显示`暂无“关键词”相关资源`；长关键词可换行。截图：artifacts/previews/frame-resource-empty-result.png。
+
+- **最终交付验证**：工作树与仅本次暂存差异的独立快照均290 / 290，类型检查及webpack生产编译通过。导航回归使用项目DEFAULT_FILTERS，而非写死用户工作树中的genreLogic，确保不依赖未提交改动。独立构建的依赖符号链接有standalone追踪边界提示；未执行服务器部署。开发服务保持，临时原始响应／隔离构建在本地提交前清理。

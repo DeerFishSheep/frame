@@ -3,6 +3,7 @@ import test from "node:test";
 import { createDoubanMatcher } from "../lib/douban/matcher";
 import { normalizeDoubanItem } from "../lib/douban/normalize";
 import { normalizeDetail } from "../lib/tmdb/normalize";
+import type { TvSeasonEvidence } from "../lib/tmdb/season-match";
 import type { Media, MediaDetail, MediaType } from "../lib/types";
 
 const source = normalizeDoubanItem({ id: "26580232", title: "看不见的客人", original_title: "Contratiempo", year: "2016", type: "movie" }, "movie")!;
@@ -136,5 +137,113 @@ test("successful cache expires after one hour and negative cache after five minu
     await match(source); const first = calls;
     now = ttl - 1; await match(source); assert.equal(calls, first);
     now = ttl; await match(source); assert.equal(calls, first * 2);
+  }
+});
+
+const seasonSource = normalizeDoubanItem({ id: "38353939", title: "杀死你的旅途 第二季", year: "2026", type: "tv" }, "tv")!;
+const series = { ...candidate(298931, "2025", "tv"), title: "杀死你的旅途", originalTitle: "Public Journey", releaseDate: "2025-10-09", posterPath: "/series.jpg" };
+const seasonSubject = { title: seasonSource.title, year: "2026", original_title: "Public Journey Season 2", actors: [{ name: "演员甲" }, { name: "演员乙" }] };
+const season: TvSeasonEvidence = {
+  seriesId: 298931, seasonNumber: 2, airDate: "2026-10-08", posterPath: "/season-two.jpg", overview: "第二季简介",
+  imdbId: "tt1234567", directors: [], cast: [person("演员甲", 1), person("演员乙", 2)],
+};
+const seasonMatcher = (overrides: Partial<Parameters<typeof createDoubanMatcher>[0]> = {}) => createDoubanMatcher({
+  search: async () => { throw new Error("explicit seasons must not use the series-year fast path"); },
+  subject: async () => ({ data: seasonSubject }),
+  detail: async () => { throw new Error("series credits are not season credits"); },
+  seasonCandidates: async () => [series], seasonEvidence: async () => season, ...overrides,
+});
+
+test("an explicit later season resolves against its own air date and credits despite an older series premiere", async () => {
+  const evidenceCalls: Array<[number, number]> = [];
+  const match = seasonMatcher({ seasonEvidence: async (id, number) => { evidenceCalls.push([id, number]); return season; } });
+  const result = await match(seasonSource);
+  assert.equal(result?.id, 298931);
+  assert.equal(result?.year, "2026");
+  assert.equal(result?.releaseDate, "2026-10-08");
+  assert.equal(result?.posterPath, "/season-two.jpg");
+  assert.equal(result?.overview, "第二季简介");
+  assert.deepEqual(evidenceCalls, [[298931, 2]]);
+  assert.equal(series.year, "2025");
+  assert.equal(series.posterPath, "/series.jpg");
+});
+
+test("an explicit first season and a unique same-year series still require genuine season evidence", async () => {
+  const first = { ...seasonSource, title: "杀死你的旅途 第一季", year: "2025" };
+  let checked = 0;
+  const match = seasonMatcher({
+    subject: async () => ({ data: { ...seasonSubject, title: first.title, year: "2025", original_title: "Public Journey Season 1" } }),
+    seasonEvidence: async () => { checked++; return null; },
+  });
+  assert.equal(await match(first), null);
+  assert.equal(checked, 1);
+});
+
+test("season mapping refuses missing evidence, duplicated actor identities, and unrelated season credits", async () => {
+  for (const data of [{ title: seasonSource.title }, { ...seasonSubject, actors: [{ name: "演员甲" }] }, { ...seasonSubject, actors: [{ name: "演员甲" }, { name: "演员甲" }] }]) {
+    let searched = 0;
+    const match = seasonMatcher({ subject: async () => ({ data }), seasonCandidates: async () => { searched++; return [series]; } });
+    assert.equal(await match(seasonSource), null);
+    assert.equal(searched, 0);
+  }
+  for (const cast of [[person("演员甲", 1)], [person("演员甲", 1), person("演员乙", 1)], [person("另一演员", 3), person("别的演员", 4)]]) {
+    assert.equal(await seasonMatcher({ seasonEvidence: async () => ({ ...season, cast }) })(seasonSource), null);
+  }
+  const directorMatch = seasonMatcher({ subject: async () => ({ data: { ...seasonSubject, actors: [], directors: [{ name: "该季导演" }] } }), seasonEvidence: async () => ({ ...season, cast: [], directors: ["该季导演"] }) });
+  assert.equal((await directorMatch(seasonSource))?.id, series.id);
+});
+
+test("wrong series, season number, invalid air date or mismatched season year cannot confirm a match", async () => {
+  for (const changed of [
+    { seriesId: 999 }, { seasonNumber: 1 }, { airDate: "2025-10-08" }, { airDate: "2027-10-08" },
+    { airDate: "2026-02-30" }, { airDate: "2026" },
+  ]) {
+    assert.equal(await seasonMatcher({ seasonEvidence: async () => ({ ...season, ...changed }) })(seasonSource), null);
+  }
+  for (const wrong of [{ ...series, id: 123, title: "另一部剧", originalTitle: "Other Show" }, { ...series, year: "2027" }, { ...series, mediaType: "movie" as const }]) {
+    let inspected = 0;
+    const match = seasonMatcher({ seasonCandidates: async () => [wrong], seasonEvidence: async () => { inspected++; return season; } });
+    assert.equal(await match(seasonSource), null);
+    assert.equal(inspected, 0);
+  }
+});
+
+test("conflicting source season numbers or years and invalid season suffixes remain unmatched", async () => {
+  for (const changed of [{ year: "2025" }, { title: "杀死你的旅途 第三季" }, { original_title: "Public Journey Season 3" }]) {
+    let searched = 0;
+    const match = seasonMatcher({ subject: async () => ({ data: { ...seasonSubject, ...changed } }), seasonCandidates: async () => { searched++; return [series]; } });
+    assert.equal(await match(seasonSource), null);
+    assert.equal(searched, 0);
+  }
+  for (const title of ["杀死你的旅途 第零季", "杀死你的旅途 第一百季", "Public Journey Season 0", "Public Journey S100"]) {
+    assert.equal(await seasonMatcher()({ ...seasonSource, title }), null);
+  }
+});
+
+test("ambiguous season matches and overlarge candidate sets are rejected instead of choosing the first hit", async () => {
+  for (const count of [2, 4, 5]) {
+    let inspected = 0;
+    const pool = Array.from({ length: count }, (_, index) => ({ ...series, id: series.id as number + index }));
+    const match = seasonMatcher({ seasonCandidates: async () => pool, seasonEvidence: async id => { inspected++; return { ...season, seriesId: id }; } });
+    assert.equal(await match(seasonSource), null);
+    assert.equal(inspected, count > 4 ? 0 : count);
+  }
+  let inspected = 0;
+  const duplicates = seasonMatcher({ seasonCandidates: async () => [series, series], seasonEvidence: async () => { inspected++; return season; } });
+  assert.equal((await duplicates(seasonSource))?.id, series.id);
+  assert.equal(inspected, 1);
+});
+
+test("original-title season fallback is bounded and cannot broaden ordinary TV or movie searches", async () => {
+  const searches: string[] = [];
+  const translated = { ...series, title: "另一译名" };
+  const match = seasonMatcher({ seasonCandidates: async title => { searches.push(title); return title === seasonSource.title ? [] : [translated]; } });
+  assert.equal((await match(seasonSource))?.id, series.id);
+  assert.deepEqual(searches, [seasonSource.title, "Public Journey Season 2"]);
+  for (const item of [{ ...seasonSource, title: "杀死你的旅途" }, { ...seasonSource, mediaType: "movie" as const }]) {
+    let broadSearches = 0;
+    const ordinary = createDoubanMatcher({ search: async () => [], subject: async () => ({ data: {} }), detail: async () => { throw new Error("unused"); }, seasonCandidates: async () => { broadSearches++; return [series]; }, seasonEvidence: async () => season });
+    assert.equal(await ordinary(item), null);
+    assert.equal(broadSearches, 0);
   }
 });

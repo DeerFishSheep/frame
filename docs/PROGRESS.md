@@ -2,11 +2,13 @@
 
 最后核对：2026-10-15（北京时间）
 
-## 本次任务（RES-06，已验证完成）
+## 本次任务（NAV-01／MATCH-02／RES-07，已验证完成）
 
-渠道按指定13项顺序排列；卡片来源和结果标题下关键词已移除。仅显式提交自动定位资源区域，加载期间居中动画显示当前关键词；刷新／分页／返回数据不触发重复滚动。
+名称搜索和找片统一TMDB；新名称搜索默认全部，返回电影／电视剧恢复之前的榜单平台与条件。豆瓣明确季数的剧集改用季证据匹配，Pansou成功空结果正常显示暂无相关资源。
 
-真实页面验证顺序、静态文案移除、提交从y0滚到结果区、loading提示可见；刷新前后y690.5保持。29项相关测试与类型检查通过。复检入口ResourceSearchState的submitSequence和ResourceSearchResults；保持本地运行，不发布。
+真实验收：豆瓣TV→搜索（TMDB／全部）→TV、找片→TV、搜索清空条件恢复原豆瓣URL；IMDB→搜索→清空恢复原Top250。豆瓣38353939已关联TMDB298931，第二季日期2026-10-08，卡片进入本站详情、豆瓣评分8.5。Pansou真实total=0返回本站200／0条，浏览器显示暂无相关资源，控制台无错误。工作树与独立暂存快照均290 / 290，类型检查与webpack生产编译通过。隔离构建仅有依赖符号链接的standalone追踪边界提示，未进行服务器部署验收。
+
+复检入口：`lib/catalog-navigation.ts`、`lib/douban/matcher.ts`、`lib/pansou/client.ts`；先跑`npm test`，再复走上面的页面路径。当前只完成本地修复；详情沿用整剧页面，不新增分季详情路由。截图见`artifacts/previews/frame-search-platform-memory.png`与`frame-resource-empty-result.png`。
 
 ## 现在做到哪里
 
@@ -159,6 +161,9 @@
 | LOCAL-09 | 网络变化后的开发来源名单更新 | 已修复／实际局域网及模拟验证 | scripts/dev.mjs、createDevNetworkWatch、dev-control.sh；新IP19脚本200、TMDB20条，用户iPhone确认正常；新增16项监督器回归，最终267项 |
 | RES-05 | 紧凑整卡资源操作 | 已实现／真实页面与相关回归验证 | ResourceRow、.resultHitArea；HTTP(S)整卡链接，协议链接整卡复制；无按钮行，88px起自然高度；10项回归与类型检查通过 |
 | RES-06 | 搜索排序、定位与动态提示 | 已实现／真实页面与相关回归验证 | RESOURCE_CHANNELS、submitSequence、ResourceSearchResults；仅提交滚动、居中动画、来源／静态关键词移除，29项及类型检查通过 |
+| NAV-01 | TMDB搜索默认全部、独立榜单来源记忆 | 已验证完成／真实页面与模拟验证 | `catalogNavigationHref`、`rememberCatalogLocation`、`buildSearchHref`；豆瓣／IMDB返回与清空通过，18项相关测试 |
+| MATCH-02 | 豆瓣分季剧集匹配TMDB整剧 | 已验证完成／真实接口、页面与模拟验证 | `resolveSeason`、`createTmdbSeasonMatcher`；38353939→298931，季号／年份／演职员唯一核对，24项相关测试 |
+| RES-07 | 资源空结果误报无效数据 | 已验证完成／真实接口、页面与模拟验证 | `normalize`、`ResourceSearchResults`；支持成功total=0省略merged_by_type，故障不当作空，24项Pansou测试 |
 
 有新的用户任务时，在此表补充任务，再按实际完成情况更新。
 

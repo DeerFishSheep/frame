@@ -47,6 +47,10 @@ function normalize(payload: unknown, query: ResourceSearchQuery): ResourceItem[]
   if (!record(payload)) throw new PansouError("搜索服务返回了无效数据。", 502, "INVALID_RESPONSE");
   if ((payload.code !== undefined && payload.code !== 0 && payload.code !== 200) || payload.error) throw new PansouError("搜索服务未能完成请求，请稍后重试。", 502, "UPSTREAM_ERROR");
   const data = record(payload.data) ? payload.data : payload;
+  if ((data.code !== undefined && data.code !== 0 && data.code !== 200) || data.error) throw new PansouError("搜索服务未能完成请求，请稍后重试。", 502, "UPSTREAM_ERROR");
+  // Pansou omits the merge map for a successful zero-result search.
+  if (data.total === 0 && data.merged_by_type == null
+    && (data.results == null || Array.isArray(data.results) && data.results.length === 0)) return [];
   if (!record(data.merged_by_type)) throw new PansouError("搜索服务返回了无效数据。", 502, "INVALID_RESPONSE");
   const items: ResourceItem[] = [], seen = new Map<string, ResourceItem>();
   let suppliedItems = 0;

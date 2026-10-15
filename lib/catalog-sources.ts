@@ -12,17 +12,35 @@ export type CatalogSourceId = typeof CATALOG_SOURCES[number]["id"];
 export function catalogSource(params: URLSearchParams): CatalogSourceId {
   return CATALOG_SOURCES.find(source => source.id === params.get("source"))?.id ?? "tmdb";
 }
+/** Global name search and Discover always read TMDB, independently of the saved chart provider. */
+export function catalogDataSource(params: URLSearchParams): CatalogSourceId {
+  return params.get("query")?.trim() || ["discover", "favorites"].includes(params.get("chart") || "") ? "tmdb" : catalogSource(params);
+}
 export function isHiddenDoubanHref(href: string) {
   const url = new URL(href, "https://frame.local");
   return url.pathname === "/" && url.searchParams.get("source") === "douban" && ["popular", "lists", "realtime"].includes(url.searchParams.get("chart") || "");
 }
 
-export function catalogSourceHref(target: CatalogSourceId, params: URLSearchParams, remember: (key: string) => string | undefined) {
-  if (target === catalogSource(params)) return target === "douban" ? migrateDoubanPopularHref(`/?${params}`) : `/?${params}`;
-  const media: MediaType = params.get("media") === "tv" ? "tv" : "movie";
+/** Only actual charts can be restored; old search/Discover links must not overwrite provider navigation. */
+export function catalogSourceLocation(target: CatalogSourceId, media: MediaType, remember: (key: string) => string | undefined) {
   const previous = remember(`catalog-location:${media}:${target}`);
-  const restored = previous && target === "douban" ? migrateDoubanPopularHref(previous) : previous;
-  if (restored && !(target === "douban" && isHiddenDoubanHref(restored))) return restored;
+  if (!previous) return undefined;
+  try {
+    const restored = target === "douban" ? migrateDoubanPopularHref(previous) : previous;
+    const url = new URL(restored, "https://frame.local");
+    if (url.origin !== "https://frame.local" || url.pathname !== "/" || url.searchParams.get("query")?.trim()
+      || ["discover", "favorites"].includes(url.searchParams.get("chart") || "")
+      || catalogSource(url.searchParams) !== target || (url.searchParams.get("media") || "movie") !== media
+      || target === "douban" && isHiddenDoubanHref(restored)) return undefined;
+    return restored;
+  } catch { return undefined; }
+}
+
+export function catalogSourceHref(target: CatalogSourceId, params: URLSearchParams, remember: (key: string) => string | undefined) {
+  if (target === catalogSource(params) && !params.get("query")?.trim() && !["discover", "favorites"].includes(params.get("chart") || "")) return target === "douban" ? migrateDoubanPopularHref(`/?${params}`) : `/?${params}`;
+  const media: MediaType = params.get("media") === "tv" ? "tv" : "movie";
+  const restored = catalogSourceLocation(target, media, remember);
+  if (restored) return restored;
   if (target === "douban") return `/?${doubanParams(defaultDoubanFilters(media))}`;
   const chart = params.get("chart") === "popular" ? "popular" : "top";
   return target === "imdb" ? `/?source=imdb&media=${media}&chart=${chart}&sort=rank` : `/?media=${media}&chart=${chart}`;
