@@ -497,3 +497,10 @@ time确实改变顺序，但响应无完整上映日期，本轮未确认其内�
 - **高度修复实测**：最终选择光鸭1条结果，网格自然高度140px、computed min-height=0px，分页紧接卡片；原732px五行占位已移除。截图artifacts/previews/frame-resource-single-row.png。工作树最终267项与类型检查通过，含LOCAL-09新增16项。
 
 - **最终交付**：工作树与独立暂存快照267 / 267、类型检查及webpack生产编译通过；依赖符号链接产生standalone追踪边界提示，未声称独立生产包启动／服务器验收。运行中的本地服务已由监视器接管；iPhone用户确认正常。保留用户未提交改动，清理本任务探针／临时构建，截图与运行中的PID提示保留。
+
+
+## RES-05 紧凑整卡操作
+
+ResourceRow取消底部按钮行。绝对定位的原生a／button覆盖整卡，HTTP(S)链接新窗口打开（noopener noreferrer），协议类型调用原copyText(resourceCopyText(item))；键盘行为由原生元素处理。标题和元数据保持可读，loading父级inert继续阻止旧内容操作。
+
+.resultList行高改为minmax(88px,auto)，结果卡按内容自适应，无五行占位。真实页面网盘卡只有1个整卡链接／0按钮，覆盖范围匹配卡片，短卡高度88px；10项现有复制／分页测试与类型检查通过。复制原生粘贴此前工具限制保持，未请求实际下载链接。截图artifacts/previews/frame-resource-compact-cards.png。

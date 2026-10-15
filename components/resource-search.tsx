@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowUpRight, Check, ChevronLeft, ChevronRight, Cloud, Copy, Link as LinkIcon, Magnet, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUpRight, Check, ChevronLeft, ChevronRight, Cloud, Link as LinkIcon, Magnet, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 import { RESOURCE_CHANNELS } from "@/lib/pansou/channels";
 import type { ResourceChannel, ResourceItem, ResourceSearchQuery, ResourceSearchResult } from "@/lib/pansou/types";
 import { mediaKey, type MediaDetail } from "@/lib/types";
@@ -219,14 +219,13 @@ function ResourceRow({ item }: { item: ResourceItem }) {
     } catch { notify("复制失败，请重试", true); }
   };
   return <article className={styles.resultRow} data-scroll-anchor={`resource:${item.id}`} data-skeleton="block">
+    {http
+      ? <a className={styles.resultHitArea} href={item.url} target="_blank" rel="noopener noreferrer" title={item.title} aria-label={`打开资源：${item.title}`}/>
+      : <button type="button" className={styles.resultHitArea} onClick={copy} title={item.title} aria-label={`复制资源链接：${item.title}`}/>}
     <ChannelBadge channel={item.channel}/>
     <div className={styles.resultCopy}>
       <h3 title={item.title}>{item.title}</h3>
       <div className={styles.resultMeta}><span>{info.label}</span>{item.source && <span title={item.source}>{item.source}</span>}{date && <time dateTime={item.publishedAt!}>{date}</time>}{item.extractionCode && <span className={styles.extraction}>提取码 <code>{item.extractionCode}</code></span>}</div>
-    </div>
-    <div className={styles.resultActions}>
-      {http && <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`打开资源：${item.title}`}>打开<ArrowUpRight size={14}/></a>}
-      <button type="button" onClick={copy} aria-label={`复制资源链接：${item.title}`}><Copy size={14}/><span>{http ? "复制" : "复制链接"}</span></button>
     </div>
   </article>;
 }
