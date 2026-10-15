@@ -73,17 +73,28 @@ test("provided valid dates must include the season premiere for metadata confirm
   assert.equal((await matchWith(withActors, { seasonEvidence: async () => ({ ...season, cast: actors }) })(source))?.id, 42);
 });
 
-test("conflicting season identity, year and known episode counts cannot be rescued by actor overlap", async () => {
+test("conflicting season identity and year cannot be rescued by actor overlap", async () => {
   const withActors = { ...rawSource, actors: [{ name: "演员甲" }, { name: "演员乙" }] };
   let aggregateCalls = 0;
   const noAggregate = async () => { aggregateCalls++; return null; };
-  for (const changed of [{ seriesId: 999 }, { seasonNumber: 2 }, { airDate: "2024-09-29" }, { airDate: "2025-02-30" }, { episodeCount: 8 }]) {
+  for (const changed of [{ seriesId: 999 }, { seasonNumber: 2 }, { airDate: "2024-09-29" }, { airDate: "2025-02-30" }]) {
     const result = await matchWith(withActors, { seasonEvidence: async () => ({ ...season, cast: actors, ...changed }), seriesEvidence: noAggregate })(source);
     assert.equal(result, null);
   }
   assert.equal(aggregateCalls, 0);
   assert.equal((await matchWith({ ...rawSource, episodes_count: undefined })(source))?.id, 42);
   assert.equal((await matchWith(rawSource, { seasonEvidence: async () => ({ ...season, episodeCount: undefined }) })(source))?.id, 42);
+});
+
+test("different episode-count conventions do not veto exact original-name and season metadata matching", async () => {
+  let aggregateCalls = 0;
+  const result = await matchWith({ ...rawSource, episodes_count: 7 }, {
+    seasonEvidence: async () => ({ ...season, episodeCount: 6 }),
+    seriesEvidence: async () => { aggregateCalls++; return null; },
+  })(source);
+  assert.equal(result?.id, 42);
+  assert.equal(result?.seasonNumber, 3);
+  assert.equal(aggregateCalls, 0);
 });
 
 test("missing or mismatched exact original names cannot become a translated-name-only metadata match", async () => {

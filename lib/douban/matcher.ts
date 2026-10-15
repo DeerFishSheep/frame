@@ -15,7 +15,6 @@ function seasonSourceDates(raw: Record<string, unknown>): Set<string> {
     return date && validSeasonDate(date) ? [date] : [];
   }));
 }
-const episodeCount = (value: unknown) => typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : undefined;
 
 /** Resolve same-title remakes from real credits; never choose the first popular search result. */
 export function createDoubanMatcher(dependencies: {
@@ -38,7 +37,6 @@ export function createDoubanMatcher(dependencies: {
     if (original && tvSeasonNumber(original) !== null && tvSeasonNumber(original) !== seasonNumber) return null;
     const evidence = { directors: people(raw.directors), actors: people(raw.actors) };
     const sourceDates = seasonSourceDates(raw);
-    const sourceEpisodes = episodeCount(raw.episodes_count);
     const wantedOriginal = original ? normalizedName(searchTitle(original, "tv")) : "";
     const names = new Set([item.title, original].filter(Boolean).map(name => normalizedName(searchTitle(name, "tv"))));
     const filter = (items: Media[]) => items.filter(candidate => candidate.mediaType === "tv" && typeof candidate.id === "number" && Number.isSafeInteger(candidate.id) && candidate.id > 0
@@ -55,9 +53,7 @@ export function createDoubanMatcher(dependencies: {
       const season = await dependencies.seasonEvidence(Number(candidate.id), seasonNumber);
       if (!season || season.seriesId !== candidate.id || season.seasonNumber !== seasonNumber
         || !validSeasonDate(season.airDate) || season.airDate.slice(0, 4) !== item.year) continue;
-      const returnedEpisodes = episodeCount(season.episodeCount);
-      if (sourceEpisodes !== undefined && returnedEpisodes !== undefined && sourceEpisodes !== returnedEpisodes) continue;
-      // Region coverage differs between providers and must not determine a work's identity.
+      // Identify works from names and season evidence; provider episode totals and region coverage vary.
       const metadataConfirmed = candidates.length === 1 && !!wantedOriginal && normalizedName(candidate.originalTitle) === wantedOriginal
         && (!sourceDates.size || sourceDates.has(season.airDate));
       if (!metadataConfirmed && !creditsMatch(season, evidence)) {
