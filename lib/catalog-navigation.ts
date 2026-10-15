@@ -25,13 +25,12 @@ function preferredSource(pathname: string, params: URLSearchParams, remember: Re
   const saved = remember(CATALOG_SOURCE_MEMORY);
   const source = CATALOG_SOURCES.find(item => item.id === saved)?.id;
   if (source) return source;
-  if (/^\/douban\/(?:movie|tv)\//.test(pathname)) return "douban";
   return pathname.startsWith("/movie/") || pathname.startsWith("/tv/") ? catalogSource(params) : "tmdb";
 }
 
 export function preferredCatalogMedia(pathname: string, params: URLSearchParams, remember: ReadCatalogMemory): MediaType {
-  if (pathname.startsWith("/movie/") || pathname.startsWith("/douban/movie/")) return "movie";
-  if (pathname.startsWith("/tv/") || pathname.startsWith("/douban/tv/")) return "tv";
+  if (pathname.startsWith("/movie/")) return "movie";
+  if (pathname.startsWith("/tv/")) return "tv";
   const media = params.get("media");
   return media === "tv" || media === "movie" ? media : remember(CATALOG_MEDIA_MEMORY) === "tv" ? "tv" : "movie";
 }

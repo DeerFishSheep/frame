@@ -105,8 +105,8 @@ test("TMDB enrichment preserves Douban identity, original score, count, name and
   const match: Media = { ...original, id: 278, title: "Other title", voteAverage: 8.7, voteCount: 10, source: "tmdb", rank: 20, releaseDate: "1994-09-23" };
   const combined = enrichDoubanMedia(original, match);
   assert.deepEqual([combined.id, combined.title, combined.source, combined.voteAverage, combined.voteCount, combined.rank], [278, original.title, "douban", 9.7, 3350350, 1]);
-  assert.equal(mediaKey(combined), mediaKey(original)); assert.equal(mediaHref(combined), "/douban/movie/1292052");
-  assert.equal(mediaHref(original), "/douban/movie/1292052");
+  assert.equal(mediaKey(combined), mediaKey(original)); assert.equal(mediaHref(combined), "/movie/278?source=douban&doubanId=1292052");
+  assert.equal(mediaHref(original), "https://movie.douban.com/subject/1292052/");
   assert.equal(enrichDoubanMedia(original, null), original);
 });
 

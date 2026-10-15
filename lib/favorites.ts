@@ -26,7 +26,6 @@ function restoreMedia(value: unknown): Media | null {
   if (value.doubanId !== undefined && !doubanId || value.source === "douban" && !doubanId) return null;
   if (value.mediaType !== "movie" && value.mediaType !== "tv") return null;
   if (value.seasonNumber !== undefined && (value.mediaType !== "tv" || !validSeasonNumber(value.seasonNumber))) return null;
-  if (value.sourceSeasonNumber !== undefined && (value.mediaType !== "tv" || !validSeasonNumber(value.sourceSeasonNumber))) return null;
   if (value.source !== "tmdb" && value.source !== "imdb" && value.source !== "douban" && value.source !== "demo") return null;
   if (value.detailSource !== undefined && (typeof value.detailSource !== "string" || !["tmdb", "imdb", "douban"].includes(value.detailSource))) return null;
   if (value.detailDoubanId !== undefined && (value.detailSource !== "douban" || typeof value.detailDoubanId !== "string" || !/^[1-9]\d{0,11}$/.test(value.detailDoubanId))) return null;
@@ -49,7 +48,6 @@ function restoreMedia(value: unknown): Media | null {
     ...(doubanId ? { doubanId } : {}),
     mediaType: value.mediaType,
     ...(value.seasonNumber !== undefined ? { seasonNumber: value.seasonNumber as number } : {}),
-    ...(value.sourceSeasonNumber !== undefined ? { sourceSeasonNumber: value.sourceSeasonNumber as number } : {}),
     title: value.title,
     originalTitle: value.originalTitle,
     posterPath: value.posterPath,
@@ -114,21 +112,13 @@ export function toggleFavorite(items: Media[], item: Media): Media[] {
 
 function favoriteAliases(item: Media) {
   // Older Douban favorites already represent a specific season, even before this field existed.
-  const seasonNumber = item.seasonNumber ?? (item.sourceSeasonNumber === undefined && item.mediaType === "tv" && item.doubanId ? tvSeasonNumber(item.title) ?? undefined : undefined);
+  const seasonNumber = item.seasonNumber ?? (item.mediaType === "tv" && item.doubanId ? tvSeasonNumber(item.title) ?? undefined : undefined);
   const identity = { ...item, seasonNumber };
-  // A Douban subject already identifies one season, even before detail metadata provides its label.
-  const aliases = [mediaKey(identity), ...(item.doubanId ? [`douban:${item.doubanId}`] : [])];
-  if (typeof item.id === "number") aliases.push(mediaKey({ ...identity, doubanId: undefined, sourceSeasonNumber: undefined }));
-  return aliases;
+  return typeof item.id === "number" ? [mediaKey(identity), mediaKey({ ...identity, doubanId: undefined })] : [mediaKey(identity)];
 }
 
 /** Provider rows keep their own keys; a reliably matched work shares its saved state across sources. */
 export function sameFavorite(first: Media, second: Media) {
-  if (first.doubanId && first.doubanId === second.doubanId && first.mediaType === "tv" && second.mediaType === "tv") {
-    const firstSeason = first.sourceSeasonNumber ?? first.seasonNumber ?? tvSeasonNumber(first.title);
-    const secondSeason = second.sourceSeasonNumber ?? second.seasonNumber ?? tvSeasonNumber(second.title);
-    if (firstSeason != null && secondSeason != null && firstSeason !== secondSeason) return false;
-  }
   const keys = favoriteAliases(first);
   return favoriteAliases(second).some(key => keys.includes(key));
 }

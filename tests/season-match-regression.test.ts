@@ -102,9 +102,9 @@ test("a mixed catalog batch preserves all four matches, existing identities, ord
   for (const item of reported) {
     const matched = result.results.find(entry => entry.doubanId === item.doubanId)!;
     const url = new URL(mediaHref(matched), "https://frame.test");
-    assert.equal(url.pathname, `/douban/tv/${item.doubanId}`);
-    assert.equal(url.search, "");
-    assert.equal(matched.seasonNumber, item.season);
+    assert.equal(url.pathname, `/tv/${item.id}`);
+    assert.equal(url.searchParams.get("season"), String(item.season));
+    assert.equal(url.searchParams.get("doubanId"), item.doubanId);
     assert.equal(matched.posterPath, item.poster);
   }
   assert.deepEqual(result.results[3], rows[3]);

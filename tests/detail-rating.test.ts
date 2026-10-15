@@ -62,9 +62,7 @@ test("source context travels in shared card/hero links and validates strict IDs 
   assert.equal(mediaHref(film), "/movie/1368337");
   assert.equal(mediaHref({ ...film, source: "imdb" }), "/movie/1368337?source=imdb");
   const href = mediaHref({ ...film, source: "douban", doubanId: raw.id });
-  assert.equal(href, "/douban/movie/36808876");
-  const legacy = new URL(`/movie/${film.id}?source=douban&doubanId=${raw.id}`, "https://frame.test");
-  assert.deepEqual(parseRatingContext(legacy.searchParams), { source: "douban", doubanId: raw.id });
+  assert.deepEqual(parseRatingContext(new URL(href, "https://frame.test").searchParams), { source: "douban", doubanId: raw.id });
   assert.deepEqual(parseRatingContext(new URLSearchParams()), { source: "tmdb" });
   for (const query of ["source=bad", "source=imdb&source=douban", "source=douban&doubanId=../x", "source=imdb&doubanId=123", "source=douban&rating=9.9"]) assert.throws(() => parseRatingContext(new URLSearchParams(query)));
 });
@@ -75,7 +73,7 @@ test("favorites created in a provider detail retain its score and source across 
   const saved = parseFavorites(JSON.stringify([detailFavorite(film, rating, context)]))[0];
   assert.deepEqual([saved.source, saved.voteAverage, saved.voteCount, saved.doubanId], ["douban", 8.6, 561767, raw.id]);
   assert.equal(sameFavorite(saved, film), true);
-  assert.equal(mediaHref(saved), "/douban/movie/36808876");
+  assert.equal(mediaHref(saved), "/movie/1368337?source=douban&doubanId=36808876");
 });
 
 test("IMDB single-title lookup supports direct opens, coalesces and caches exact title ratings", async () => {
@@ -99,9 +97,9 @@ test("saving a fallback score preserves the entry provider for later recovery wi
     const saved = parseFavorites(JSON.stringify([detailFavorite(film, result, context)]))[0];
     assert.deepEqual([saved.source, saved.voteAverage, saved.voteCount], ["tmdb", 8, 4121]);
     assert.equal(saved.detailSource, context.source);
-    const url = new URL(mediaHref(saved), "https://frame.test");
-    if (context.source === "douban") assert.equal(url.pathname, `/douban/movie/${raw.id}`);
-    else assert.equal(url.searchParams.get("source"), context.source);
+    const params = new URL(mediaHref(saved), "https://frame.test").searchParams;
+    assert.equal(params.get("source"), context.source);
+    if (context.source === "douban") assert.equal(params.get("doubanId"), raw.id);
   }
 });
 
@@ -114,7 +112,7 @@ test("unverified source navigation IDs cannot merge unrelated favorite identitie
   assert.equal(saved.doubanId, undefined); assert.equal(saved.detailDoubanId, raw.id);
   assert.equal(sameFavorite(saved, differentFilm), false);
   assert.equal(toggleFavorite([differentFilm], saved).length, 2);
-  assert.equal(mediaHref(saved), "/douban/movie/36808876");
+  assert.equal(mediaHref(saved), "/movie/1368337?source=douban&doubanId=36808876");
 });
 
 test("IMDB malformed or mismatched title ratings are not cached as valid data", async () => {

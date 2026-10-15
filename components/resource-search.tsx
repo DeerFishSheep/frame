@@ -5,7 +5,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowUpRight, Check, ChevronLeft, ChevronRight, Cloud, Link as LinkIcon, LoaderCircle, Magnet, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 import { RESOURCE_CHANNELS } from "@/lib/pansou/channels";
 import type { ResourceChannel, ResourceItem, ResourceSearchQuery, ResourceSearchResult } from "@/lib/pansou/types";
-import { mediaKey, type DisplayDetail } from "@/lib/types";
+import { mediaKey, type MediaDetail } from "@/lib/types";
 import { useAsyncResource } from "@/lib/use-async-resource";
 import { useStableUpdate } from "@/lib/use-stable-update";
 import { useViewState } from "@/lib/view-state";
@@ -54,11 +54,11 @@ function readChannels(): ResourceChannel[] {
 }
 
 /** Scope both requests and browsing state to one title, including when the route reuses its component. */
-export function ResourceSearchProvider({ item, children }: { item: DisplayDetail; children: ReactNode }) {
+export function ResourceSearchProvider({ item, children }: { item: MediaDetail; children: ReactNode }) {
   return <ResourceSearchState key={`${SEARCH_STATE_VERSION}:${mediaKey(item)}`} item={item}>{children}</ResourceSearchState>;
 }
 
-function ResourceSearchState({ item, children }: { item: DisplayDetail; children: ReactNode }) {
+function ResourceSearchState({ item, children }: { item: MediaDetail; children: ReactNode }) {
   const identity = mediaKey(item);
   const [view, setView] = useViewState<SearchView>(`resource-search:${SEARCH_STATE_VERSION}:${identity}`, { query: null, channel: "all", page: 1, pageSize: resourcePageSize(false) });
   const [open, setOpen] = useState(false);

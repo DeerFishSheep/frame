@@ -17,17 +17,13 @@ test("season links retain the selected season and rating provider through shared
   assert.equal(mediaHref(second), "/tv/298931?season=2");
   for (const item of [doubanSecond, { ...second, source: "imdb" as const }, { ...second, detailSource: "douban" as const, detailDoubanId: "38353939" }]) {
     const url = new URL(mediaHref(item), "https://frame.test");
-    if ((item.detailSource ?? item.source) === "douban") {
-      assert.equal(url.pathname, "/douban/tv/38353939");
-      assert.equal(url.search, "");
-    } else {
-      assert.equal(url.pathname, "/tv/298931");
-      assert.equal(url.searchParams.get("season"), "2");
-      assert.equal(url.searchParams.get("source"), item.detailSource ?? item.source);
-    }
+    assert.equal(url.pathname, "/tv/298931");
+    assert.equal(url.searchParams.get("season"), "2");
+    assert.equal(url.searchParams.get("source"), item.detailSource ?? item.source);
+    if ((item.detailSource ?? item.source) === "douban") assert.equal(url.searchParams.get("doubanId"), "38353939");
   }
   assert.equal(new URL(mediaHref({ ...second, mediaType: "movie" }), "https://frame.test").searchParams.has("season"), false);
-  assert.equal(mediaHref({ ...doubanSecond, id: "douban:38353939" }), "/douban/tv/38353939");
+  assert.equal(mediaHref({ ...doubanSecond, id: "douban:38353939" }), "https://movie.douban.com/subject/38353939/");
 });
 
 test("whole-series and season identities cannot share resource or view-state keys", () => {
@@ -130,9 +126,7 @@ test("saving a seasonal rating fallback retains season navigation without trusti
   assert.equal(saved.doubanId, undefined);
   assert.equal(saved.detailSource, "douban");
   assert.equal(saved.detailDoubanId, "38353939");
-  assert.equal(mediaHref(saved), "/douban/tv/38353939");
-  const legacy = new URL("/tv/298931?source=douban&doubanId=38353939&season=2", "https://frame.test");
-  assert.deepEqual(parseRatingContext(legacy.searchParams), context);
+  assert.deepEqual(parseRatingContext(new URL(mediaHref(saved), "https://frame.test").searchParams), context);
   assert.equal(sameFavorite(saved, { ...first, source: "douban", doubanId: "38353939" }), false);
   const verified = await createDetailRatingService(dependencies)("tv", "298931", context);
   const confirmed = parseFavorites(JSON.stringify([detailFavorite(second, verified, context)]))[0];
