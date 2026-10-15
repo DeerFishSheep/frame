@@ -8,7 +8,7 @@ import { createTmdbSeasonMatcher, type TvSeasonEvidence, type TvSeriesEvidence }
 
 const source = normalizeDoubanItem({ id: "900001", type: "tv", title: "测试连续剧 第二季", year: "2021" }, "tv")!;
 const candidate = normalizeMedia({ id: 42, name: "测试连续剧", original_name: "Public Test Series", first_air_date: "2020-01-01", poster_path: "/series.jpg", overview: "整剧简介" }, "tv");
-const rawSource = { title: source.title, year: "2021", original_title: "Public Test Series Season 2", actors: [{ name: "演员甲" }, { name: "演员乙" }], directors: [{ name: "导演甲" }] };
+const rawSource = { title: source.title, year: "2021", actors: [{ name: "演员甲" }, { name: "演员乙" }], directors: [{ name: "导演甲" }] };
 const person = (id: number, name: string) => ({ id, name, character: "", profilePath: null });
 const season: TvSeasonEvidence = { seriesId: 42, seasonNumber: 2, airDate: "2021-09-05", posterPath: "/season2.jpg", overview: "第二季独有简介", imdbId: "tt1234567", directors: [], cast: [] };
 const aggregate: TvSeriesEvidence = { seriesId: 42, actors: [{ id: 1, names: ["演员甲", "Actor A"] }, { id: 2, names: ["演员乙", "Actor B"] }] };

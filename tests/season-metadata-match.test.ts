@@ -18,7 +18,7 @@ const matchWith = (raw: Record<string, unknown> = rawSource, overrides: Partial<
   seriesEvidence: async () => { throw new Error("complete metadata must not require actor evidence"); }, ...overrides,
 });
 
-test("a unique exact original title, matching country and verified season can match without any actor data", async () => {
+test("a unique exact original title and verified season can match without any actor data", async () => {
   let aggregateCalls = 0;
   const result = await matchWith(rawSource, { seriesEvidence: async () => { aggregateCalls++; return null; } })(source);
   assert.equal(result?.id, 42);
@@ -31,12 +31,26 @@ test("a unique exact original title, matching country and verified season can ma
   assert.equal(aggregateCalls, 0);
 });
 
-test("country comparison canonicalizes UK and GB and favors current subject countries over stale list metadata", async () => {
-  for (const countries of [["英国"], ["UK"], ["GB"]]) {
-    assert.equal((await matchWith({ ...rawSource, countries })({ ...source, countryCodes: ["US"] }))?.id, 42);
+test("country order, subsets, disjoint values and missing or unknown regions never block an otherwise verified unique season", async () => {
+  for (const [countries, candidateCountries] of [
+    [["英国", "美国"], ["US", "GB"]],
+    [["美国", "英国"], ["GB", "US"]],
+    [["英国", "美国"], ["GB"]],
+    [["英国"], ["GB", "US"]],
+    [["美国"], ["GB"]],
+    [["UK"], ["GB"]],
+    [[], []],
+    [undefined, undefined],
+    [["未识别地区"], ["ZZ"]],
+  ] as Array<[string[] | undefined, string[] | undefined]>) {
+    let aggregateCalls = 0;
+    const result = await matchWith({ ...rawSource, countries }, {
+      seasonCandidates: async () => [{ ...series, countryCodes: candidateCountries }],
+      seriesEvidence: async () => { aggregateCalls++; return null; },
+    })({ ...source, countryCodes: ["JP"] });
+    assert.equal(result?.id, 42);
+    assert.equal(aggregateCalls, 0);
   }
-  assert.equal((await matchWith({ ...rawSource, countries: undefined })({ ...source, countryCodes: ["UK"] }))?.id, 42);
-  assert.equal(await matchWith({ ...rawSource, countries: ["美国"] })({ ...source, countryCodes: ["GB"] }), null);
 });
 
 test("missing source full dates remain optional and returned dates always come from the verified season", async () => {
@@ -59,11 +73,10 @@ test("provided valid dates must include the season premiere for metadata confirm
   assert.equal((await matchWith(withActors, { seasonEvidence: async () => ({ ...season, cast: actors }) })(source))?.id, 42);
 });
 
-test("conflicting countries, season identity, year and known episode counts cannot be rescued by actor overlap", async () => {
+test("conflicting season identity, year and known episode counts cannot be rescued by actor overlap", async () => {
   const withActors = { ...rawSource, actors: [{ name: "演员甲" }, { name: "演员乙" }] };
   let aggregateCalls = 0;
   const noAggregate = async () => { aggregateCalls++; return null; };
-  assert.equal(await matchWith(withActors, { seasonCandidates: async () => [{ ...series, countryCodes: ["US"] }], seasonEvidence: async () => ({ ...season, cast: actors }), seriesEvidence: noAggregate })(source), null);
   for (const changed of [{ seriesId: 999 }, { seasonNumber: 2 }, { airDate: "2024-09-29" }, { airDate: "2025-02-30" }, { episodeCount: 8 }]) {
     const result = await matchWith(withActors, { seasonEvidence: async () => ({ ...season, cast: actors, ...changed }), seriesEvidence: noAggregate })(source);
     assert.equal(result, null);
@@ -73,20 +86,19 @@ test("conflicting countries, season identity, year and known episode counts cann
   assert.equal((await matchWith(rawSource, { seasonEvidence: async () => ({ ...season, episodeCount: undefined }) })(source))?.id, 42);
 });
 
-test("missing exact original names or known countries cannot become a name-only metadata match", async () => {
+test("missing or mismatched exact original names cannot become a translated-name-only metadata match", async () => {
   assert.equal(await matchWith({ ...rawSource, original_title: undefined }, { seasonCandidates: async () => [{ ...series, title: "警之光" }] })(source), null);
   assert.equal(await matchWith({ ...rawSource, original_title: "Different Original Season 3" }, { seasonCandidates: async () => [{ ...series, title: "警之光" }] })(source), null);
-  assert.equal(await matchWith({ ...rawSource, countries: undefined })({ ...source, countryCodes: [] }), null);
-  assert.equal(await matchWith(rawSource, { seasonCandidates: async () => [{ ...series, countryCodes: [] }] })(source), null);
-  assert.equal(await matchWith({ ...rawSource, countries: ["未识别地区"] })({ ...source, countryCodes: ["GB"] }), null);
   const noCountry = { ...rawSource, countries: undefined, actors: [{ name: "演员甲" }, { name: "演员乙" }] };
   assert.equal((await matchWith(noCountry, { seasonEvidence: async () => ({ ...season, cast: actors }) })({ ...source, countryCodes: [] }))?.id, 42);
 });
 
-test("two same-original same-country candidates stay ambiguous unless existing credit evidence selects one", async () => {
-  const pool = [series, { ...series, id: 43 }];
+test("two same-original candidates cannot be selected by country differences and require independent credit evidence", async () => {
+  const pool = [series, { ...series, id: 43, countryCodes: ["US"] }];
   const options = { seasonCandidates: async () => pool, seasonEvidence: async (id: number) => ({ ...season, seriesId: id }) };
-  assert.equal(await matchWith(rawSource, options)(source), null);
+  for (const countries of [["GB"], ["US"], [], undefined]) {
+    assert.equal(await matchWith(rawSource, { ...options, seasonCandidates: async () => [series, { ...series, id: 43, countryCodes: countries }] })(source), null);
+  }
   const withActors = { ...rawSource, actors: [{ name: "演员甲" }, { name: "演员乙" }] };
   const result = await matchWith(withActors, { ...options, seasonEvidence: async id => ({ ...season, seriesId: id, cast: id === 43 ? actors : [] }), seriesEvidence: async () => null })(source);
   assert.equal(result?.id, 43);
