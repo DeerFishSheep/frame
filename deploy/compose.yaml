@@ -1,0 +1,74 @@
+name: filmsou
+
+# One stack, three optional services. Profiles keep them independently deployable:
+#   docker compose --profile frame up -d
+#   docker compose --profile frame --profile pansou up -d
+# Everything joins one network, so frame reaches Pansou as http://pansou:80.
+
+services:
+  frame:
+    profiles: ["frame"]
+    image: ${FRAME_IMAGE:-ghcr.io/deerfishsheep/frame}:${FRAME_VERSION:-latest}
+    container_name: frame
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      TMDB_API_KEY: "${TMDB_API_KEY:-}"
+      TMDB_API_READ_ACCESS_TOKEN: "${TMDB_API_READ_ACCESS_TOKEN:-}"
+      TMDB_CACHE_SECONDS: "${TMDB_CACHE_SECONDS:-1800}"
+      PANSOU_BASE_URL: "${PANSOU_BASE_URL:-}"
+    ports:
+      - "127.0.0.1:${FRAME_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('node:http').get('http://127.0.0.1:3000/about', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    stop_grace_period: 20s
+    networks:
+      - filmsou
+
+  # Pansou is an independent open-source project (github.com/fish2018/pansou).
+  # This only wires its published image into the same network.
+  pansou:
+    profiles: ["pansou"]
+    image: ${PANSOU_IMAGE:-ghcr.io/fish2018/pansou-web}:${PANSOU_VERSION:-latest}
+    container_name: pansou
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PANSOU_PORT:-23456}:80"
+    environment:
+      # Empty means the Pansou image default (all bundled plugins and channels).
+      ENABLED_PLUGINS: "${PANSOU_ENABLED_PLUGINS:-}"
+      CHANNELS: "${PANSOU_CHANNELS:-}"
+      CONCURRENCY: "${PANSOU_CONCURRENCY:-60}"
+      ASYNC_MAX_BACKGROUND_WORKERS: "${PANSOU_MAX_WORKERS:-60}"
+      CACHE_MAX_SIZE: "${PANSOU_CACHE_SIZE:-500}"
+      ASYNC_RESPONSE_TIMEOUT: "${PANSOU_TIMEOUT:-6}"
+    networks:
+      - filmsou
+
+  # Optional static landing page; the page itself is user-supplied.
+  soeasy:
+    profiles: ["soeasy"]
+    image: nginx:alpine
+    container_name: soeasy
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${SOEASY_PORT:-8080}:80"
+    volumes:
+      # Directories, not files: a missing file becomes a directory and nginx fails to start.
+      - ./soeasy/html:/usr/share/nginx/html:ro
+      - ./soeasy/conf:/etc/nginx/conf.d:ro
+    networks:
+      - filmsou
+
+networks:
+  filmsou:
+    name: filmsou
