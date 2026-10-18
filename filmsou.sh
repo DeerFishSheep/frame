@@ -108,11 +108,53 @@ profile_of() {
   esac
 }
 
+# 站点 TMDB 凭据：二选一，Token 优先。写入 deploy/.env。
+configure_tmdb() {
+  ensure_env
+  local key token cache
+  key="$(env_get TMDB_API_KEY)"
+  token="$(env_get TMDB_API_READ_ACCESS_TOKEN)"
+  if [ -n "${key}" ] || [ -n "${token}" ]; then
+    if [ -n "${token}" ]; then ok "TMDB 已配置：Read Access Token"; else ok "TMDB 已配置：API Key"; fi
+    read -r -p "要重新配置吗？[y/N]: " again
+    case "${again}" in y|Y) ;; *) return 0;; esac
+  fi
+  printf '\nTMDB 凭据二选一（填了 Key 就不用填 Token，Token 优先）：\n'
+  printf '  在 https://www.themoviedb.org/settings/api 获取\n\n'
+  read -r -p '  1) API Key（v3，32 位）: ' key
+  if [ -n "${key}" ]; then
+    env_set TMDB_API_KEY "${key}"
+    env_set TMDB_API_READ_ACCESS_TOKEN ""
+    ok "已写入 TMDB_API_KEY"
+  else
+    read -r -s -p '  2) Read Access Token（输入时不显示）: ' token
+    printf '\n'
+    [ -n "${token}" ] || { warn "两项都没填，已跳过"; return 0; }
+    env_set TMDB_API_READ_ACCESS_TOKEN "${token}"
+    env_set TMDB_API_KEY ""
+    ok "已写入 TMDB_API_READ_ACCESS_TOKEN"
+  fi
+  local current
+  current="$(env_get TMDB_CACHE_SECONDS)"; current="${current:-1800}"
+  read -r -p "  缓存秒数 [${current}]: " cache
+  [ -n "${cache}" ] && env_set TMDB_CACHE_SECONDS "${cache}"
+  ok "凭据已保存到 ${ENV_FILE}"
+  warn "如果帧榜已启动，需要 ./filmsou.sh restart frame 才会生效"
+}
+
+ensure_tmdb() {
+  if [ -z "$(env_get TMDB_API_KEY)$(env_get TMDB_API_READ_ACCESS_TOKEN)" ]; then
+    warn "站点还没有 TMDB 密钥 —— 没有密钥时页面只显示预览，不出真实榜单"
+    configure_tmdb
+  fi
+}
+
 deploy_project() {
   local target="$1"
   ensure_env
   case "$target" in
     frame)
+      ensure_tmdb
       resolve_pansou_url query
       if [ "$(source_of frame)" = "build" ]; then
         info "从源码构建帧榜（首次较慢，之后有缓存）"
@@ -133,6 +175,7 @@ deploy_project() {
       ok "Soeasy 已启动"
       ;;
     full)
+      ensure_tmdb
       resolve_pansou_url codeploy
       if [ "$(source_of frame)" = "build" ]; then
         info "从源码构建帧榜（首次较慢，之后有缓存）"
@@ -407,6 +450,7 @@ menu() {
     printf '  6) 状态 / 日志 / 重启 / 停止\n'
     printf '  7) 回退指定项目版本\n'
     printf '  8) 环境自检（页面 + 真实搜索）\n'
+    printf '  9) 配置 TMDB 密钥\n'
     printf '  0) 退出\n'
     read -r -p '选择: ' choice
     case "${choice:-}" in
@@ -418,6 +462,7 @@ menu() {
       6) manage_menu;;
       7) rollback_project "$(pick_project)";;
       8) doctor || true;;
+      9) configure_tmdb;;
       0) ok "再见"; exit 0;;
       *) warn "无效选择";;
     esac
@@ -435,6 +480,7 @@ usage() {
   printf '  restart [frame|pansou]      重启\n'
   printf '  stop [frame|pansou]         停止\n'
   printf '  doctor                      环境自检（页面 + 真实搜索）\n'
+  printf '  config tmdb                 配置站点 TMDB 密钥\n'
 }
 
 main() {
@@ -450,6 +496,7 @@ main() {
     restart) restart_project "${1:-}";;
     stop) stop_project "${1:-}";;
     doctor) doctor;;
+    config) [ "${1:-}" = "tmdb" ] && { configure_tmdb; return 0; }; die "用法: ./filmsou.sh config tmdb";;
     help|-h|--help) usage;;
     *) usage; die "未知命令: $cmd";;
   esac

@@ -101,15 +101,22 @@ API Key 由服务端通过 `api_key` 参数认证，Token 使用 Bearer 请求�
 
 当前开发阶段不执行这部分。以下步骤保留作后续服务器部署参考。
 
-服务器需要 Docker 与 Docker Compose。把项目放到服务器后执行：
+服务器需要 Docker、Docker Compose 与 git。把仓库放到服务器后：
 
 ```bash
-cp .env.example .env
-# 编辑 .env，填写 TMDB_API_KEY 或 TMDB_API_READ_ACCESS_TOKEN
-docker compose up -d --build
-docker compose ps
-docker compose logs --tail=100 frame
+git clone https://github.com/DeerFishSheep/frame.git
+cd frame
+./filmsou.sh            # 选 4) 联合部署
 ```
+
+第一次部署会提示填 TMDB 密钥；也可以单独配置：
+
+```bash
+./filmsou.sh config tmdb    # 填 API Key 或 Read Access Token
+./filmsou.sh doctor         # 自检：页面、榜单接口、真实资源搜索
+```
+
+默认在服务器本机编译镜像（`FRAME_SOURCE=build`），不依赖任何镜像仓库。构建时约需 2GB 可用内存。
 
 镜像采用 [Next.js standalone 输出](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)，以普通用户运行。凭证通过 [Compose 运行时环境变量](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/) 注入，不进入镜像构建。
 
