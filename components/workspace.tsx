@@ -13,7 +13,7 @@ import type { CatalogView } from "@/lib/catalog-view";
 import { ResourceRegion, resourceLoadingProps } from "./resource-feedback";
 import { formatFeaturedLabel, selectFeaturedMedia } from "@/lib/media-presentation";
 import { parseFilters } from "@/lib/query";
-import { chartMeta, formatCount, formatTime, GENRES, serializeFilters } from "@/lib/ui";
+import { chartMeta, formatCount, formatTime, GENRES, REGIONS, getSortOptions, sortForMedia, serializeFilters } from "@/lib/ui";
 import { useFrame } from "./providers";
 import { matchesDateRange } from "@/lib/date-filters";
 import { useTodayDate } from "@/lib/use-today-date";
@@ -22,6 +22,7 @@ import { FilterPanel } from "./filter-panel";
 import { AppliedFilters } from "./applied-filters";
 import { FeaturedFilm } from "./featured-film";
 import { CatalogSection } from "./catalog-section";
+import { DiscoverFeatured } from "./discover-featured";
 
 function filterFavorites(items: Media[], filters: CatalogFilters) {
   const query = filters.query.trim().toLowerCase();
@@ -102,10 +103,11 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
   const previewSchedule = response?.source === "demo" && (filters.chart === "now" || filters.chart === "upcoming");
   const featuredItems = useMemo(() => selectFeaturedMedia(response?.results || []), [response]);
   const showFeature = initialChart === "trending" && (response?.context.feature ?? !searchMode);
+  const showDiscoverFeature = discoverMode && !searchMode;
   const featuredLabel = response?.context.featuredLabel || requestedFeatureLabel;
   const genres = GENRES[filters.media === "tv" ? "tv" : "movie"];
   const changeMedia = (media: CatalogFilters["media"]) => updateFilters({ ...filters, media, genres: [], sort: filters.sort.includes("date") ? media === "tv" ? "first_air_date.desc" : "primary_release_date.desc" : filters.sort });
-  const changeChart = (chart: Chart) => updateFilters({ ...DEFAULT_FILTERS, chart, period: filters.period, media: filters.media === "all" && chart !== "trending" ? "movie" : filters.media });
+  const changeChart = (chart: Chart, period = filters.period) => updateFilters({ ...DEFAULT_FILTERS, chart, period, media: filters.media === "all" && chart !== "trending" ? "movie" : filters.media });
   const clearFilters = () => updateFilters({ ...DEFAULT_FILTERS, chart: filters.chart, media: filters.media, period: filters.period });
   const toggleLayout = () => {
     prepareUpdate();
@@ -132,31 +134,38 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
     observer.observe(target); return () => { active = false; observer.disconnect(); };
   }, [hasMore, loading, loadingMore, error, moreError, autoPaused, favoritesReady, loadMore]);
 
-  const chartTabs: { key: Chart; label: string }[] = [
-    { key: "trending", label: "趋势" }, { key: "popular", label: "热门" }, { key: "top", label: "高分" },
-    { key: "now", label: filters.media === "tv" ? "近期在播" : "正在上映" },
-    { key: "upcoming", label: filters.media === "tv" ? "今日播出" : "即将上映" },
+  const chartTabs: { chart: Chart; period?: CatalogFilters["period"]; label: string }[] = [
+    { chart: "trending", period: "day", label: "今日趋势" }, { chart: "trending", period: "week", label: "本周趋势" },
+    { chart: "popular", label: "热门" }, { chart: "top", label: "高分" },
+    { chart: "now", label: filters.media === "tv" ? "近期在播" : "正在上映" },
+    { chart: "upcoming", label: filters.media === "tv" ? "今日播出" : "即将上映" },
   ];
 
-  return <div className={`workspace ${showFeature ? "workspace--featured" : ""}`}>
+  return <div className={`workspace ${showFeature || showDiscoverFeature ? "workspace--featured" : ""}`}>
+    {showDiscoverFeature && <DiscoverFeatured media={filters.media === "tv" ? "tv" : "movie"}/>}
     {showFeature && featuredItems.length > 0 && <FeaturedFilm items={featuredItems} label={featuredLabel} pending={loading}/>}
     {showFeature && !featuredItems.length && loading && <div className="skeleton featured-loading" aria-label="正在加载焦点影片"/>}
     <CatalogSection id="workspace-title" title={title} dataSource={!favoriteMode && !discoverMode && !searchMode ? response?.source || (preview ? "demo" : "tmdb") : undefined}
       badge={preview && !favoriteMode && <span className="preview-label">预览影片</span>}
       actions={<>
-          {!favoriteMode && !discoverMode && !searchMode && filters.chart === "trending" && <div className="period-tabs" role="group" aria-label="趋势时间">
-            {(["day", "week"] as const).map(period => <button key={period} className={filters.period === period ? "selected" : ""} aria-pressed={filters.period === period} onClick={() => updateFilters({ ...filters, period })}>{period === "day" ? "今天" : "本周"}</button>)}
-          </div>}
           {(discoverMode || favoriteMode) && <FilterPanel filters={filters} onApply={updateFilters}/>}
           <button className="icon-button view-toggle" onClick={toggleLayout} aria-label={layout === "grid" ? "切换列表视图" : "切换海报视图"}>{layout === "grid" ? <List size={18}/> : <Grid2X2 size={18}/>}</button>
       </>}
-      charts={!favoriteMode && !discoverMode && !searchMode ? chartTabs.map(tab => ({ id: tab.key, label: tab.label, selected: filters.chart === tab.key, onSelect: () => changeChart(tab.key) })) : undefined}
+      charts={!favoriteMode && !discoverMode && !searchMode ? chartTabs.map(tab => ({ id: `${tab.chart}:${tab.period || ""}`, label: tab.label, selected: filters.chart === tab.chart && (!tab.period || filters.period === tab.period), onSelect: () => changeChart(tab.chart, tab.period) })) : undefined}
       chartAction={<Link href={`/discover?media=${filters.media === "tv" ? "tv" : "movie"}`} className="catalog-more">全部影片<ArrowRight size={14}/></Link>}>
       {(favoriteMode || discoverMode || searchMode) && <div className="catalog-filters">
         <div className="media-tabs" role="group" aria-label="作品类型">
           {(discoverMode ? ["movie", "tv"] as const : ["all", "movie", "tv"] as const).map(media => <button key={media} className={filters.media === media ? "selected" : ""} aria-pressed={filters.media === media} onClick={() => changeMedia(media)}>{media === "all" ? "全部" : media === "movie" ? "电影" : "电视剧"}</button>)}
         </div>
-        {discoverMode && !searchMode && <div className="quick-genres" role="group" aria-label={filters.media === "tv" ? "电视剧全部类型" : "电影全部类型"}><button className={`filter-chip ${!filters.genres.length ? "active" : ""}`} aria-pressed={!filters.genres.length} onClick={() => updateFilters({ ...filters, genres: [] })}>全部类型</button>{genres.map(genre => <button key={genre.id} className={`filter-chip ${filters.genres.includes(String(genre.id)) ? "active" : ""}`} aria-pressed={filters.genres.includes(String(genre.id))} onClick={() => updateFilters({ ...filters, genres: filters.genres.includes(String(genre.id)) ? filters.genres.filter(id => id !== String(genre.id)) : [...filters.genres, String(genre.id)] })}>{genre.name}</button>)}</div>}
+        {discoverMode && !searchMode && <>
+          <div className="discover-filter-row"><span className="discover-filter-label">类型</span><div className="quick-genres quick-options" role="group" aria-label={filters.media === "tv" ? "电视剧全部类型" : "电影全部类型"}><button className={`filter-chip ${!filters.genres.length ? "active" : ""}`} aria-pressed={!filters.genres.length} onClick={() => updateFilters({ ...filters, genres: [] })}>全部类型</button>{genres.map(genre => <button key={genre.id} className={`filter-chip ${filters.genres.includes(String(genre.id)) ? "active" : ""}`} aria-pressed={filters.genres.includes(String(genre.id))} onClick={() => updateFilters({ ...filters, genres: filters.genres.includes(String(genre.id)) ? filters.genres.filter(id => id !== String(genre.id)) : [...filters.genres, String(genre.id)] })}>{genre.name}</button>)}</div></div>
+          <div className="discover-filter-row"><span className="discover-filter-label">地区</span><div className="quick-options" role="group" aria-label="地区快捷筛选">
+            {REGIONS.map(region => <button key={region.value} className={`filter-chip ${filters.region === region.value ? "active" : ""}`} aria-pressed={filters.region === region.value} onClick={() => updateFilters({ ...filters, region: region.value })}>{region.label}</button>)}
+          </div></div>
+          <div className="discover-filter-row"><span className="discover-filter-label">排序</span><div className="quick-options" role="group" aria-label="排序快捷筛选">
+            {getSortOptions(filters.media === "tv" ? "tv" : "movie").map(option => <button key={option.value} className={`filter-chip ${sortForMedia(filters.sort, filters.media === "tv" ? "tv" : "movie") === option.value ? "active" : ""}`} aria-pressed={sortForMedia(filters.sort, filters.media === "tv" ? "tv" : "movie") === option.value} onClick={() => updateFilters({ ...filters, sort: option.value })}>{option.label}</button>)}
+          </div></div>
+        </>}
       </div>}
       <AppliedFilters filters={filters} today={today} onChange={updateFilters} onClear={clearFilters}/>
       <div className="catalog-status" {...resourceLoadingProps(loading)}>
@@ -175,7 +184,7 @@ export function Workspace({ initialChart }: { initialChart: Chart }) {
       </div> : <div className={`media-grid ${layout === "list" ? "list-layout" : ""}`}>{items.map((item, index) => <MediaCard key={mediaKey(item)} item={item} showRank={showRank} resultIndex={(favoriteMode ? 0 : ((response?.context.startPage ?? filters.page) - 1) * 20) + index + 1}/>)}</div>}
       </ResourceRegion>
       {moreError && <p className="load-error" role="alert">{moreError}</p>}
-      {hasMore && !loading && !error && <div className="load-more-row" ref={moreAnchor}><button className="load-more" onClick={loadMore} disabled={loadingMore}>{loadingMore ? <LoaderCircle size={16} className="spinning"/> : <ChevronDown size={16}/>} {loadingMore ? "正在加载" : "加载更多"}</button></div>}
+      {hasMore && !loading && !error && <div ref={moreAnchor} className="load-more-row"><button className="load-more" onClick={() => void loadMore()} disabled={loadingMore}>{loadingMore ? <LoaderCircle size={16} className="spinning"/> : moreError ? <RefreshCw size={16}/> : <ChevronDown size={16}/>} {loadingMore ? "正在加载" : moreError ? "重试加载" : "加载更多"}</button></div>}
     </CatalogSection>
   </div>;
 }

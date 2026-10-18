@@ -18,6 +18,18 @@ export interface TvSeriesEvidence {
   /** Aliases belong to one person ID and can never count as multiple actors. */
   actors: { id: number; names: string[] }[];
 }
+export interface TvWorkEvidence extends Pick<MediaDetail, "directors" | "cast"> {
+  seriesId: number;
+  names: string[];
+  firstAirDate: string;
+  imdbId: string | null;
+}
+/** One season of a series exactly as the series record lists it, without asking for that season. */
+export interface TvSeriesSeason {
+  seasonNumber: number;
+  name: string;
+  airDate: string;
+}
 const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
 const list = (value: unknown): unknown[] => Array.isArray(value) ? value : [];
 export function validSeasonDate(value: string) {
@@ -83,5 +95,37 @@ export function createTmdbSeasonMatcher(client: Pick<ReturnType<typeof createTmd
     }
     return { seriesId: id, actors: [...people].map(([personId, names]) => ({ id: personId, names: [...names] })) };
   }
-  return { seasonCandidates, seasonEvidence, seriesEvidence };
+  async function workEvidence(id: number): Promise<TvWorkEvidence | null> {
+    if (!Number.isSafeInteger(id) || id < 1) return null;
+    const response = await client.request<unknown>(`/tv/${id}`, new URLSearchParams({ language: "zh-CN", append_to_response: "alternative_titles,credits,external_ids" }));
+    const raw = object(response.data), credits = object(raw.credits), aliases = object(raw.alternative_titles);
+    if (raw.id !== id || (credits.id !== undefined && credits.id !== id)) throw new TmdbError("TMDB 返回的剧集身份资料无效，请重试。", "TMDB_INVALID_RESPONSE", 502);
+    const alternateNames = Array.isArray(aliases.results) && (aliases.id === undefined || aliases.id === id) ? aliases.results.map(value => text(object(value).title)) : [];
+    const cast = list(credits.cast).flatMap(value => {
+      const person = object(value);
+      if (!Number.isSafeInteger(person.id) || Number(person.id) < 1) return [];
+      return [...new Set([text(person.name), text(person.original_name)].filter(Boolean))].map(name => ({ id: Number(person.id), name, character: text(person.character), profilePath: null }));
+    });
+    const directors = list(credits.crew).map(object).filter(person => person.job === "Director").flatMap(person => [text(person.name), text(person.original_name)].filter(Boolean));
+    const imdb = text(object(raw.external_ids).imdb_id);
+    return { seriesId: id, names: [...new Set([text(raw.name), text(raw.original_name), ...alternateNames].filter(Boolean))],
+      firstAirDate: text(raw.first_air_date), cast, directors, imdbId: /^tt\d{5,12}$/.test(imdb) ? imdb : null };
+  }
+  /**
+   * The seasons a series lists, with the name each one carries. A provider may number the same run differently from
+   * the source (TMDB counts every seasonal run of a long series as its own season), so the record's own name and
+   * premiere date are what locate the season a source is describing; this call is what makes them readable.
+   */
+  async function seriesSeasons(id: number): Promise<TvSeriesSeason[] | null> {
+    if (!Number.isSafeInteger(id) || id < 1) return null;
+    const response = await client.request<unknown>("/tv/" + id, new URLSearchParams({ language: "zh-CN" }));
+    const raw = object(response.data);
+    if (raw.id !== id) throw new TmdbError("TMDB 返回的剧集身份资料无效，请重试。", "TMDB_INVALID_RESPONSE", 502);
+    return list(raw.seasons).map(object).flatMap(value => {
+      const seasonNumber = value.season_number;
+      if (!Number.isSafeInteger(seasonNumber) || Number(seasonNumber) < 1 || Number(seasonNumber) > 99) return [];
+      return [{ seasonNumber: Number(seasonNumber), name: text(value.name), airDate: text(value.air_date) }];
+    });
+  }
+  return { seasonCandidates, seasonEvidence, seriesEvidence, workEvidence, seriesSeasons };
 }

@@ -55,7 +55,7 @@ export function createTmdbService(client: Client) {
   async function detail(mediaType: string, idText: string): Promise<{ detail: MediaDetail; retrievedAt: string; stale: boolean }> {
     validateMedia(mediaType, idText);
     const params = new URLSearchParams({
-      language: "zh-CN", append_to_response: "credits,keywords,external_ids,images,recommendations",
+      language: "zh-CN", append_to_response: "credits,external_ids,images,recommendations",
       include_image_language: "zh,en,null",
     });
     const response = await client.request<unknown>(`/${mediaType}/${idText}`, params);
@@ -77,16 +77,6 @@ export function createTmdbService(client: Client) {
     return { ...normalizeRecommendations(raw, mediaType), retrievedAt: response.retrievedAt, source: "tmdb", stale: response.stale };
   }
 
-  async function keywords(query: string) {
-    const normalized = query.trim();
-    if (!normalized || normalized.length > 100) throw new TmdbError("关键词搜索需要 1 到 100 个字符。", "INVALID_QUERY", 400);
-    const response = await client.request<unknown>("/search/keyword", new URLSearchParams({ query: normalized, page: "1" }));
-    const raw = object(response.data);
-    if (!Array.isArray(raw.results)) throw new TmdbError("TMDB 返回的关键词格式无效。", "TMDB_INVALID_RESPONSE", 502);
-    return { results: raw.results.map(object).filter((item) => Number.isSafeInteger(item.id) && Number(item.id) > 0 && typeof item.name === "string")
-      .map((item) => ({ id: item.id as number, name: item.name as string })), retrievedAt: response.retrievedAt, stale: response.stale };
-  }
-
   async function findByImdbId(imdbId: string, mediaType: MediaType) {
     if (!/^tt\d{5,12}$/.test(imdbId) || (mediaType !== "movie" && mediaType !== "tv")) throw new TmdbError("IMDB 编号或作品类型无效。", "INVALID_IMDB_ID", 400);
     const response = await client.request<unknown>(`/find/${imdbId}`, new URLSearchParams({ external_source: "imdb_id", language: "zh-CN" }));
@@ -99,12 +89,21 @@ export function createTmdbService(client: Client) {
   async function findByTitle(title: string, year: string, mediaType: MediaType) {
     return exactMediaMatch(await searchCandidates(title, year, mediaType), title, year, mediaType);
   }
-  async function searchCandidates(title: string, year: string, mediaType: MediaType) {
-    if (!title.trim() || title.length > 200 || !/^\d{4}$/.test(year)) return [];
-    const response = await client.request<unknown>(`/search/${mediaType}`, new URLSearchParams({ query: searchTitle(title, mediaType), language: "zh-CN", include_adult: "false", [mediaType === "movie" ? "year" : "first_air_date_year"]: year }));
+  /** The year narrows a title search; a sequel whose parent series premiered earlier is found by retrying once without it. */
+  async function searchByTitle(query: string, mediaType: MediaType, year?: string) {
+    const params = new URLSearchParams({ query, language: "zh-CN", include_adult: "false" });
+    if (year) params.set(mediaType === "movie" ? "year" : "first_air_date_year", year);
+    const response = await client.request<unknown>(`/search/${mediaType}`, params);
     const results = object(response.data).results;
     if (!Array.isArray(results)) return [];
     return results.map(raw => normalizeMedia(raw, mediaType)).filter(item => Number.isSafeInteger(item.id) && Number(item.id) > 0);
   }
-  return { catalog, detail, recommendations, keywords, findByImdbId, findByTitle, searchCandidates, regions };
+  async function searchCandidates(title: string, year: string, mediaType: MediaType) {
+    if (!title.trim() || title.length > 200 || !/^\d{4}$/.test(year)) return [];
+    const query = searchTitle(title, mediaType);
+    const results = await searchByTitle(query, mediaType, year);
+    // Only an empty year-filtered result is retried; a year that returned anything keeps its exact behavior.
+    return results.length ? results : searchByTitle(query, mediaType);
+  }
+  return { catalog, detail, recommendations, findByImdbId, findByTitle, searchCandidates, regions };
 }

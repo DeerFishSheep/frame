@@ -86,7 +86,7 @@ export function getDemoCatalog(filters: CatalogFilters): CatalogResponse {
   if (filters.chart === "favorites") {
     return empty("收藏来自本设备保存的作品；预览样本不会自动加入收藏。");
   }
-  if (filters.region || filters.language || filters.keywords || filters.runtimeMin || filters.runtimeMax) {
+  if (filters.region || filters.language || filters.runtimeMin || filters.runtimeMax) {
     return empty(`${PREVIEW_NOTICE} 地区、语言、关键词和片长筛选需要连接 TMDB 数据。`);
   }
 
@@ -134,7 +134,7 @@ export function getDemoDetail(mediaType: MediaType, id: number): MediaDetail | n
   if (!item) return null;
   return {
     ...copyMedia(item), id, runtime: null, numberOfSeasons: null, status: "",
-    countries: [], directors: [], cast: [], keywords: [],
+    countries: [], directors: [], cast: [],
     images: item.backdropPath ? [item.backdropPath] : [], recommendations: { results: [], page: 1, totalPages: 0, totalResults: 0 }, imdbId: null,
   };
 }

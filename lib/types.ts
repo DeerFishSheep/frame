@@ -42,7 +42,6 @@ export interface MediaDetail extends Media {
   countries: string[];
   directors: string[];
   cast: { id: number; name: string; character: string; profilePath: string | null }[];
-  keywords: { id: number; name: string }[];
   images: string[];
   recommendations: MediaPage;
   imdbId: string | null;
@@ -79,7 +78,6 @@ export interface CatalogFilters {
   votesMin: string;
   region: string;
   language: string;
-  keywords: string;
   runtimeMin: string;
   runtimeMax: string;
   sort: string;
@@ -88,8 +86,8 @@ export interface CatalogFilters {
 
 export const DEFAULT_FILTERS: CatalogFilters = {
   chart: "trending", media: "movie", period: "day", query: "", genres: [],
-  genreLogic: "or", dateFrom: "", dateTo: "", scoreMin: "", scoreMax: "",
-  votesMin: "", region: "", language: "", keywords: "", runtimeMin: "", runtimeMax: "",
+  genreLogic: "and", dateFrom: "", dateTo: "", scoreMin: "", scoreMax: "",
+  votesMin: "", region: "", language: "", runtimeMin: "", runtimeMax: "",
   sort: "popularity.desc", page: 1,
 };
 

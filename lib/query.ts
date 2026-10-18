@@ -57,10 +57,6 @@ export function parseFilters(params: URLSearchParams, now = new Date()): Catalog
   if (genreText && !/^\d+(?:,\d+)*$/.test(genreText)) throw new QueryError("类型应使用逗号分隔的数字 ID。");
   const genres = [...new Set(genreText ? genreText.split(",") : [])];
   if (genres.length > 20 || genres.some((id) => Number(id) < 1 || Number(id) > 1_000_000)) throw new QueryError("类型参数无效。");
-  const keywords = value(params, "keywords");
-  if (keywords && (!/^\d+(?:[,|]\d+)*$/.test(keywords) || keywords.split(/[,|]/).length > 20 || keywords.split(/[,|]/).some((id) => Number(id) < 1 || Number(id) > 100_000_000))) {
-    throw new QueryError("关键词应使用数字 ID，逗号表示同时满足，竖线表示满足任一。");
-  }
   const region = value(params, "region").toUpperCase();
   const language = value(params, "language").toLowerCase();
   if (region && !/^[A-Z]{2}$/.test(region)) throw new QueryError("制片地区应使用两位国家代码。");
@@ -80,7 +76,7 @@ export function parseFilters(params: URLSearchParams, now = new Date()): Catalog
   const result: CatalogFilters = {
     chart: chart as CatalogFilters["chart"], media: media as CatalogFilters["media"],
     period: period as CatalogFilters["period"], genreLogic: genreLogic as CatalogFilters["genreLogic"],
-    query, genres, keywords, region, language, sort,
+    query, genres, region, language, sort,
     dateFrom, dateTo,
     scoreMin: numberText(value(params, "scoreMin"), "最低评分", 0, 10, false),
     scoreMax: numberText(value(params, "scoreMax"), "最高评分", 0, 10, false),
@@ -103,7 +99,7 @@ export interface CatalogRequest {
 
 export function hasAdvancedFilters(filters: CatalogFilters) {
   return Boolean(filters.genres.length || filters.dateFrom || (filters.dateTo && (filters.dateTo !== "today" || filters.chart !== "discover" || filters.query)) || filters.scoreMin || filters.scoreMax ||
-    filters.votesMin || filters.region || filters.language || filters.keywords || filters.runtimeMin || filters.runtimeMax ||
+    filters.votesMin || filters.region || filters.language || filters.runtimeMin || filters.runtimeMax ||
     filters.sort !== DEFAULT_FILTERS.sort);
 }
 
@@ -145,7 +141,7 @@ export function buildCatalogRequest(input: CatalogFilters, now = new Date()): Ca
     if (dateTo) params.set(`${dateKey}.lte`, dateTo);
     const mapping: Partial<Record<keyof CatalogFilters, string>> = {
       scoreMin: "vote_average.gte", scoreMax: "vote_average.lte", votesMin: "vote_count.gte",
-      region: "with_origin_country", language: "with_original_language", keywords: "with_keywords",
+      region: "with_origin_country", language: "with_original_language",
       runtimeMin: "with_runtime.gte", runtimeMax: "with_runtime.lte",
     };
     for (const [key, param] of Object.entries(mapping)) {

@@ -94,12 +94,12 @@ test("aggregate confirmation requires two distinct actor names and people, never
 });
 
 test("aggregate evidence does not choose between multiple verified candidates or exceed the candidate bound", async () => {
-  for (const count of [2, 5]) {
+  for (const count of [2, 8, 9]) {
     let fallbackCalls = 0;
     const candidates = Array.from({ length: count }, (_, index) => ({ ...candidate, id: 42 + index }));
     const result = await matcher({ seasonCandidates: async () => candidates, seasonEvidence: async id => ({ ...season, seriesId: id }), seriesEvidence: async id => { fallbackCalls++; return { ...aggregate, seriesId: id }; } })(source);
     assert.equal(result, null);
-    assert.equal(fallbackCalls, count > 4 ? 0 : count);
+    assert.equal(fallbackCalls, count > 8 ? 0 : count);
   }
 });
 

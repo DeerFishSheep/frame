@@ -52,8 +52,9 @@ test("duplicate aliases are one naming fact and cannot replace missing actor evi
 
 test("raw candidate unions are deduplicated and bounded before requesting official aliases", async () => {
   let seasonCalls = 0;
-  const pool = Array.from({ length: 5 }, (_, index) => ({ ...candidate, id: index + 1 }));
-  const overLimit = matcher({ seasonCandidates: async title => title === source.title ? pool.slice(0, 3) : pool.slice(3), seasonEvidence: async () => { seasonCalls++; return season; } });
+  // Nine candidates: one above the raised bound of eight, so the union is still refused before any evidence request.
+  const pool = Array.from({ length: 9 }, (_, index) => ({ ...candidate, id: index + 1 }));
+  const overLimit = matcher({ seasonCandidates: async title => title === source.title ? pool.slice(0, 5) : pool.slice(5), seasonEvidence: async () => { seasonCalls++; return season; } });
   assert.equal(await overLimit(source), null);
   assert.equal(seasonCalls, 0);
   const duplicates = matcher({ seasonCandidates: async () => [candidate, candidate, candidate], seasonEvidence: async () => { seasonCalls++; return season; } });

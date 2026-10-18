@@ -22,11 +22,10 @@ test("normalizes movie/TV identity, Chinese fallback and distinct genre structur
 });
 
 test("detail tolerates missing data and maps appended detail resources", () => {
-  const detail = normalizeDetail({ ...fixture, runtime: 125, imdb_id: "tt12345", credits: { crew: [{ job: "Director", name: "导演" }], cast: [{ id: 3, name: "演员", character: "角色", profile_path: "/actor.jpg" }] }, keywords: { keywords: [{ id: 4, name: "time travel" }] }, images: { backdrops: [{ file_path: "/scene.jpg" }] }, recommendations: { results: [fixture] } }, "movie");
+  const detail = normalizeDetail({ ...fixture, runtime: 125, imdb_id: "tt12345", credits: { crew: [{ job: "Director", name: "导演" }], cast: [{ id: 3, name: "演员", character: "角色", profile_path: "/actor.jpg" }] }, images: { backdrops: [{ file_path: "/scene.jpg" }] }, recommendations: { results: [fixture] } }, "movie");
   assert.equal(detail.runtime, 125);
   assert.deepEqual(detail.directors, ["导演"]);
   assert.deepEqual(detail.images, ["/scene.jpg"]);
-  assert.equal(detail.keywords[0].id, 4);
   assert.equal(detail.imdbId, "tt12345");
   assert.equal(normalizeDetail({}, "tv").runtime, null);
   assert.equal(normalizeDetail({}, "tv").numberOfSeasons, null);
@@ -141,19 +140,17 @@ test("timeout aborts and retries exactly once", async () => {
   assert.equal(calls, 2);
 });
 
-test("details whitelist IDs and keywords return normalized IDs and names", async () => {
+test("details whitelist IDs and request only supported appended resources", async () => {
   const requests: string[] = [];
   const service = createTmdbService(createTmdbClient(options(async (url) => {
     requests.push(String(url));
-    return json(String(url).includes("search/keyword") ? { results: [{ id: 8, name: "space" }, { name: "invalid" }] } : fixture);
+    return json(fixture);
   })));
   const result = await service.detail("movie", "42");
   assert.equal(result.detail.id, 42);
-  assert.match(requests[0], /append_to_response=credits%2Ckeywords%2Cexternal_ids%2Cimages%2Crecommendations/);
+  assert.match(requests[0], /append_to_response=credits%2Cexternal_ids%2Cimages%2Crecommendations/);
   await assert.rejects(service.detail("person", "42"));
   await assert.rejects(service.detail("movie", "../42"));
-  assert.deepEqual((await service.keywords("space")).results, [{ id: 8, name: "space" }]);
-  await assert.rejects(service.keywords(""));
 });
 
 test("malformed upstream catalog is an error, never an empty successful chart", async () => {

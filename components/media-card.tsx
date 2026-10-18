@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowUpRight, Bookmark, Film, Star } from "lucide-react";
+import { Bookmark, Film, Star } from "lucide-react";
 import { mediaHref, mediaKey, type Media } from "@/lib/types";
 import { artworkSources } from "@/lib/media-artwork";
 import { formatCount } from "@/lib/ui";
@@ -35,7 +35,6 @@ export function MediaCard({ item, showRank = true, resultIndex }: { item: Media;
         <MediaImage item={item}/><span className="poster-shade"/>
         {number && <span className={`rank-badge ${number.value <= 3 ? "rank-top" : ""}`} title={number.label} aria-label={number.label}>{number.text}</span>}
         <span className="poster-kind" title={[region, item.mediaType === "movie" ? "电影" : "剧集"].filter(Boolean).join(" · ")}>{region && <><span className="poster-region">{region}</span><span aria-hidden="true">·</span></>}<span className="poster-media-kind">{item.mediaType === "movie" ? "电影" : "剧集"}</span></span>
-        <span className="poster-open"><ArrowUpRight size={20}/><span>查看详情</span></span>
         <div className="poster-info">
           <div className="poster-genres" aria-label="全部类型">{genres.length ? genres.map(genre => <span key={genre}>{genre}</span>) : <span>类型待补充</span>}</div>
           <div className="poster-footer">

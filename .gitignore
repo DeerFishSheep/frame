@@ -8,3 +8,13 @@ dist/
 artifacts/
 .tmp/
 playwright-report/
+
+# Local scratch: probe scripts, agent state, preview captures
+probe-*.ts
+probe-*.txt
+.agent-teams/
+.dsh-ops/
+.dsh-ops-*.lock
+frame_preview_*.png
+frame_ranking_demo.html
+FRAME_Codex_*.md

@@ -64,7 +64,6 @@ export function normalizeDetail(value: unknown, mediaType: MediaType): MediaDeta
   const credits = object(raw.credits);
   const crew = list(credits.crew).map(object);
   const creators = list(raw.created_by).map(object);
-  const keywordData = object(raw.keywords);
   const imageData = object(raw.images);
   const runtime = mediaType === "movie" ? finite(raw.runtime) : list(raw.episode_run_time).map(finite).find((time) => time > 0);
   const directors = mediaType === "movie"
@@ -78,7 +77,6 @@ export function normalizeDetail(value: unknown, mediaType: MediaType): MediaDeta
     cast: mergeCastMembers(list(credits.cast).map(object).map((person) => ({
       id: finite(person.id), name: text(person.name), character: text(person.character), profilePath: path(person.profile_path),
     }))).slice(0, 18),
-    keywords: list(keywordData.keywords ?? keywordData.results).map(object).filter((keyword) => finite(keyword.id) > 0).map((keyword) => ({ id: finite(keyword.id), name: text(keyword.name) })),
     images: list(imageData.backdrops).map(object).map((item) => path(item.file_path)).filter((item): item is string => item !== null).slice(0, 12),
     recommendations: Array.isArray(object(raw.recommendations).results)
       ? normalizeRecommendations(raw.recommendations, mediaType)

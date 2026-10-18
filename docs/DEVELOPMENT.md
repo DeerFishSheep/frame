@@ -61,7 +61,7 @@ npm run start
 | --- | --- | --- |
 | 页面布局、顶部导航、统一搜索、主题 | `app/globals.css`、`components/shell.tsx`、`lib/navigation.ts`、`components/providers.tsx` | `FrameShell`、`buildSearchHref`、`toggleTheme` |
 | 各主榜单通栏轮播 | `components/featured-film.tsx`、`app/globals.css`、`lib/media-presentation.ts` | `FeaturedCarousel`、`featured-image`、`workspace--featured`、`FEATURED_INTERVAL_MS` |
-| 榜单、搜索、分页、收藏页 | `components/workspace.tsx` | `Workspace`、`loadMore` |
+| 榜单、搜索、自动分页、收藏页 | `components/workspace.tsx`、`lib/catalog-pager.ts` | `Workspace`、`moreAnchor`、`CatalogPager` |
 | 找片全部类型 | `components/workspace.tsx`、`lib/ui.ts` | `quick-genres`、`GENRES` |
 | 筛选弹层、主题搜索 | `components/filter-panel.tsx` | `FilterPanel`、`KeywordPicker` |
 | 海报卡片、完整日期、全部类型、序号 | `components/media-card.tsx`、`lib/media-presentation.ts` | `MediaCard`、`formatMediaDate`、`cardNumber` |
@@ -147,6 +147,14 @@ npm run start
 2. `detail-rating` 禁止换行；人数不再使用 `flex-basis: 100%`。手机外链显示简短的 TMDB／IMDb，完整含义保留在无障碍名称。
 3. `DetailMediaStrip` 负责演员与剧照的单行、箭头、键盘、边界状态；演员显示已返回的最多 18 位，剧照显示已返回的最多 12 张，未增加上游取数范围。
 4. “相关主题”区域与专属 CSS 已删除；找片中的关键词筛选继续保留。
+
+## UI-09 自动分页与趋势分类
+
+- `Workspace` 在 `moreAnchor` 上监听 IntersectionObserver，底部提前距离为视口高度的 0.8 倍，限制在 400～1000px；窗口改变时更新距离。网格、列表、找片、搜索均共用；收藏只增加本地展示条数。
+- `CatalogPager` 保证单请求、末页停止、结果去重和页码递增；`completedPage` 拦截过时观察回调。新条件和卸载调用 `cancel()`，旧响应不能写回；失败释放锁，重试仍请求同一页。
+- 加载失败或整页没有新增条目时暂停自动加载，保留底部按钮。不要通过重建观察器无休止重试；不要删掉请求代次和 `responseKey` 校验。
+- “今日趋势”“本周趋势”分别映射 `chart=trending&period=day/week`，其余榜单维持原媒介与分类映射；旧带 `period` 的 URL 继续兼容。
+- 复检：不点击加载按钮，滚动验证 20→40→60；切换日／周并刷新；检查页面末尾、加载失败与快速条件切换。并发、迟到响应、失败重试、末页等单元测试见 `tests/catalog-pager.test.ts`。
 
 
 ## UI-10 日期筛选复检

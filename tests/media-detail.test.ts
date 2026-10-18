@@ -70,9 +70,14 @@ test("a conflicting requested season and failed or incorrect source matches cann
     await assert.rejects(read("tv", String(seasonDetail.id), context), isError("SEASON_MATCH_UNAVAILABLE", 502));
     assert.equal(calls.detail.length, 0);
   }
-  const ordinary = setup({ subject: async () => ({ data: { ...source, title: "边界旅途" }, retrievedAt: at, stale: false }) });
-  await assert.rejects(ordinary.read("tv", String(seasonDetail.id), { ...context, seasonNumber: 2 }), isError("SEASON_MATCH_UNAVAILABLE", 502));
-  assert.equal(ordinary.calls.detail.length, 0);
+  // A source carrying no season signal anywhere defers to the matcher's verdict instead of re-deriving a season from the title.
+  const plainSource = { ...source, title: "边界旅途", original_title: "" };
+  const ordinary = setup({ subject: async () => ({ data: plainSource, retrievedAt: at, stale: false }) });
+  assert.equal((await ordinary.read("tv", String(seasonDetail.id), { ...context, seasonNumber: 2 })).detail.seasonNumber, 2);
+  assert.deepEqual(ordinary.calls.detail, [["tv", String(seasonDetail.id), 2]]);
+  const unverified = setup({ subject: async () => ({ data: plainSource, retrievedAt: at, stale: false }), match: async () => ({ ...seasonDetail, id: seasonDetail.id + 1 }) });
+  await assert.rejects(unverified.read("tv", String(seasonDetail.id), { ...context, seasonNumber: 2 }), isError("SEASON_MATCH_UNAVAILABLE", 502));
+  assert.equal(unverified.calls.detail.length, 0);
   const failed = setup({ match: async () => { throw new Error("Matching service unavailable"); } });
   await assert.rejects(failed.read("tv", String(seasonDetail.id), context), /Matching service unavailable/);
   assert.equal(failed.calls.detail.length, 0);
@@ -134,7 +139,7 @@ test("ordinary TV and movie details retain their original behavior and result ob
   }
   const plain = { ...seasonDetail, seasonNumber: undefined, title: "整剧资料" };
   const response = { detail: plain, retrievedAt: at, stale: false };
-  const { read, calls } = setup({ detail: async () => response, subject: async () => ({ data: { ...source, title: "整剧条目" }, retrievedAt: at, stale: false }) });
+  const { read, calls } = setup({ detail: async () => response, subject: async () => ({ data: { ...source, title: "整剧条目", original_title: "" }, retrievedAt: at, stale: false }) });
   assert.equal(await read("tv", String(plain.id), context), response);
   assert.equal(calls.match.length, 0);
 });
@@ -158,4 +163,34 @@ test("unsupported season suffixes in old Douban links cannot silently open whole
     assert.equal(calls.match.length, 0);
     assert.equal(calls.detail.length, 0);
   }
+});
+
+test("the source season comes from every Douban name and the loaded season always follows the matcher", async () => {
+  // A bare trailing number is only a season when the source aliases agree with it (Douban 杀人者的购物中心2 -> TMDB season 2).
+  const bare = setup({
+    subject: async () => ({ data: { id: source.id, type: "tv", title: "边界旅途2", original_title: "Boundary Journey2", year: "2025", aka: ["Boundary Journey Season 2"], pubdate: ["2025-03-02(韩国)"], rating: { value: 8, count: 10 } }, retrievedAt: at, stale: false }),
+    match: async () => ({ ...seasonDetail, seasonNumber: 2 }),
+  });
+  const bareResult = await bare.read("tv", String(seasonDetail.id), context);
+  assert.equal(bareResult.detail.seasonNumber, 2);
+  assert.deepEqual(bare.calls.detail, [["tv", String(seasonDetail.id), 2]]);
+
+  // Douban numbers a standalone sequel as season 2 while TMDB keeps it as season 1 of its own series (Douban 麻辣教师 第二季 -> TMDB season 1).
+  const sequelCalls: Array<[string, string, number | undefined]> = [];
+  const sequel = setup({
+    subject: async () => ({ data: { id: source.id, type: "tv", title: "边界旅途 第二季", original_title: "Boundary Journey", year: "2025", aka: ["Boundary Journey 2"], pubdate: ["2025-03-02(日本)"], rating: { value: 8, count: 10 } }, retrievedAt: at, stale: false }),
+    match: async () => ({ ...seasonDetail, seasonNumber: 1, releaseDate: "2025-03-02" }),
+    detail: async (media, id, seasonNumber) => { sequelCalls.push([media, id, seasonNumber]); return { detail: { ...seasonDetail, seasonNumber: 1, releaseDate: "2025-03-02" }, retrievedAt: at, stale: false }; },
+  });
+  const sequelResult = await sequel.read("tv", String(seasonDetail.id), context);
+  assert.equal(sequelResult.detail.seasonNumber, 1);
+  assert.deepEqual(sequelCalls, [["tv", String(seasonDetail.id), 1]]);
+
+  // The same shape without a matching source date stays unmatched instead of being guessed.
+  const unconfirmed = setup({
+    subject: async () => ({ data: { id: source.id, type: "tv", title: "边界旅途 第二季", original_title: "Boundary Journey", year: "2025", pubdate: ["2025-03-02(日本)"], rating: { value: 8, count: 10 } }, retrievedAt: at, stale: false }),
+    match: async () => ({ ...seasonDetail, seasonNumber: 1, releaseDate: "2025-04-09" }),
+  });
+  await assert.rejects(unconfirmed.read("tv", String(seasonDetail.id), context), isError("SEASON_MATCH_UNAVAILABLE", 502));
+  assert.equal(unconfirmed.calls.detail.length, 0);
 });

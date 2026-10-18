@@ -94,13 +94,15 @@ test("matching credits cannot rescue a different title, ambiguous identities or 
   }
 });
 
-test("matching work is bounded to two constrained searches, one subject and at most four candidate details", async () => {
-  for (const count of [4, 5]) {
+// The candidate bound was raised from four to eight: real Douban records carry same-name pools larger than four
+// (a 2026 remake beside its 2014 and 2012 originals), and the bound is a request-cost limit, not an identity rule.
+test("matching work is bounded to two constrained searches, one subject and at most eight candidate details", async () => {
+  for (const count of [8, 9]) {
     let searches = 0, subjects = 0, details = 0;
     const pool = Array.from({ length: count }, (_, index) => candidate(index + 1));
     const match = createDoubanMatcher({ search: async (_title, year) => { assert.equal(year, "2016"); searches++; return pool; }, subject: async () => { subjects++; return { data: evidence }; }, detail: async (_media, id) => { details++; return { detail: detail(pool.find(item => String(item.id) === id)!, ["unrelated"]) }; } });
     assert.equal(await match(source), null);
-    assert.ok(searches <= 2); assert.equal(subjects, 1); assert.equal(details, count === 4 ? 4 : 0);
+    assert.ok(searches <= 2); assert.equal(subjects, 1); assert.equal(details, count === 8 ? 8 : 0);
   }
   for (const year of ["", "16", "2016x"]) {
     let calls = 0;
@@ -222,12 +224,12 @@ test("conflicting source season numbers or years and invalid season suffixes rem
 });
 
 test("ambiguous season matches and overlarge candidate sets are rejected instead of choosing the first hit", async () => {
-  for (const count of [2, 4, 5]) {
+  for (const count of [2, 4, 8, 9]) {
     let inspected = 0;
     const pool = Array.from({ length: count }, (_, index) => ({ ...series, id: series.id as number + index }));
     const match = seasonMatcher({ seasonCandidates: async () => pool, seasonEvidence: async id => { inspected++; return { ...season, seriesId: id }; } });
     assert.equal(await match(seasonSource), null);
-    assert.equal(inspected, count > 4 ? 0 : count);
+    assert.equal(inspected, count > 8 ? 0 : count);
   }
   let inspected = 0;
   const duplicates = seasonMatcher({ seasonCandidates: async () => [series, series], seasonEvidence: async () => { inspected++; return season; } });

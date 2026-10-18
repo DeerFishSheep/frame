@@ -81,5 +81,5 @@ export const formatTime = (value: string | null) => value ? new Intl.DateTimeFor
 export const formatCount = (value: number) => new Intl.NumberFormat("zh-CN").format(value);
 
 export function activeFilterCount(filters: CatalogFilters) {
-  return filters.genres.length + [filters.dateFrom,filters.dateTo === "today" ? "" : filters.dateTo,filters.scoreMin,filters.scoreMax,filters.votesMin,filters.region,filters.language,filters.keywords,filters.runtimeMin,filters.runtimeMax].filter(Boolean).length + (filters.sort !== DEFAULT_FILTERS.sort ? 1 : 0);
+  return filters.genres.length + [filters.dateFrom,filters.dateTo === "today" ? "" : filters.dateTo,filters.scoreMin,filters.scoreMax,filters.votesMin,filters.region,filters.language,filters.runtimeMin,filters.runtimeMax].filter(Boolean).length + (filters.sort !== DEFAULT_FILTERS.sort ? 1 : 0);
 }
