@@ -10,3 +10,11 @@ artifacts
 playwright-report
 frame_preview_*.png
 frame_ranking_demo.html
+
+# Nothing below this line is needed to build or run the image.
+local
+probe-*.ts
+*.command
+AGENTS.md
+.agent-teams
+.dsh-ops*

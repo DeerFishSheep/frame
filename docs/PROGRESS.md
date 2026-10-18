@@ -2,6 +2,13 @@
 
 最后核对：2026-10-16（北京时间）
 
+## 仓库整理（已完成）
+
+- 公开仓库只保留能构建、能部署、能交接的内容。以下从仓库移除，文件仍留在本机：`AGENTS.md`（AI 协作规则，且被 `next dev` 自动改写）、`启动.command`／`停止.command`（macOS Finder 专用）。
+- 新建 `local/` 收拢临时物：58 个探针脚本移到 `local/probes/`，截图、演示 HTML、个人任务书移到 `local/`。`local/` 已同时写入 `.gitignore` 与 `.dockerignore`，也不参与 `tsc`（`tsconfig.json` exclude）。
+- 探针的 import 路径已批量改成 `../../lib/`，从新位置可直接运行（`probe-all.ts` 9/9 复跑通过）。
+- 文档中可执行的复检命令已同步到 `local/probes/` 路径。
+
 ## 本次任务（REL-01 / DEPLOY-01 / DEPLOY-02，脚本已完成，待服务器实测）
 
 - **重大方向调整**：用户无法修复 GitHub 账号账单问题，Actions 不可用；本机访问 docker.io / ghcr.io 也返回 EOF。因此 **放弃「预构建镜像 + 拉取」路线，改为服务器上从源码构建**（`FRAME_SOURCE=build`，默认）。这条路不依赖任何镜像仓库或 CI，只需服务器能 clone 本仓库 + 访问 npm registry。
@@ -34,7 +41,7 @@
 - **重要发现（非代码问题）**：电影榜全量扫描时出现大量「未匹配」，逐条核查后**全部是豆瓣侧 IP 限流**（`subject_ip_rate_limit` code 1309，报错文案「豆瓣暂时无法提供数据，请重试」），由本轮高频测试触发，非匹配逻辑缺陷。串行低速跑「热门电影」100 条时，除 4 条限流外**全部匹配**。生产环境正常浏览不会产生这种请求密度；限流恢复后需复测。
 - 电影榜口径说明：`chart=top` 不接受 `collection` 参数；「热门电影」`sort` 取值为 `recommend/time/rank`（不是 `U`）。
 - 未验证：豆瓣限流冷却后的电影榜全量匹配率未复测（进行中）；浏览器界面未人工验收。
-- 下一步：豆瓣限流恢复后跑 `node node_modules/tsx/dist/cli.mjs probe-movie-charts.ts` 复测电影榜；复检入口 `tests/douban-movie-alias.test.ts`。
+- 下一步：豆瓣限流恢复后跑 `node node_modules/tsx/dist/cli.mjs local/probes/probe-movie-charts.ts` 复测电影榜；复检入口 `tests/douban-movie-alias.test.ts`。
 
 ## 上一任务（MATCH-13，已实现／真实榜单验证通过，待用户界面验收）
 
@@ -56,7 +63,7 @@
 - 测试预算更新：`tests/douban-matcher.test.ts`、`tests/season-alias-match.test.ts`、`tests/season-series-evidence.test.ts` 中断言「上限 4」的用例改为 8，原意（超限即拒绝、且在任何证据请求前拒绝）完整保留。
 - 剩余未匹配 3 条（均为 TMDB 数据源缺口，不可修）：吃饱睡足等幸福～早春养生篇～（父剧 286627 无该特别篇）、被裁掉的女孩、砚边青梅（豆瓣无原名/别名/演职员，TMDB multi 搜索 0 条）。
 - 未验证：浏览器界面未人工验收；生产 HTTP 长跑与缓存命中率未压测；性能为单机单次窗口。
-- 下一步：用户在浏览器验收；复检入口 `node node_modules/tsx/dist/cli.mjs probe-full-chart.ts`（整榜实时匹配率）。
+- 下一步：用户在浏览器验收；复检入口 `node node_modules/tsx/dist/cli.mjs local/probes/probe-full-chart.ts`（整榜实时匹配率）。
 
 ## 上一任务（MATCH-12，已实现／主 Agent 独立复验通过，待用户界面验收）
 
@@ -80,7 +87,7 @@
 - 修复优先级：第一批 4 项低风险小改（`matcher.ts:155`合并／季号识别扩展+139门禁放宽／`matcher.ts:71`剥原名季标记／`matcher.ts:95`唯一性重定义）可修 4 条；跨类型兜底修 2 条；放宽季路径确认门槛修 TXQ，风险最高建议单独立项。
 - 验证：主 Agent 逐条独立复验了 4 份诊断的关键声称（TMDB 季存在性、季首播日期、别名内容、年份过滤行为），全部属实。所有「修完即命中」结论来自探针模拟，**未跑真实修复后端到端**。
 - 未做：未修改任何`lib/``components/``app/`源码；榜序号 343/347/400/405/433/445/452 未复现（沿用用户给定值，不影响根因结论）。
-- 下一步：按第一批 4 项开修；入口`lib/douban/matcher.ts`、`lib/media-match.ts`、`lib/tmdb/service.ts`。复检：`node node_modules/tsx/dist/cli.mjs probe-all.ts`（9 条现状）。
+- 下一步：按第一批 4 项开修；入口`lib/douban/matcher.ts`、`lib/media-match.ts`、`lib/tmdb/service.ts`。复检：`node node_modules/tsx/dist/cli.mjs local/probes/probe-all.ts`（9 条现状）。
 
 ## 上一任务（MATCH-10，已实现／真实接口验证通过，界面待用户验收）
 

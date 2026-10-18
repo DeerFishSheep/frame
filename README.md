@@ -15,7 +15,22 @@
 | [开发记录](docs/CHANGELOG.md) | 每次开发的改动、证据和下一步 |
 | [本地开发与代码定位](docs/DEVELOPMENT.md) | 本地流程、组件入口和记录更新方式 |
 
-后续 Agent 按 [AGENTS.md](AGENTS.md) 接手。每完成一部分开发，同时更新进度和开发记录。
+后续接手先读 [当前进度](docs/PROGRESS.md)，再按需看 [开发记录](docs/CHANGELOG.md)。每完成一部分开发，同时更新进度和开发记录。
+
+## 仓库里有什么
+
+只提交能构建、能部署、能交接的内容：
+
+```
+app/ components/ lib/ public/ tests/   # 应用代码
+scripts/                                # 本地开发脚本
+deploy/                                 # 生产 compose 与配置模板
+filmsou.sh                              # 服务器部署入口
+docs/ PLAN.md README.md                 # 文档
+Dockerfile compose.yaml .env.example    # 构建与本地运行
+```
+
+不提交、也不进镜像的内容放在 `local/`（已在 `.gitignore` 与 `.dockerignore` 中排除）：临时探针脚本、截图、个人任务书。
 
 ## 本地运行
 

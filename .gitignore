@@ -9,9 +9,15 @@ artifacts/
 .tmp/
 playwright-report/
 
-# Local scratch: probe scripts, agent state, preview captures
+# Local scratch: probes, screenshots, personal briefs — never published
+local/
 probe-*.ts
 probe-*.txt
+
+# Personal agent workflow rules and macOS-only launchers stay on this machine
+AGENTS.md
+*.command
+
 .agent-teams/
 .dsh-ops/
 .dsh-ops-*.lock
