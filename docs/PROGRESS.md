@@ -2,7 +2,19 @@
 
 最后核对：2026-10-16（北京时间）
 
-## 本次任务（MATCH-14，已实现／已验证，待用户界面验收）
+## 本次任务（REL-01 / DEPLOY-01，进行中：镜像构建被环境阻塞）
+
+- 已发布公开仓库：https://github.com/DeerFishSheep/frame （3 个提交，HEAD `c4c62d8`）。`.env*`、`artifacts/`、`probe-*` 等本地物未入库。
+- **REL-01 已完成**：`.github/workflows/release.yml` —— verify（tsc + 388 项测试）通过才构建，再推 `ghcr.io/deerfishsheep/frame` 的 **amd64 + arm64** 双架构镜像，打 `vX.Y.Z` / `X.Y` / `latest` 三个标。测试挂则不出镜像，天然满足「构建失败不作为正式更新」。
+- **REL-01 阻塞（非代码）**：① GitHub Actions 无法启动，报 `account is locked due to a billing issue`，需用户到 GitHub 账单设置处理。② 本地 buildx 多架构构建被网络阻断（`registry-1.docker.io` 与 `ghcr.io` 均返回 EOF，`docker-container` builder 拉不到 buildkit）。两条构建通道都待环境恢复。
+- **DEPLOY-01 已完成**：`filmsou.sh`（383 行，仓库根目录）+ `deploy/compose.yaml`（单文件 profiles，三服务可独立装卸）。菜单 7 项 + 非交互子命令。`bash -n` 通过、三个 profile 的 `docker compose config` 通过、`.env` 读写幂等性已实测。
+- 关键设计：联合部署时 `PANSOU_BASE_URL=http://pansou:80`（容器内网），Pansou 在宿主机时用 `http://172.17.0.1:<port>`，**不使用 127.0.0.1**（容器内它是容器自己）。更新流程记录旧版本→备份 `.env`→拉取→重启→健康检查，失败自动回退且只动选中服务。
+- **DEPLOY-02 已完成（脚本层面）**：`update` / `rollback` / `doctor`。`doctor` 检查页面 200、榜单接口 200、Pansou 端口、以及经帧榜发起的**真实资源搜索**，不只看容器是否在跑。
+- 待确认：`ghcr.io/fish2018/pansou-web` 是否支持 arm64（ghcr.io 网络不通，`docker manifest inspect` 未取到）。
+- 未验证：新 Debian 服务器上的完整安装/更新/回退实测；域名与 HTTPS（未定方案）。
+- 下一步：账单修复后推 tag `v1.0.1` 触发构建；服务器执行 `git clone` → `./filmsou.sh`。
+
+## 上一任务（MATCH-14，已实现／已验证，待用户界面验收）
 
 - 起因：用户报告豆瓣「选电影／热门电影」里 **坂本日常 真人版**（豆瓣 37233625）识别不到，但 TMDB 确实有。
 - 根因：`lib/douban/matcher.ts` 的**电影分支**（原 313-318 行）用了一套自己的名字集合，**只含 title 与 original_title，漏了 aka**；而通用路径是含 aka 的。豆瓣标题「坂本日常 真人版」与 TMDB 标题「坂本日常」/原名「SAKAMOTO DAYS」都对不上，但豆瓣 aka 里的 **"Sakamoto Days" 正好等于 TMDB 原名** —— 候选在进入身份核验前就被这个不完整的过滤器丢掉了。
