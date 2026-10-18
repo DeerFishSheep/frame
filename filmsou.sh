@@ -327,13 +327,20 @@ rollback_frame_from_git() {
 
 show_status() {
   ensure_env
-  local fport pport
+  local fport pport bind
   fport="$(env_get FRAME_PORT)"; fport="${fport:-3000}"
   pport="$(env_get PANSOU_PORT)"; pport="${pport:-23456}"
-  info "帧榜 : http://127.0.0.1:${fport}   来源 $(source_of frame)   版本 $(env_get FRAME_VERSION)"
+  bind="$(env_get FRAME_BIND)"; bind="${bind:-127.0.0.1}"
+  if [ "${bind}" = "0.0.0.0" ]; then
+    info "帧榜 : http://<服务器IP>:${fport}  （已对外监听 0.0.0.0）"
+  else
+    info "帧榜 : http://127.0.0.1:${fport}  （仅本机，需反代）"
+  fi
+  info "帧榜来源 $(source_of frame)   版本 $(env_get FRAME_VERSION)"
   info "Pansou: http://127.0.0.1:${pport}   版本 $(env_get PANSOU_VERSION)"
   info "帧榜 -> Pansou: $(env_get PANSOU_BASE_URL)"
   info "当前代码版本: $(git_head)"
+  info "配置文件: ${ENV_FILE}"
   printf '\n'
   compose ps
 }

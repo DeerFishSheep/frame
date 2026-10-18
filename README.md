@@ -118,6 +118,24 @@ cd frame
 
 默认在服务器本机编译镜像（`FRAME_SOURCE=build`），不依赖任何镜像仓库。构建时约需 2GB 可用内存。
 
+### 关于配置文件
+
+`deploy/.env.example` 只是**模板**（跟着代码走，不要改它）；真正的配置是 `deploy/.env`，第一次运行 `./filmsou.sh` 时自动从模板生成，之后所有设置都写在里面。
+
+| 文件 | 作用 | 进仓库吗 |
+| --- | --- | --- |
+| `deploy/.env.example` | 默认值模板 | 是 |
+| `deploy/.env` | 你的密钥、端口、版本、绑定地址 | **否**（含密钥，已在 .gitignore） |
+
+改配置不用手写文件：
+
+```bash
+./filmsou.sh config tmdb     # TMDB 密钥
+vi deploy/.env               # 其他项（端口、绑定地址、版本）
+```
+
+拉取新代码不会覆盖 `deploy/.env` —— 它是未跟踪文件。
+
 镜像采用 [Next.js standalone 输出](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)，以普通用户运行。凭证通过 [Compose 运行时环境变量](https://docs.docker.com/compose/how-tos/environment-variables/set-environment-variables/) 注入，不进入镜像构建。
 
 站点只绑定服务器 `127.0.0.1:3000`。在已有 Nginx、Caddy 或服务器面板中，将域名反向代理到 `http://127.0.0.1:3000`，并配置 HTTPS。
