@@ -2,7 +2,18 @@
 
 最后核对：2026-10-16（北京时间）
 
-## 本次任务（REL-01 / DEPLOY-01，进行中：镜像构建被环境阻塞）
+## 本次任务（REL-01 / DEPLOY-01 / DEPLOY-02，脚本已完成，待服务器实测）
+
+- **重大方向调整**：用户无法修复 GitHub 账号账单问题，Actions 不可用；本机访问 docker.io / ghcr.io 也返回 EOF。因此 **放弃「预构建镜像 + 拉取」路线，改为服务器上从源码构建**（`FRAME_SOURCE=build`，默认）。这条路不依赖任何镜像仓库或 CI，只需服务器能 clone 本仓库 + 访问 npm registry。
+- 发布流水线 `.github/workflows/release.yml` 保留：账单修复后推 tag 即可产出镜像，届时把 `FRAME_SOURCE` 改成 `registry` 就切换。**不再是阻塞项**。
+- `filmsou.sh`（455 行）已完成并实测：部署（frame/pansou/soeasy/full，build 模式先构建）、更新（按 git 标签切版本→重建→健康检查→失败自动切回旧提交）、回退（列标签→切回→重建→检查）、`doctor`（页面 200、榜单接口 200、Pansou 端口、经帧榜发起的真实资源搜索）。
+- 已实测：`bash -n`、三个 profile 的 `docker compose config`、`.env` 读写幂等、`./filmsou.sh status` 端到端。
+- 帧榜 compose 同时保留 `image:` 与 `build:`，build 模式编译出同名镜像，将来切 registry 镜像名一致。
+- 未验证：Docker 构建本身（本机无法拉 node:22-alpine，docker.io 不通）；Debian 服务器上的完整安装/更新/回退；域名与 HTTPS（方案未定）。
+- 服务器要求：Docker + compose 插件、git、能访问 npm registry、构建时约 2GB 可用内存。
+- 下一步：服务器 clone → 填 `deploy/.env` 的 TMDB 密钥 → `./filmsou.sh` 选「4) 联合部署」。
+
+## 上一任务（REL-01 / DEPLOY-01，镜像构建被环境阻塞，已改用源码构建）
 
 - 已发布公开仓库：https://github.com/DeerFishSheep/frame （3 个提交，HEAD `c4c62d8`）。`.env*`、`artifacts/`、`probe-*` 等本地物未入库。
 - **REL-01 已完成**：`.github/workflows/release.yml` —— verify（tsc + 388 项测试）通过才构建，再推 `ghcr.io/deerfishsheep/frame` 的 **amd64 + arm64** 双架构镜像，打 `vX.Y.Z` / `X.Y` / `latest` 三个标。测试挂则不出镜像，天然满足「构建失败不作为正式更新」。

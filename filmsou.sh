@@ -114,6 +114,10 @@ deploy_project() {
   case "$target" in
     frame)
       resolve_pansou_url query
+      if [ "$(source_of frame)" = "build" ]; then
+        info "从源码构建帧榜（首次较慢，之后有缓存）"
+        compose --profile frame build frame
+      fi
       info "启动帧榜"
       compose --profile frame up -d frame
       wait_healthy frame && ok "帧榜已启动，端口 ${FRAME_PORT:-3000}"
@@ -130,6 +134,10 @@ deploy_project() {
       ;;
     full)
       resolve_pansou_url codeploy
+      if [ "$(source_of frame)" = "build" ]; then
+        info "从源码构建帧榜（首次较慢，之后有缓存）"
+        compose --profile frame build frame
+      fi
       info "联合启动帧榜 + Pansou"
       compose --profile frame --profile pansou up -d frame pansou
       if wait_healthy pansou && wait_healthy frame; then
@@ -159,11 +167,24 @@ image_of() {
   esac
 }
 
+# 帧榜从哪来：build = 本机按当前 checkout 编译（默认，不依赖任何镜像仓库）；registry = 拉已发布镜像
+source_of() {
+  local v
+  v="$(env_get FRAME_SOURCE)"
+  printf '%s' "${v:-build}"
+}
+
+git_head() { git -C "${SCRIPT_DIR}" rev-parse --short HEAD 2>/dev/null || echo unknown; }
+
 # 更新 = 记旧版本 -> 备份配置 -> 拉新镜像 -> 重启 -> 自检 -> 失败自动回退
 update_project() {
   local svc="$1" wanted="${2:-}" var image old
   ensure_env
   svc="$(profile_of "$svc")"
+  if [ "$svc" = "frame" ] && [ "$(source_of frame)" = "build" ]; then
+    update_frame_from_git "$wanted"
+    return $?
+  fi
   var="$(version_var_of "$svc")"
   image="$(image_of "$svc")"
   old="$(env_get "$var")"; old="${old:-latest}"
@@ -194,6 +215,10 @@ rollback_project() {
   local svc="$1" wanted="${2:-}" var image old
   ensure_env
   svc="$(profile_of "$svc")"
+  if [ "$svc" = "frame" ] && [ "$(source_of frame)" = "build" ]; then
+    rollback_frame_from_git "$wanted"
+    return $?
+  fi
   var="$(version_var_of "$svc")"
   image="$(image_of "$svc")"
   old="$(env_get "$var")"
@@ -210,11 +235,62 @@ rollback_project() {
   wait_healthy "$svc" "${HEALTH_TIMEOUT:-120}" && ok "$svc 已回退到 $wanted"
 }
 
+# 源码模式的更新：切到目标版本 -> 重新构建 -> 自检 -> 失败切回旧提交并重建
+update_frame_from_git() {
+  local wanted="$1" old
+  command -v git >/dev/null 2>&1 || die "源码构建模式需要 git"
+  old="$(git_head)"
+  if [ -z "$wanted" ]; then
+    printf '可用版本：\n'
+    git -C "${SCRIPT_DIR}" tag --sort=-creatordate 2>/dev/null | head -10 | sed 's/^/  /' || true
+    read -r -p "目标标签或分支（当前 ${old}，回车取消）: " wanted
+  fi
+  [ -n "$wanted" ] || { warn "已取消"; return 0; }
+  info "更新帧榜: ${old} -> ${wanted}"
+  env_backup
+  git -C "${SCRIPT_DIR}" fetch --tags --quiet || warn "git fetch 失败，使用本地已有记录"
+  git -C "${SCRIPT_DIR}" rev-parse --verify --quiet "${wanted}" >/dev/null || die "找不到版本 ${wanted}"
+  git -C "${SCRIPT_DIR}" checkout --quiet "${wanted}"
+  if compose --profile frame build frame \
+     && compose --profile frame up -d frame \
+     && wait_healthy frame "${HEALTH_TIMEOUT:-180}"; then
+    ok "帧榜已更新到 ${wanted}"
+  else
+    warn "更新失败，回退到 ${old} 并重建"
+    git -C "${SCRIPT_DIR}" checkout --quiet "${old}" || warn "无法切回 ${old}"
+    compose --profile frame build frame || true
+    compose --profile frame up -d frame || true
+    wait_healthy frame "${HEALTH_TIMEOUT:-180}" || warn "回退后仍不健康，见 logs"
+    return 1
+  fi
+}
+
+rollback_frame_from_git() {
+  local wanted="$1" current
+  command -v git >/dev/null 2>&1 || die "源码构建模式需要 git"
+  current="$(git_head)"
+  printf '可用标签：\n'
+  git -C "${SCRIPT_DIR}" tag --sort=-creatordate 2>/dev/null | head -10 | sed 's/^/  /' || true
+  printf '最近提交：\n'
+  git -C "${SCRIPT_DIR}" log --oneline -10 2>/dev/null | sed 's/^/  /' || true
+  [ -n "$wanted" ] || read -r -p "回退到哪个标签/提交（当前 ${current}，回车取消）: " wanted
+  [ -n "$wanted" ] || { warn "已取消"; return 0; }
+  env_backup
+  git -C "${SCRIPT_DIR}" rev-parse --verify --quiet "${wanted}" >/dev/null || die "找不到版本 ${wanted}"
+  git -C "${SCRIPT_DIR}" checkout --quiet "${wanted}"
+  compose --profile frame build frame && compose --profile frame up -d frame
+  wait_healthy frame "${HEALTH_TIMEOUT:-180}" && ok "帧榜已回退到 ${wanted}"
+}
+
 show_status() {
   ensure_env
-  info "帧榜 : http://127.0.0.1:${FRAME_PORT:-3000}   版本 $(env_get FRAME_VERSION)"
-  info "Pansou: http://127.0.0.1:${PANSOU_PORT:-23456}   版本 $(env_get PANSOU_VERSION)"
-  info "Pansou 地址: $(env_get PANSOU_BASE_URL)"
+  local fport pport
+  fport="$(env_get FRAME_PORT)"; fport="${fport:-3000}"
+  pport="$(env_get PANSOU_PORT)"; pport="${pport:-23456}"
+  info "帧榜 : http://127.0.0.1:${fport}   来源 $(source_of frame)   版本 $(env_get FRAME_VERSION)"
+  info "Pansou: http://127.0.0.1:${pport}   版本 $(env_get PANSOU_VERSION)"
+  info "帧榜 -> Pansou: $(env_get PANSOU_BASE_URL)"
+  info "当前代码版本: $(git_head)"
   printf '\n'
   compose ps
 }

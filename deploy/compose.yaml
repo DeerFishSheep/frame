@@ -9,6 +9,12 @@ services:
   frame:
     profiles: ["frame"]
     image: ${FRAME_IMAGE:-ghcr.io/deerfishsheep/frame}:${FRAME_VERSION:-latest}
+    # The default deployment builds on the host from this checkout: no registry and no
+    # CI needed. A published image can be used instead once one exists, either by running
+    # "pull" or by setting FRAME_SOURCE=registry.
+    build:
+      context: ..
+      dockerfile: Dockerfile
     container_name: frame
     restart: unless-stopped
     init: true
