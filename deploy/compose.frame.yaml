@@ -1,0 +1,34 @@
+name: filmsou
+
+# Production stack: every service is a published image, nothing compiles here.
+services:
+  frame:
+    image: ${FRAME_IMAGE:-ghcr.io/deerfishsheep/frame}:${FRAME_VERSION:-latest}
+    container_name: frame
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      TMDB_API_KEY: "${TMDB_API_KEY:-}"
+      TMDB_API_READ_ACCESS_TOKEN: "${TMDB_API_READ_ACCESS_TOKEN:-}"
+      TMDB_CACHE_SECONDS: "${TMDB_CACHE_SECONDS:-1800}"
+      PANSOU_BASE_URL: "${PANSOU_BASE_URL:-}"
+    ports:
+      - "127.0.0.1:${FRAME_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('node:http').get('http://127.0.0.1:3000/about', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    stop_grace_period: 20s
+    networks:
+      - filmsou
+
+networks:
+  filmsou:
+    name: filmsou
