@@ -388,14 +388,24 @@ doctor() {
 
   info "3/7 容器"
   compose ps
+  local bind
+  bind="$(env_get FRAME_BIND)"; bind="${bind:-127.0.0.1}"
+  if [ "${bind}" = "0.0.0.0" ]; then
+    ok "帧榜端口已对外监听（http://<服务器IP>:${port}）"
+  else
+    warn "帧榜只监听 ${bind}，浏览器打不开；测试请把 deploy/.env 的 FRAME_BIND 改成 0.0.0.0 后 restart"
+  fi
 
   info "4/7 帧榜首页"
   code="$(curl -s -o /dev/null -w '%{http_code}' -m 10 "http://127.0.0.1:${port}/about" || echo 000)"
   if [ "$code" = "200" ]; then ok "HTTP 200"; else warn "HTTP $code"; failed=1; fi
 
-  info "5/7 帧榜接口"
-  code="$(curl -s -o /dev/null -w '%{http_code}' -m 20 "http://127.0.0.1:${port}/api/douban?source=douban&media=tv&chart=weekly&collection=tv_weekly_best&page=1" || echo 000)"
-  if [ "$code" = "200" ]; then ok "榜单接口 HTTP 200"; else warn "榜单接口 HTTP $code"; failed=1; fi
+  info "5/7 榜单接口（电影 + 剧集）"
+  local mcode tcode
+  mcode="$(curl -s -o /dev/null -w '%{http_code}' -m 20 "http://127.0.0.1:${port}/api/douban?source=douban&media=movie&chart=weekly&collection=movie_weekly_best&page=1" || echo 000)"
+  tcode="$(curl -s -o /dev/null -w '%{http_code}' -m 20 "http://127.0.0.1:${port}/api/douban?source=douban&media=tv&chart=weekly&collection=tv_global_best_weekly&page=1" || echo 000)"
+  if [ "$mcode" = "200" ]; then ok "电影榜单 HTTP 200"; else warn "电影榜单 HTTP $mcode"; failed=1; fi
+  if [ "$tcode" = "200" ]; then ok "剧集榜单 HTTP 200"; else warn "剧集榜单 HTTP $tcode"; failed=1; fi
 
   info "6/7 Pansou 存活"
   code="$(curl -s -o /dev/null -w '%{http_code}' -m 10 "http://127.0.0.1:${pansou_port}/" || echo 000)"
