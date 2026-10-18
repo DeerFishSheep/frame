@@ -25,7 +25,7 @@ services:
       TMDB_CACHE_SECONDS: "${TMDB_CACHE_SECONDS:-1800}"
       PANSOU_BASE_URL: "${PANSOU_BASE_URL:-}"
     ports:
-      - "${FRAME_BIND:-127.0.0.1}:${FRAME_PORT:-3000}:3000"
+      - "${FRAME_BIND:-0.0.0.0}:${FRAME_PORT:-3000}:3000"
     healthcheck:
       test:
         - CMD

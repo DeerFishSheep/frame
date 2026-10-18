@@ -36,6 +36,34 @@ ensure_env() {
     chmod 600 "${ENV_FILE}"
     ok "已生成 ${ENV_FILE}（请按需填写 TMDB 密钥）"
   fi
+  sync_env_defaults
+  migrate_env
+}
+
+# 模板新增的键自动补进已有配置：只补缺失的，绝不覆盖你设过的值。
+sync_env_defaults() {
+  [ -f "${ENV_FILE}" ] && [ -f "${ENV_EXAMPLE}" ] || return 0
+  local line key added=0
+  while IFS= read -r line; do
+    case "$line" in ''|'#'*) continue;; esac
+    key="${line%%=*}"
+    [ -n "$key" ] || continue
+    if ! grep -q "^${key}=" "${ENV_FILE}" 2>/dev/null; then
+      printf '%s\n' "$line" >> "${ENV_FILE}"
+      added=$((added + 1))
+    fi
+  done < "${ENV_EXAMPLE}"
+  [ "$added" -gt 0 ] && ok "已从模板补全 ${added} 项配置（未覆盖你已有的值）"
+  return 0
+}
+
+# 旧模板把绑定地址固定在 127.0.0.1，克隆后浏览器打不开；迁移为对外监听并说明。
+migrate_env() {
+  if [ "$(env_get FRAME_BIND)" = "127.0.0.1" ]; then
+    env_set FRAME_BIND 0.0.0.0
+    warn "FRAME_BIND 已从 127.0.0.1 改为 0.0.0.0（不改的话公网打不开）"
+  fi
+  return 0
 }
 
 env_get() {
@@ -351,15 +379,17 @@ show_logs() {
   if [ -n "$svc" ]; then compose logs -f --tail=200 "$(profile_of "$svc")"; else compose logs -f --tail=100; fi
 }
 
+# 用 up -d 而不是 restart：改了端口或环境变量时，只有重建容器才会生效。
 restart_project() {
   ensure_env
   local svc="${1:-}"
   if [ -n "$svc" ]; then
     svc="$(profile_of "$svc")"
-    compose --profile "$svc" restart "$svc"
-    wait_healthy "$svc" && ok "$svc 已重启"
+    compose --profile "$svc" up -d "$svc"
+    wait_healthy "$svc" && ok "$svc 已按最新配置重建"
   else
-    compose restart
+    compose --profile frame --profile pansou --profile soeasy up -d
+    ok "已按最新配置重建"
   fi
 }
 
