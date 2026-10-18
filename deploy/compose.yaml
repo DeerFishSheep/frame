@@ -25,7 +25,7 @@ services:
       TMDB_CACHE_SECONDS: "${TMDB_CACHE_SECONDS:-1800}"
       PANSOU_BASE_URL: "${PANSOU_BASE_URL:-}"
     ports:
-      - "127.0.0.1:${FRAME_PORT:-3000}:3000"
+      - "${FRAME_BIND:-127.0.0.1}:${FRAME_PORT:-3000}:3000"
     healthcheck:
       test:
         - CMD
@@ -48,7 +48,7 @@ services:
     container_name: pansou
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${PANSOU_PORT:-23456}:80"
+      - "${PANSOU_BIND:-127.0.0.1}:${PANSOU_PORT:-23456}:80"
     environment:
       # Empty means the Pansou image default (all bundled plugins and channels).
       ENABLED_PLUGINS: "${PANSOU_ENABLED_PLUGINS:-}"
@@ -67,7 +67,7 @@ services:
     container_name: soeasy
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${SOEASY_PORT:-8080}:80"
+      - "${SOEASY_BIND:-127.0.0.1}:${SOEASY_PORT:-8080}:80"
     volumes:
       # Directories, not files: a missing file becomes a directory and nginx fails to start.
       - ./soeasy/html:/usr/share/nginx/html:ro
